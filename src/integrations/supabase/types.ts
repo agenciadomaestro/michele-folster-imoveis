@@ -14,16 +14,264 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          broker_id: string | null
+          consent: boolean
+          created_at: string
+          email: string | null
+          id: string
+          interest: string
+          message: string | null
+          name: string
+          notes: string | null
+          phone: string
+          property_code: string | null
+          property_id: string | null
+          source: string
+          source_page: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          broker_id?: string | null
+          consent?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest?: string
+          message?: string | null
+          name: string
+          notes?: string | null
+          phone: string
+          property_code?: string | null
+          property_id?: string | null
+          source?: string
+          source_page?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string | null
+          consent?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest?: string
+          message?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string
+          property_code?: string | null
+          property_id?: string | null
+          source?: string
+          source_page?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          creci: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          creci?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          creci?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          address: string | null
+          area_built: number | null
+          area_land: number | null
+          area_useful: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          broker_id: string | null
+          city: string
+          code: string
+          condo_fee: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          featured: boolean
+          features: string[]
+          id: string
+          iptu: number | null
+          neighborhood: string | null
+          parking: number | null
+          purpose: string
+          rent_price: number | null
+          sale_price: number | null
+          show_address: boolean
+          slug: string
+          state: string
+          status: string
+          suites: number | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          area_built?: number | null
+          area_land?: number | null
+          area_useful?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          broker_id?: string | null
+          city: string
+          code: string
+          condo_fee?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          featured?: boolean
+          features?: string[]
+          id?: string
+          iptu?: number | null
+          neighborhood?: string | null
+          parking?: number | null
+          purpose?: string
+          rent_price?: number | null
+          sale_price?: number | null
+          show_address?: boolean
+          slug: string
+          state?: string
+          status?: string
+          suites?: number | null
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          area_built?: number | null
+          area_land?: number | null
+          area_useful?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          broker_id?: string | null
+          city?: string
+          code?: string
+          condo_fee?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          featured?: boolean
+          features?: string[]
+          id?: string
+          iptu?: number | null
+          neighborhood?: string | null
+          parking?: number | null
+          purpose?: string
+          rent_price?: number | null
+          sale_price?: number | null
+          show_address?: boolean
+          slug?: string
+          state?: string
+          status?: string
+          suites?: number | null
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      property_photos: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          property_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          property_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          property_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_photos_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_staff_manager: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "admin" | "broker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +398,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "admin", "broker"],
+    },
   },
 } as const
