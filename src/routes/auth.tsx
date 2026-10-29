@@ -21,7 +21,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [busy, setBusy] = useState(false);
 
-  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email")), password = String(fd.get("password"));
@@ -29,7 +29,7 @@ function AuthPage() {
     if (mode === "in") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       setBusy(false);
-      if (error) return toast.error("E-mail ou senha inválidos.");
+      if (error) { toast.error("E-mail ou senha inválidos."); return; }
       navigate({ to: "/painel" });
     } else {
       const { error } = await supabase.auth.signUp({
@@ -37,7 +37,7 @@ function AuthPage() {
         options: { emailRedirectTo: window.location.origin + "/painel", data: { full_name: String(fd.get("name")) } },
       });
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
       toast.success("Conta criada. Confirme pelo link enviado ao seu e-mail.");
       setMode("in");
     }

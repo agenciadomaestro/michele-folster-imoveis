@@ -52,21 +52,21 @@ export const coverOf = (p: Property) =>
   [...(p.property_photos ?? [])].sort((a, b) => a.position - b.position)[0]?.url;
 
 export type SearchFilters = {
-  q?: string;
-  code?: string;
-  purpose?: "venda" | "locacao";
-  type?: string;
-  city?: string;
-  neighborhood?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  parking?: number;
-  minPrice?: number;
-  maxPrice?: number;
-  minArea?: number;
-  maxArea?: number;
-  sort?: "recentes" | "menor" | "maior";
-  page?: number;
+  q?: string | undefined;
+  code?: string | undefined;
+  purpose?: "venda" | "locacao" | undefined;
+  type?: string | undefined;
+  city?: string | undefined;
+  neighborhood?: string | undefined;
+  bedrooms?: number | undefined;
+  bathrooms?: number | undefined;
+  parking?: number | undefined;
+  minPrice?: number | undefined;
+  maxPrice?: number | undefined;
+  minArea?: number | undefined;
+  maxArea?: number | undefined;
+  sort?: "recentes" | "menor" | "maior" | undefined;
+  page?: number | undefined;
 };
 
 const NUM_WORDS: Record<string, number> = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, "três": 3, quatro: 4, cinco: 5 };
@@ -79,7 +79,7 @@ export function parseTextQuery(text: string, cities: string[] = []): { filters: 
   const norm = strip(rest);
 
   const code = rest.match(/\b([A-Za-z]{2}\d{3,5})\b/);
-  if (code) { filters.code = code[1].toUpperCase(); rest = rest.replace(code[0], ""); }
+  if (code) { filters.code = (code[1] ?? "").toUpperCase(); rest = rest.replace(code[0], ""); }
 
   for (const t of PROPERTY_TYPES) {
     if (new RegExp(`\\b${strip(t)}s?\\b`).test(norm)) { filters.type = t; rest = rest.replace(new RegExp(t + "s?", "i"), ""); break; }
@@ -88,18 +88,18 @@ export function parseTextQuery(text: string, cities: string[] = []): { filters: 
   else if (/\b(comprar|venda|compra)\b/.test(norm)) filters.purpose = "venda";
 
   const rooms = norm.match(/(\d+|um|uma|dois|duas|tres|quatro|cinco)\s+(quartos?|dormitorios?)/);
-  if (rooms) filters.bedrooms = Number(rooms[1]) || NUM_WORDS[rooms[1]];
+  if (rooms) filters.bedrooms = Number(rooms[1]) || NUM_WORDS[rooms[1] ?? ""];
   const baths = norm.match(/(\d+|um|uma|dois|duas|tres|quatro)\s+banheiros?/);
-  if (baths) filters.bathrooms = Number(baths[1]) || NUM_WORDS[baths[1]];
+  if (baths) filters.bathrooms = Number(baths[1]) || NUM_WORDS[baths[1] ?? ""];
   const vagas = norm.match(/(\d+|uma|duas|tres)\s+vagas?/);
-  if (vagas) filters.parking = Number(vagas[1]) || NUM_WORDS[vagas[1]];
+  if (vagas) filters.parking = Number(vagas[1]) || NUM_WORDS[vagas[1] ?? ""];
 
   for (const c of cities) {
     if (norm.includes(strip(c))) { filters.city = c; break; }
   }
   if (!filters.city) {
     const em = rest.match(/\b(?:em|no|na)\s+([A-ZÀ-Ú][\wÀ-ú]+(?:\s[A-ZÀ-Ú][\wÀ-ú]+)*)/);
-    if (em) filters.city = em[1];
+    if (em?.[1]) filters.city = em[1];
   }
 
   rest = strip(rest)
