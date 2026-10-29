@@ -30,11 +30,11 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       setBusy(false);
       if (error) { toast.error("E-mail ou senha inválidos."); return; }
-      navigate({ to: "/painel" });
+      navigate({ to: "/admin" });
     } else {
       const { error } = await supabase.auth.signUp({
         email, password,
-        options: { emailRedirectTo: window.location.origin + "/painel", data: { full_name: String(fd.get("name")) } },
+        options: { emailRedirectTo: window.location.origin + "/admin", data: { full_name: String(fd.get("name")) } },
       });
       setBusy(false);
       if (error) { toast.error(error.message); return; }

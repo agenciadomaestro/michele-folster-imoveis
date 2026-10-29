@@ -10,11 +10,35 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as ImoveisRouteImport } from './routes/imoveis'
+import { Route as LocacaoRouteImport } from './routes/locacao'
+import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as VendaRouteImport } from './routes/venda'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminNovoRouteImport } from './routes/admin/novo'
+import { Route as ImovelCodeRouteImport } from './routes/imovel.$code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImoveisRoute = ImoveisRouteImport.update({
@@ -22,31 +46,127 @@ const ImoveisRoute = ImoveisRouteImport.update({
   path: '/imoveis',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocacaoRoute = LocacaoRouteImport.update({
+  id: '/locacao',
+  path: '/locacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendaRoute = VendaRouteImport.update({
+  id: '/venda',
+  path: '/venda',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNovoRoute = AdminNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const ImovelCodeRoute = ImovelCodeRouteImport.update({
+  id: '/imovel/$code',
+  path: '/imovel/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/contato': typeof ContatoRoute
   '/imoveis': typeof ImoveisRoute
+  '/locacao': typeof LocacaoRoute
+  '/sobre': typeof SobreRoute
+  '/venda': typeof VendaRoute
+  '/admin/novo': typeof AdminNovoRoute
+  '/imovel/$code': typeof ImovelCodeRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/contato': typeof ContatoRoute
   '/imoveis': typeof ImoveisRoute
+  '/locacao': typeof LocacaoRoute
+  '/sobre': typeof SobreRoute
+  '/venda': typeof VendaRoute
+  '/admin/novo': typeof AdminNovoRoute
+  '/imovel/$code': typeof ImovelCodeRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/contato': typeof ContatoRoute
   '/imoveis': typeof ImoveisRoute
+  '/locacao': typeof LocacaoRoute
+  '/sobre': typeof SobreRoute
+  '/venda': typeof VendaRoute
+  '/admin/novo': typeof AdminNovoRoute
+  '/imovel/$code': typeof ImovelCodeRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/imoveis'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/contato'
+    | '/imoveis'
+    | '/locacao'
+    | '/sobre'
+    | '/venda'
+    | '/admin/novo'
+    | '/imovel/$code'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/imoveis'
-  id: '__root__' | '/' | '/imoveis'
+  to:
+    | '/'
+    | '/auth'
+    | '/contato'
+    | '/imoveis'
+    | '/locacao'
+    | '/sobre'
+    | '/venda'
+    | '/admin/novo'
+    | '/imovel/$code'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/contato'
+    | '/imoveis'
+    | '/locacao'
+    | '/sobre'
+    | '/venda'
+    | '/admin/novo'
+    | '/imovel/$code'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ContatoRoute: typeof ContatoRoute
   ImoveisRoute: typeof ImoveisRoute
+  LocacaoRoute: typeof LocacaoRoute
+  SobreRoute: typeof SobreRoute
+  VendaRoute: typeof VendaRoute
+  ImovelCodeRoute: typeof ImovelCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +178,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/imoveis': {
       id: '/imoveis'
       path: '/imoveis'
@@ -65,12 +206,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImoveisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/locacao': {
+      id: '/locacao'
+      path: '/locacao'
+      fullPath: '/locacao'
+      preLoaderRoute: typeof LocacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/venda': {
+      id: '/venda'
+      path: '/venda'
+      fullPath: '/venda'
+      preLoaderRoute: typeof VendaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/novo': {
+      id: '/admin/novo'
+      path: '/novo'
+      fullPath: '/admin/novo'
+      preLoaderRoute: typeof AdminNovoRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/imovel/$code': {
+      id: '/imovel/$code'
+      path: '/imovel/$code'
+      fullPath: '/imovel/$code'
+      preLoaderRoute: typeof ImovelCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AdminRouteRouteChildren {
+  AdminNovoRoute: typeof AdminNovoRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminNovoRoute: AdminNovoRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ContatoRoute: ContatoRoute,
   ImoveisRoute: ImoveisRoute,
+  LocacaoRoute: LocacaoRoute,
+  SobreRoute: SobreRoute,
+  VendaRoute: VendaRoute,
+  ImovelCodeRoute: ImovelCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
