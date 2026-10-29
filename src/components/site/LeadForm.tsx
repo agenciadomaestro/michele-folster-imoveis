@@ -19,12 +19,12 @@ export function LeadForm({ propertyId, propertyCode, source = "site" }: { proper
   const [errors, setErrors] = useState<Record<string, string>>({});
   const openedAt = useRef(Date.now());
 
-  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (sending) return;
     const fd = new FormData(e.currentTarget);
-    if (fd.get("website")) return; // honeypot
-    if (Date.now() - openedAt.current < 2500) return toast.error("Aguarde um instante e tente novamente.");
+    if (fd.get("website")) return;
+    if (Date.now() - openedAt.current < 2500) { toast.error("Aguarde um instante e tente novamente."); return; }
     const parsed = schema.safeParse({
       name: fd.get("name"), phone: fd.get("phone"), email: fd.get("email") ?? "",
       message: fd.get("message") ?? "", interest: fd.get("interest") ?? "informacoes", consent: fd.get("consent") === "on",
