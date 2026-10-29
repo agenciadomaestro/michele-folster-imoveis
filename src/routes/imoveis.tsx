@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { z } from "zod";
 import { SearchX, ChevronLeft, ChevronRight } from "lucide-react";
@@ -7,7 +7,7 @@ import { PropertyCard, CardSkeleton } from "@/components/site/PropertyCard";
 import { fetchLocations, PAGE_SIZE, PROPERTY_TYPES, searchProperties, type SearchFilters } from "@/lib/realty";
 
 const num = z.coerce.number().positive().optional().catch(undefined);
-const searchSchema = z.object({
+export const searchSchema = z.object({
   q: z.string().optional().catch(undefined),
   code: z.string().optional().catch(undefined),
   purpose: z.enum(["venda", "locacao"]).optional().catch(undefined),
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/imoveis")({
 });
 
 export function ResultsPage({ fixedPurpose, title }: { fixedPurpose?: "venda" | "locacao"; title?: string }) {
-  const raw = Route.useSearch();
+  const raw = useSearch({ strict: false }) as SearchFilters;
   const search: SearchFilters = fixedPurpose ? { ...raw, purpose: fixedPurpose } : raw;
   const navigate = useNavigate();
   const set = (patch: Partial<SearchFilters>) =>
