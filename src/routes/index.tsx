@@ -116,8 +116,6 @@ function Index() {
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-accent/60 px-4 py-1.5 text-xs font-bold text-primary backdrop-blur-md">
               <Sparkles className="size-3.5 fill-current" />
               <span>Imobiliária Boutique em Santa Catarina</span>
-              <span className="size-1 rounded-full bg-primary/60" />
-              <span className="text-[11px] font-mono text-muted-foreground">{AGENCY.creci}</span>
             </div>
 
             {/* Main Headline */}

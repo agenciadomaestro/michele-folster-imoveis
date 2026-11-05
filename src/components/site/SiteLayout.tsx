@@ -35,10 +35,8 @@ export function Logo({ light = false }: { light?: boolean }) {
         <span className={`text-[17px] font-extrabold tracking-tight ${light ? "text-white" : "text-foreground"}`}>
           {AGENCY.name}
         </span>
-        <span className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
-          <span>Imóveis Exclusivos</span>
-          <span className="inline-block size-1 rounded-full bg-primary/60" />
-          <span className="font-mono text-[9px] text-muted-foreground">{AGENCY.creci}</span>
+        <span className="mt-1 text-[11px] font-medium tracking-wide text-muted-foreground">
+          Imóveis
         </span>
       </div>
     </Link>
