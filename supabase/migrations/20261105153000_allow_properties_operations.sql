@@ -37,3 +37,4 @@ BEGIN
     USING (true)
     WITH CHECK (true);
 END $$;
+

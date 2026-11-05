@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Building2,
   Users,
@@ -12,6 +13,8 @@ import {
   Edit,
   ShieldCheck,
   Trash2,
+  Search,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
@@ -31,6 +34,7 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminDashboard() {
   const router = useRouter();
+  const [searchCode, setSearchCode] = useState("");
 
   // Query Properties
   const { data: properties = [], isLoading: loadingProps, refetch: refetchProps } = useQuery({
@@ -61,6 +65,12 @@ function AdminDashboard() {
     toast.success("Imóvel removido com sucesso.");
     refetchProps();
   };
+
+  const filteredProperties = properties.filter((item) => {
+    if (!searchCode.trim()) return true;
+    const term = searchCode.trim().toUpperCase();
+    return item.code ? item.code.toUpperCase().includes(term) : false;
+  });
 
   // Query Leads
   const { data: leads = [] } = useQuery({
@@ -214,15 +224,47 @@ function AdminDashboard() {
         <div className="panel p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold">Imóveis Cadastrados</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold">Imóveis Cadastrados</h2>
+                {searchCode && (
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-primary">
+                    {filteredProperties.length} {filteredProperties.length === 1 ? "resultado" : "resultados"}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Lista de imóveis gerenciados no sistema
               </p>
             </div>
-            <Link to="/admin/imoveis/novo" className="btn btn-soft text-xs h-9">
-              <PlusCircle className="mr-1.5 size-3.5" />
-              Novo Imóvel
-            </Link>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Campo de Busca por Código */}
+              <div className="relative min-w-[210px] sm:w-60">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchCode}
+                  onChange={(e) => setSearchCode(e.target.value)}
+                  placeholder="Busca por código"
+                  className="field h-9 pl-9 pr-8 text-xs font-semibold tracking-wider uppercase placeholder:normal-case placeholder:font-normal placeholder:tracking-normal"
+                />
+                {searchCode && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchCode("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                    title="Limpar busca"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <Link to="/admin/imoveis/novo" className="btn btn-soft text-xs h-9 shrink-0">
+                <PlusCircle className="mr-1.5 size-3.5" />
+                Novo Imóvel
+              </Link>
+            </div>
           </div>
 
           {loadingProps ? (
@@ -240,9 +282,25 @@ function AdminDashboard() {
                 Cadastrar Imóvel Agora
               </Link>
             </div>
+          ) : filteredProperties.length === 0 ? (
+            <div className="py-12 text-center">
+              <Search className="mx-auto size-10 text-muted-foreground/40 mb-3" />
+              <p className="text-base font-semibold">Nenhum imóvel encontrado</p>
+              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+                Não encontramos nenhum imóvel com o código contendo{" "}
+                <span className="font-bold text-foreground font-mono">"{searchCode.toUpperCase()}"</span>.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchCode("")}
+                className="btn btn-outline text-xs h-8 mt-4"
+              >
+                Limpar busca
+              </button>
+            </div>
           ) : (
             <div className="divide-y divide-border overflow-x-auto">
-              {properties.map((item) => {
+              {filteredProperties.map((item) => {
                 const coverPhoto = item.property_photos?.sort(
                   (a, b) => a.position - b.position
                 )[0]?.url;

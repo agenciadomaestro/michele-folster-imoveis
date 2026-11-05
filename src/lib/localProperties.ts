@@ -130,3 +130,4 @@ export function mergeWithLocalProperties(supabaseProperties: Property[]): Proper
 
   return result;
 }
+
