@@ -1,21 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PropertyForm } from "@/components/admin/PropertyForm";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/novo")({
-  head: () => ({
-    meta: [
-      { title: "Cadastrar Imóvel — Painel Michele Folster" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
-  component: NovoImovelPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/imoveis/novo" });
+  },
 });
-
-function NovoImovelPage() {
-  return (
-    <div className="min-h-screen bg-background py-8 px-4 sm:px-6">
-      <PropertyForm />
-    </div>
-  );
-}
-

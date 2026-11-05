@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
+import { Loader2, LogIn } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -18,46 +19,127 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"in" | "up">("in");
   const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Se já estiver logado, redireciona diretamente para /admin
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        navigate({ to: "/admin" });
+      }
+    });
+  }, [navigate]);
 
   const submit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email")), password = String(fd.get("password"));
     setBusy(true);
-    if (mode === "in") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      setBusy(false);
-      if (error) { toast.error("E-mail ou senha inválidos."); return; }
-      navigate({ to: "/admin" });
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email, password,
-        options: { emailRedirectTo: window.location.origin + "/admin", data: { full_name: String(fd.get("name")) } },
+
+    const cleanEmail = email.trim();
+
+    try {
+      // 1. Login direto no Supabase Auth com email e senha
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
       });
+
+      if (signInError) {
+        setBusy(false);
+        const errLower = signInError.message.toLowerCase();
+        if (errLower.includes("confirm") || errLower.includes("email not confirmed")) {
+          toast.error("E-mail não confirmado no Supabase Auth. Verifique o seu e-mail ou execute o script de seed.");
+        } else {
+          toast.error("E-mail ou senha inválidos. Verifique as suas credenciais.");
+        }
+        return;
+      }
+
+      const user = authData?.user;
+      if (user) {
+        // 2. Se for o usuário Master, garante perfil na tabela profiles
+        if (user.email === "contato@agenciabipe.com") {
+          try {
+            await supabase.from("profiles").upsert({
+              id: user.id,
+              full_name: "Everson Maestro",
+              active: true,
+            });
+          } catch (e) {
+            console.warn("Aviso ao sincronizar perfil:", e);
+          }
+        }
+
+        const displayName =
+          user.user_metadata?.["full_name"] ||
+          (user.email === "contato@agenciabipe.com" ? "Everson Maestro" : "Corretor");
+
+        setBusy(false);
+        toast.success(`Acesso concedido! Bem-vindo(a), ${displayName}.`);
+        navigate({ to: "/admin" });
+      } else {
+        setBusy(false);
+      }
+    } catch (err: any) {
       setBusy(false);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Conta criada. Confirme pelo link enviado ao seu e-mail.");
-      setMode("in");
+      console.error(err);
+      toast.error(err.message || "Erro inesperado ao realizar login.");
     }
   };
 
   return (
-    <div className="grid min-h-screen place-items-center bg-surface px-4">
+    <div className="grid min-h-screen place-items-center bg-surface px-4 py-8">
       <div className="panel w-full max-w-sm p-8 shadow-[var(--shadow-soft)]">
         <Logo />
-        <h1 className="mt-8 text-xl font-bold">{mode === "in" ? "Entrar na área da equipe" : "Criar acesso"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Proprietário, administradores e corretores.</p>
-        <form onSubmit={submit} className="mt-6 space-y-3">
-          {mode === "up" && <div><label className="label">Nome</label><input name="name" required className="field" /></div>}
-          <div><label className="label">E-mail</label><input name="email" type="email" required className="field" /></div>
-          <div><label className="label">Senha</label><input name="password" type="password" minLength={6} required className="field" /></div>
-          <button className="btn btn-primary w-full" disabled={busy}>{busy ? "Aguarde..." : mode === "in" ? "Entrar" : "Criar conta"}</button>
+        <h1 className="mt-8 text-xl font-bold">Entrar na área da equipe</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Acesso restrito a administradores e corretores autorizados.
+        </p>
+
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <div>
+            <label className="label">E-mail</label>
+            <input
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="field"
+              placeholder="seuemail@exemplo.com"
+              autoComplete="email"
+            />
+          </div>
+
+          <div>
+            <label className="label">Senha</label>
+            <input
+              name="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="field"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button className="btn btn-primary w-full" disabled={busy}>
+            {busy ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Autenticando...
+              </>
+            ) : (
+              <>
+                <LogIn className="mr-1.5 size-4" />
+                Entrar no Painel
+              </>
+            )}
+          </button>
         </form>
-        <button className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-primary" onClick={() => setMode(mode === "in" ? "up" : "in")}>
-          {mode === "in" ? "Primeiro acesso? Criar conta" : "Já tenho conta"}
-        </button>
       </div>
     </div>
   );

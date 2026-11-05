@@ -7,7 +7,15 @@ export type Property = Database["public"]["Tables"]["properties"]["Row"] & {
 
 export const AGENCY = {
   name: "Michele Folster",
-  tagline: "Imóveis selecionados com atendimento próximo",
+  tagline: "Imóveis selecionados com atendimento próximo e consultoria exclusiva",
+  phone: "(48) 99182-3456",
+  whatsapp: "5548991823456",
+  email: "contato@michelefolster.com.br",
+  creci: "CRECI 38.412-J",
+  city: "Florianópolis",
+  state: "SC",
+  address: "Av. dos Búzios, 1200 - Jurerê Internacional, Florianópolis - SC",
+  instagram: "@michelefolsterimoveis",
 };
 
 export const PROPERTY_TYPES = [

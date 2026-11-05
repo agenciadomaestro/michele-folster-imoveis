@@ -1,82 +1,378 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ShieldCheck, Home, Handshake } from "lucide-react";
+import { useState } from "react";
+import {
+  ArrowRight,
+  ShieldCheck,
+  Home,
+  Handshake,
+  Building2,
+  Building,
+  Sparkles,
+  CheckCircle2,
+  PhoneCall,
+  MessageCircle,
+  Star,
+  MapPin,
+  TrendingUp,
+} from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { SearchBox } from "@/components/site/SearchBox";
 import { PropertyCard, CardSkeleton } from "@/components/site/PropertyCard";
 import { supabase } from "@/integrations/supabase/client";
-import type { Property } from "@/lib/realty";
+import { AGENCY, type Property } from "@/lib/realty";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Michele Folster Imóveis — Comprar e alugar imóveis" },
-      { name: "description", content: "Encontre casas, apartamentos, terrenos e salas comerciais para comprar ou alugar com a Michele Folster Imóveis." },
-      { property: "og:title", content: "Michele Folster Imóveis" },
-      { property: "og:description", content: "Imóveis selecionados para comprar e alugar, com atendimento próximo." },
+      { title: "Michele Folster Imóveis — Imóveis Selecionados em Santa Catarina" },
+      {
+        name: "description",
+        content:
+          "Casas, apartamentos de alto padrão, coberturas e terrenos selecionados para comprar ou alugar com a Michele Folster Imóveis.",
+      },
+      { property: "og:title", content: "Michele Folster Imóveis — Boutique Imobiliária" },
+      {
+        property: "og:description",
+        content: "Imóveis exclusivos em Florianópolis e região com consultoria personalizada.",
+      },
     ],
   }),
   component: Index,
 });
 
 function Index() {
+  const [filterPurpose, setFilterPurpose] = useState<"todos" | "venda" | "locacao">("todos");
+
   const { data, isLoading } = useQuery({
     queryKey: ["featured"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("properties").select("*, property_photos(url, position)")
-        .eq("status", "publicado").order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(6);
+        .from("properties")
+        .select("*, property_photos(url, position)")
+        .eq("status", "publicado")
+        .order("featured", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(9);
       if (error) throw error;
       return data as Property[];
     },
   });
 
+  const filteredProperties = (data || []).filter((p) => {
+    if (filterPurpose === "todos") return true;
+    if (filterPurpose === "venda") return p.purpose === "venda" || p.purpose === "ambos";
+    if (filterPurpose === "locacao") return p.purpose === "locacao" || p.purpose === "ambos";
+    return true;
+  });
+
+  const categories = [
+    {
+      title: "Apartamentos & Coberturas",
+      subtitle: "Vista mar e áreas nobres",
+      type: "Apartamento",
+      icon: Building2,
+      count: "Disponíveis",
+    },
+    {
+      title: "Casas & Vilas",
+      subtitle: "Amplas, com jardim e piscina",
+      type: "Casa",
+      icon: Home,
+      count: "Disponíveis",
+    },
+    {
+      title: "Sobrados em Condomínio",
+      subtitle: "Segurança e conforto para a família",
+      type: "Sobrado",
+      icon: Building,
+      count: "Disponíveis",
+    },
+    {
+      title: "Terrenos & Lotes",
+      subtitle: "Para construir o seu projeto",
+      type: "Terreno",
+      icon: MapPin,
+      count: "Disponíveis",
+    },
+  ];
+
+  const whatsappUrl = `https://wa.me/${AGENCY.whatsapp}?text=${encodeURIComponent(
+    "Olá Michele! Gostaria de agendar uma consulta sobre imóveis ou avaliação do meu patrimônio."
+  )}`;
+
   return (
     <SiteLayout>
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(60%_60%_at_50%_0%,var(--color-accent),transparent)]" />
-        <div className="container-page relative pb-16 pt-16 md:pt-24">
-          <div className="mx-auto max-w-2xl text-center">
-            <span className="chip">Michele Folster Imóveis</span>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.1] text-foreground md:text-5xl">
-              O imóvel certo, com quem entende de você.
+      {/* ========================================================================= */}
+      {/* HERO SECTION */}
+      {/* ========================================================================= */}
+      <section className="relative overflow-hidden pt-10 pb-16 md:pt-16 md:pb-24">
+        {/* Ambient Light Gradients */}
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] bg-[radial-gradient(ellipse_60%_50%_at_50%_20%,oklch(0.53_0.17_292/14%),transparent_70%)]" />
+
+        <div className="container-page relative z-10">
+          <div className="mx-auto max-w-3xl text-center">
+            {/* Top Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-accent/60 px-4 py-1.5 text-xs font-bold text-primary backdrop-blur-md">
+              <Sparkles className="size-3.5 fill-current" />
+              <span>Imobiliária Boutique em Santa Catarina</span>
+              <span className="size-1 rounded-full bg-primary/60" />
+              <span className="text-[11px] font-mono text-muted-foreground">{AGENCY.creci}</span>
+            </div>
+
+            {/* Main Headline */}
+            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl md:leading-[1.12]">
+              O imóvel certo, com quem{" "}
+              <span className="bg-gradient-to-r from-primary via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                entende de você.
+              </span>
             </h1>
-            <p className="mt-4 text-base text-muted-foreground md:text-lg">
-              Casas, apartamentos e espaços comerciais selecionados para comprar ou alugar.
+
+            {/* Subtitle */}
+            <p className="mt-5 text-base text-muted-foreground sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              Curadoria de casas exclusivas, apartamentos de alto padrão e terrenos nas localizações mais desejadas de Florianópolis e litoral catarinense.
             </p>
           </div>
+
+          {/* Floating SearchBox */}
           <div className="mx-auto mt-10 max-w-5xl">
             <SearchBox />
           </div>
-        </div>
-      </section>
 
-      <section className="container-page mt-8">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold">Imóveis em destaque</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Seleção recente da nossa carteira.</p>
-          </div>
-          <Link to="/imoveis" className="btn btn-ghost hidden text-primary sm:inline-flex">Ver todos <ArrowRight className="size-4" /></Link>
-        </div>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {isLoading ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />) : data?.map((p) => <PropertyCard key={p.id} p={p} />)}
-        </div>
-      </section>
-
-      <section className="container-page mt-24">
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { icon: Home, t: "Carteira selecionada", d: "Cada imóvel é visitado e avaliado antes de ser anunciado." },
-            { icon: Handshake, t: "Atendimento próximo", d: "Um corretor acompanha você da primeira visita à assinatura." },
-            { icon: ShieldCheck, t: "Negociação segura", d: "Documentação conferida e processo transparente." },
-          ].map((b) => (
-            <div key={b.t} className="rounded-[22px] bg-surface p-7">
-              <span className="grid size-11 place-items-center rounded-2xl bg-accent text-primary"><b.icon className="size-5" /></span>
-              <h3 className="mt-5 font-semibold">{b.t}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{b.d}</p>
+          {/* Proof / Trust Metrics */}
+          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4 text-center">
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
+              <span className="text-2xl font-black text-foreground">100%</span>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Imóveis Verificados</p>
             </div>
-          ))}
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
+              <span className="text-2xl font-black text-foreground">Atendimento</span>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">VIP & Personalizado</p>
+            </div>
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
+              <span className="text-2xl font-black text-foreground">Assessoria</span>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Jurídica e Contratual</p>
+            </div>
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
+              <span className="text-2xl font-black text-primary">SC</span>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Região Litorânea</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* CATEGORIAS EM DESTAQUE */}
+      {/* ========================================================================= */}
+      <section className="container-page py-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              Categorias Populares
+            </span>
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl mt-1">
+              Explore pelo Tipo de Imóvel
+            </h2>
+          </div>
+          <Link
+            to="/imoveis"
+            className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+          >
+            Ver todos os filtros <ArrowRight className="size-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.map((c) => {
+            const Icon = c.icon;
+            return (
+              <Link
+                key={c.type}
+                to="/imoveis"
+                search={{ type: c.type } as any}
+                className="group relative overflow-hidden rounded-[22px] border border-border/70 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-lift)]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="grid size-12 place-items-center rounded-2xl bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                    <Icon className="size-6" />
+                  </div>
+                  <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground group-hover:text-foreground">
+                    Ver Imóveis
+                  </span>
+                </div>
+                <h3 className="mt-5 font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                  {c.title}
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  {c.subtitle}
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* IMÓVEIS EM DESTAQUE */}
+      {/* ========================================================================= */}
+      <section className="container-page py-16">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
+              <Star className="size-3.5 fill-current" />
+              <span>Coleção Selecionada</span>
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl mt-1">
+              Imóveis em Destaque
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground max-w-xl">
+              Nossa curadoria mais recente de oportunidades selecionadas a dedo para morar ou investir.
+            </p>
+          </div>
+
+          {/* Quick Purpose Filter Buttons */}
+          <div className="flex items-center gap-1.5 rounded-2xl bg-secondary p-1">
+            {[
+              { id: "todos", label: "Todos" },
+              { id: "venda", label: "Comprar" },
+              { id: "locacao", label: "Alugar" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFilterPurpose(tab.id as any)}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                  filterPurpose === tab.id
+                    ? "bg-background text-primary shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Property Cards Grid */}
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+            : filteredProperties.length === 0
+            ? (
+              <div className="col-span-full rounded-2xl border border-dashed border-border p-12 text-center">
+                <Home className="mx-auto size-10 text-muted-foreground/40 mb-3" />
+                <p className="text-base font-semibold">Nenhum imóvel disponível para este filtro</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Confira todas as opções disponíveis em nosso catálogo completo.
+                </p>
+                <Link to="/imoveis" className="btn btn-primary mt-4">
+                  Ver Todos os Imóveis
+                </Link>
+              </div>
+            )
+            : filteredProperties.map((p) => <PropertyCard key={p.id} p={p} />)}
+        </div>
+
+        {/* Bottom CTA to see full portfolio */}
+        <div className="mt-12 text-center">
+          <Link
+            to="/imoveis"
+            className="btn btn-outline h-12 px-8 font-bold text-sm hover:border-primary hover:text-primary transition-all"
+          >
+            <span>Explorar Todos os Imóveis da Carteira</span>
+            <ArrowRight className="size-4 ml-1.5" />
+          </Link>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* DIFERENCIAIS / EXPERIÊNCIA MICHELE FOLSTER */}
+      {/* ========================================================================= */}
+      <section className="border-y border-border/60 bg-surface/60 py-20">
+        <div className="container-page">
+          <div className="mx-auto max-w-2xl text-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              Excelência e Confiança
+            </span>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+              Por que escolher a Michele Folster Imóveis?
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+              Diferente das imobiliárias tradicionais de massa, atuamos com foco exclusivo no seu tempo, segurança patrimonial e conforto.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {[
+              {
+                icon: Home,
+                title: "Curadoria de Alto Nível",
+                desc: "Cada imóvel de nossa carteira passa por rigorosa vistoria e avaliação antes de ser oferecido aos clientes.",
+              },
+              {
+                icon: Handshake,
+                title: "Consultoria Dedicada",
+                desc: "Um atendimento direto, acolhedor e próximo. Acompanhamos cada visita e tiramos todas as suas dúvidas.",
+              },
+              {
+                icon: ShieldCheck,
+                title: "Segurança Jurídica Total",
+                desc: "Conferência documental minuciosa, elaboração segura de contratos e suporte até o registro em cartório.",
+              },
+            ].map((b) => (
+              <div
+                key={b.title}
+                className="group relative rounded-[24px] border border-border/80 bg-card p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-lift)]"
+              >
+                <div className="grid size-12 place-items-center rounded-2xl bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                  <b.icon className="size-6" />
+                </div>
+                <h3 className="mt-6 text-lg font-bold text-foreground">{b.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{b.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* BANNER CTA: QUER VENDER OU AVALIAR SEU IMÓVEL */}
+      {/* ========================================================================= */}
+      <section className="container-page py-20">
+        <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-primary via-purple-700 to-indigo-900 p-8 sm:p-14 text-white shadow-xl shadow-primary/20">
+          {/* Subtle Circles Background */}
+          <div className="pointer-events-none absolute -right-20 -top-20 size-96 rounded-full bg-white/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-20 size-80 rounded-full bg-black/20 blur-xl" />
+
+          <div className="relative z-10 max-w-2xl">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3.5 py-1 text-xs font-semibold backdrop-blur-md">
+              <TrendingUp className="size-3.5" /> Para Proprietários
+            </span>
+            <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl leading-tight">
+              Pensando em vender ou alugar o seu imóvel?
+            </h2>
+            <p className="mt-4 text-sm sm:text-base text-white/85 leading-relaxed">
+              Conte com produção fotográfica profissional, ampla divulgação nas melhores mídias e atendimento exclusivo aos potenciais compradores.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn bg-white text-primary hover:bg-white/90 h-12 px-6 font-bold text-sm shadow-md transition-all active:scale-95"
+              >
+                <MessageCircle className="size-4 mr-1 text-emerald-600" />
+                Falar com a Michele no WhatsApp
+              </a>
+              <Link
+                to="/contato"
+                className="btn border border-white/30 bg-white/10 hover:bg-white/20 text-white h-12 px-6 font-semibold text-sm backdrop-blur-sm"
+              >
+                Solicitar Avaliação Online
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </SiteLayout>

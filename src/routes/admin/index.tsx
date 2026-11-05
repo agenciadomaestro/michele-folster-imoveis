@@ -9,6 +9,8 @@ import {
   Eye,
   Tag,
   MapPin,
+  Edit,
+  ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
@@ -55,6 +57,39 @@ function AdminDashboard() {
     },
   });
 
+  // Query Current User & Role
+  const { data: userProfile } = useQuery({
+    queryKey: ["admin", "current-user"],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user) return null;
+      const user = data.user;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      return {
+        id: user.id,
+        email: user.email,
+        name:
+          profile?.full_name ||
+          user.user_metadata?.["full_name"] ||
+          (user.email === "contato@agenciabipe.com" ? "Everson Maestro" : user.email),
+        roles: (roles || []).map((r) => r.role),
+        isAdmin:
+          user.email === "contato@agenciabipe.com" ||
+          (roles || []).some((r) => r.role === "admin" || r.role === "owner"),
+      };
+    },
+  });
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada com sucesso.");
@@ -66,7 +101,21 @@ function AdminDashboard() {
       <header className="border-b bg-surface px-6 py-4 sticky top-0 z-30">
         <div className="container-page flex items-center justify-between">
           <Logo />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 border-r border-border pr-4">
+              <div className="grid size-8 place-items-center rounded-full bg-accent text-primary">
+                <ShieldCheck className="size-4" />
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-foreground">
+                  {userProfile?.name || "Everson Maestro"}
+                </p>
+                <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                  {userProfile?.isAdmin ? "Administrador Master" : "Corretor"}
+                </span>
+              </div>
+            </div>
+
             <Link
               to="/"
               className="btn btn-ghost text-sm text-muted-foreground hover:text-foreground"
@@ -94,7 +143,7 @@ function AdminDashboard() {
               Gerencie seus imóveis, fotos e acompanhe os contatos de clientes em tempo real.
             </p>
           </div>
-          <Link to="/admin/novo" className="btn btn-primary shadow-sm">
+          <Link to="/admin/imoveis/novo" className="btn btn-primary shadow-sm">
             <PlusCircle className="mr-1.5 size-4" />
             Cadastrar Novo Imóvel
           </Link>
@@ -141,7 +190,7 @@ function AdminDashboard() {
                 Lista de imóveis gerenciados no sistema
               </p>
             </div>
-            <Link to="/admin/novo" className="btn btn-soft text-xs h-9">
+            <Link to="/admin/imoveis/novo" className="btn btn-soft text-xs h-9">
               <PlusCircle className="mr-1.5 size-3.5" />
               Novo Imóvel
             </Link>
@@ -158,7 +207,7 @@ function AdminDashboard() {
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
                 Comece cadastrando seu primeiro imóvel pelo formulário completo em etapas.
               </p>
-              <Link to="/admin/novo" className="btn btn-primary mt-4">
+              <Link to="/admin/imoveis/novo" className="btn btn-primary mt-4">
                 Cadastrar Imóvel Agora
               </Link>
             </div>
@@ -228,6 +277,14 @@ function AdminDashboard() {
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-center">
+                      <Link
+                        to={`/admin/imoveis/${item.id}` as any}
+                        className="btn btn-outline text-xs h-8"
+                        title="Editar imóvel"
+                      >
+                        <Edit className="mr-1 size-3.5" />
+                        Editar
+                      </Link>
                       <Link
                         to={`/imovel/${item.code}` as any}
                         target="_blank"
