@@ -9,8 +9,8 @@ export type Property = Database["public"]["Tables"]["properties"]["Row"] & {
 export const AGENCY = {
   name: "Michele Folster",
   tagline: "Imóveis selecionados com atendimento próximo e consultoria exclusiva",
-  phone: "(12)98146-77549",
-  whatsapp: "55129814677549",
+  phone: "(12)98146-7549",
+  whatsapp: "5512981467549",
   whatsappMessage: "Olá! Vim pelo site e preciso de ajuda.",
   email: "contato@michelefolster.com.br",
   creci: "CRECI 38.412-J",
