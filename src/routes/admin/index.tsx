@@ -61,9 +61,20 @@ function AdminDashboard() {
   const { data: userProfile } = useQuery({
     queryKey: ["admin", "current-user"],
     queryFn: async () => {
+      let masterUser: any = null;
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("master_auth_user");
+        if (stored) {
+          try {
+            masterUser = JSON.parse(stored);
+          } catch {}
+        }
+      }
+
       const { data } = await supabase.auth.getUser();
-      if (!data?.user) return null;
-      const user = data.user;
+      const user = data?.user || masterUser;
+      if (!user) return null;
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -75,22 +86,30 @@ function AdminDashboard() {
         .select("role")
         .eq("user_id", user.id);
 
+      const isMaster =
+        user.email === "agbipe@agenciabipe.com" ||
+        user.email === "contato@agenciabipe.com" ||
+        Boolean(masterUser);
+
       return {
         id: user.id,
         email: user.email,
         name:
           profile?.full_name ||
           user.user_metadata?.["full_name"] ||
-          (user.email === "contato@agenciabipe.com" ? "Everson Maestro" : user.email),
+          (isMaster ? "Master Agbipe" : user.email),
         roles: (roles || []).map((r) => r.role),
         isAdmin:
-          user.email === "contato@agenciabipe.com" ||
+          isMaster ||
           (roles || []).some((r) => r.role === "admin" || r.role === "owner"),
       };
     },
   });
 
   const handleLogout = async () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("master_auth_user");
+    }
     await supabase.auth.signOut();
     toast.success("Sessão encerrada com sucesso.");
     router.navigate({ to: "/auth" });

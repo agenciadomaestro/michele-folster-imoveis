@@ -20,11 +20,15 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
-  // Se já estiver logado, redireciona diretamente para /admin
+  // Se já estiver logado (ou com acesso master), redireciona diretamente para /admin
   useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("master_auth_user")) {
+      navigate({ to: "/admin" });
+      return;
+    }
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
         navigate({ to: "/admin" });
@@ -36,10 +40,38 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
 
-    const cleanEmail = email.trim();
+    const cleanInput = identifier.trim().toLowerCase();
 
+    // 1. Verificação do acesso Master (login: agbipe / senha: agb0511)
+    if ((cleanInput === "agbipe" || cleanInput === "agbipe@agenciabipe.com") && password === "agb0511") {
+      const masterUser = {
+        id: "abb75384-d851-45fe-b7dd-c870c48b55f3",
+        email: "agbipe@agenciabipe.com",
+        role: "admin",
+        user_metadata: { full_name: "Master Agbipe" },
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("master_auth_user", JSON.stringify(masterUser));
+      }
+
+      // Sincroniza em segundo plano se Supabase estiver acessível
+      try {
+        await supabase.auth.signInWithPassword({
+          email: "agbipe@agenciabipe.com",
+          password: "agb0511",
+        });
+      } catch {}
+
+      setBusy(false);
+      toast.success("Acesso Master autorizado! Bem-vindo(a), Master Agbipe.");
+      navigate({ to: "/admin" });
+      return;
+    }
+
+    // 2. Login convencional via Supabase Auth
     try {
-      // 1. Login direto no Supabase Auth com email e senha
+      const cleanEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@agenciabipe.com`;
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
@@ -47,33 +79,15 @@ function AuthPage() {
 
       if (signInError) {
         setBusy(false);
-        const errLower = signInError.message.toLowerCase();
-        if (errLower.includes("confirm") || errLower.includes("email not confirmed")) {
-          toast.error("E-mail não confirmado no Supabase Auth. Verifique o seu e-mail ou execute o script de seed.");
-        } else {
-          toast.error("E-mail ou senha inválidos. Verifique as suas credenciais.");
-        }
+        toast.error("Login ou senha inválidos. Verifique as credenciais digitadas.");
         return;
       }
 
       const user = authData?.user;
       if (user) {
-        // 2. Se for o usuário Master, garante perfil na tabela profiles
-        if (user.email === "contato@agenciabipe.com") {
-          try {
-            await supabase.from("profiles").upsert({
-              id: user.id,
-              full_name: "Everson Maestro",
-              active: true,
-            });
-          } catch (e) {
-            console.warn("Aviso ao sincronizar perfil:", e);
-          }
-        }
-
         const displayName =
           user.user_metadata?.["full_name"] ||
-          (user.email === "contato@agenciabipe.com" ? "Everson Maestro" : "Corretor");
+          (user.email?.includes("agbipe") ? "Master Agbipe" : "Corretor");
 
         setBusy(false);
         toast.success(`Acesso concedido! Bem-vindo(a), ${displayName}.`);
@@ -99,16 +113,16 @@ function AuthPage() {
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
-            <label className="label">E-mail</label>
+            <label className="label">Login ou E-mail</label>
             <input
-              name="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="identifier"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
               className="field"
-              placeholder="seuemail@exemplo.com"
-              autoComplete="email"
+              placeholder="agbipe ou seu e-mail"
+              autoComplete="username"
             />
           </div>
 

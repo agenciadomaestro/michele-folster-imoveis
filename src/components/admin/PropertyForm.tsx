@@ -457,7 +457,15 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
 
     try {
       const { data: authData } = await supabase.auth.getUser();
-      const currentUser = authData?.user;
+      let currentUser: any = authData?.user;
+      if (!currentUser && typeof window !== "undefined") {
+        const stored = localStorage.getItem("master_auth_user");
+        if (stored) {
+          try {
+            currentUser = JSON.parse(stored);
+          } catch {}
+        }
+      }
 
       // 1. Process Photos and Upload to Supabase Storage
       const bucketName = "property-photos";

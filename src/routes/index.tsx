@@ -110,14 +110,8 @@ function Index() {
 
         <div className="container-page relative z-10">
           <div className="mx-auto max-w-3xl text-center">
-            {/* Top Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-accent/60 px-4 py-1.5 text-xs font-bold text-primary backdrop-blur-md">
-              <Sparkles className="size-3.5 fill-current" />
-              <span>Imobiliária Boutique em Santa Catarina</span>
-            </div>
-
             {/* Main Headline */}
-            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl md:leading-[1.12]">
+            <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl md:leading-[1.12]">
               O imóvel certo, com quem{" "}
               <span className="bg-gradient-to-r from-primary via-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 entende de você.
@@ -126,7 +120,7 @@ function Index() {
 
             {/* Subtitle */}
             <p className="mt-5 text-base text-muted-foreground sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              Curadoria de casas exclusivas, apartamentos de alto padrão e terrenos nas localizações mais desejadas de Florianópolis e litoral catarinense.
+              Curadoria de casas, apartamentos, terrenos, galpões e pontos comerciais nas localizações mais desejadas de Caçapava-SP.
             </p>
           </div>
 
@@ -150,8 +144,8 @@ function Index() {
               <p className="mt-0.5 text-xs font-medium text-muted-foreground">Jurídica e Contratual</p>
             </div>
             <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
-              <span className="text-2xl font-black text-primary">SC</span>
-              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Região Litorânea</p>
+              <span className="text-2xl font-black text-primary">SP</span>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Vale do Paraiba</p>
             </div>
           </div>
         </div>
