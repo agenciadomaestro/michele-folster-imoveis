@@ -51,33 +51,34 @@ export function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary/20 selection:text-primary">
       {/* Top Notification / Contact Micro-bar */}
-      <div className="border-b border-border/50 bg-secondary/50 px-4 py-1.5 text-xs text-muted-foreground">
-        <div className="container-page flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="hidden items-center gap-1.5 sm:inline-flex">
+      <div className="border-b border-border/50 bg-secondary/50 px-2 sm:px-4 py-1.5 text-[10.5px] sm:text-xs text-muted-foreground">
+        <div className="container-page flex items-center justify-between gap-2 overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-4 shrink min-w-0">
+            <span className="hidden items-center gap-1.5 sm:inline-flex whitespace-nowrap">
               <MapPin className="size-3 text-primary" />
               <span>{AGENCY.address}</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-              <Clock className="size-3 text-primary" />
-              <span>Atendimento: Seg a Sex, 09h às 17h30h</span>
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 font-medium text-foreground whitespace-nowrap">
+              <Clock className="size-3 text-primary shrink-0" />
+              <span className="sm:hidden">Atend.: Seg a Sex, 09h às 17h30h</span>
+              <span className="hidden sm:inline">Atendimento: Seg a Sex, 09h às 17h30h</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <a
               href={`tel:${AGENCY.phone.replace(/\D/g, "")}`}
-              className="hidden items-center gap-1 hover:text-primary transition-colors sm:inline-flex"
+              className="hidden items-center gap-1 hover:text-primary transition-colors sm:inline-flex whitespace-nowrap"
             >
               <Phone className="size-3 text-primary" />
               <span>{AGENCY.phone}</span>
             </a>
             <Link
               to="/auth"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 text-[10.5px] sm:text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap shrink-0"
             >
-              <Lock className="size-3" />
-              <span>Acesso Corretor</span>
+              <Lock className="size-3 shrink-0" />
+              <span className="whitespace-nowrap">Acesso Corretor</span>
             </Link>
           </div>
         </div>

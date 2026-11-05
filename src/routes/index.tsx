@@ -134,8 +134,10 @@ function Index() {
             </h1>
 
             {/* Subtitle */}
-            <p className="mt-5 text-base text-muted-foreground sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              Curadoria de casas, apartamentos, terrenos, galpões e pontos comerciais nas localizações mais desejadas de Caçapava-SP.
+            <p className="mt-5 text-base text-muted-foreground sm:text-lg max-w-2xl mx-auto leading-relaxed [text-wrap:balance]">
+              Curadoria de casas, apartamentos, terrenos,<br className="sm:hidden" />{" "}
+              galpões e pontos comerciais nas localizações<br className="sm:hidden" />{" "}
+              mais desejadas de <span className="whitespace-nowrap">Caçapava-SP.</span>
             </p>
           </div>
 
@@ -145,21 +147,25 @@ function Index() {
           </div>
 
           {/* Proof / Trust Metrics */}
-          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4 text-center">
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
-              <span className="text-2xl font-black text-foreground">100%</span>
+          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 text-center">
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-black text-foreground block">100%</span>
               <p className="mt-0.5 text-xs font-medium text-muted-foreground">Imóveis Verificados</p>
             </div>
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
-              <span className="text-2xl font-black text-foreground">Atendimento</span>
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
+              <span className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight block truncate sm:overflow-visible">
+                Atendimento
+              </span>
               <p className="mt-0.5 text-xs font-medium text-muted-foreground">VIP & Personalizado</p>
             </div>
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
-              <span className="text-2xl font-black text-foreground">Assessoria</span>
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
+              <span className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight block truncate sm:overflow-visible">
+                Assessoria
+              </span>
               <p className="mt-0.5 text-xs font-medium text-muted-foreground">Jurídica e Contratual</p>
             </div>
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-4 backdrop-blur-xs">
-              <span className="text-2xl font-black text-primary">SP</span>
+            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-black text-black dark:text-white block">SP</span>
               <p className="mt-0.5 text-xs font-medium text-muted-foreground">Vale do Paraiba</p>
             </div>
           </div>
