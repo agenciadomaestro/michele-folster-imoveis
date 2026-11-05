@@ -15,6 +15,8 @@ import {
   Trash2,
   Search,
   X,
+  Kanban,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
@@ -165,6 +167,14 @@ function AdminDashboard() {
             </div>
 
             <Link
+              to="/admin/leads"
+              className="btn btn-soft text-xs h-9 text-primary font-bold shadow-xs"
+            >
+              <Kanban className="mr-1.5 size-4" />
+              Gestão de Leads (CRM)
+            </Link>
+
+            <Link
               to="/"
               className="btn btn-ghost text-sm text-muted-foreground hover:text-foreground"
             >
@@ -210,13 +220,24 @@ function AdminDashboard() {
             </p>
           </div>
 
-          <div className="panel p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Leads Recebidos</span>
-              <Users className="size-5 text-primary" />
+          <div className="panel p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Leads Recebidos</span>
+                <Users className="size-5 text-primary" />
+              </div>
+              <div className="mt-3 text-3xl font-bold">{leads.length}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Contatos recebidos via site</p>
             </div>
-            <div className="mt-3 text-3xl font-bold">{leads.length}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Contatos recebidos via site</p>
+            <div className="mt-4 pt-3 border-t border-border/50">
+              <Link
+                to="/admin/leads"
+                className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <span>Acessar CRM Kanban</span>
+                <ChevronRight className="size-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -398,14 +419,20 @@ function AdminDashboard() {
 
         {/* Leads Section */}
         <div className="panel p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-semibold">Leads & Contatos Recentes</h2>
               <p className="text-xs text-muted-foreground">
                 Últimos formulários enviados por clientes no site
               </p>
             </div>
-            <span className="chip text-xs">Tempo Real</span>
+            <div className="flex items-center gap-2">
+              <span className="chip text-xs">Tempo Real</span>
+              <Link to="/admin/leads" className="btn btn-outline text-xs h-8">
+                <Kanban className="mr-1.5 size-3.5 text-primary" />
+                Abrir Kanban de Leads
+              </Link>
+            </div>
           </div>
 
           {leads.length === 0 ? (

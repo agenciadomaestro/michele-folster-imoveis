@@ -3,6 +3,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { saveLocalLead, type Lead } from "@/lib/leads";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Informe seu nome").max(120),
@@ -36,7 +37,44 @@ export function LeadForm({ propertyId, propertyCode, source = "site" }: { proper
     setErrors({});
     setSending(true);
     const v = parsed.data;
+
+    // Salva localmente para refletir de imediato no CRM Kanban
+    const localLeadId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `lead-${Date.now()}`;
+
+    const newLeadObj: Lead = {
+      id: localLeadId,
+      name: v.name,
+      phone: v.phone,
+      email: v.email || null,
+      message: v.message || null,
+      interest: v.interest,
+      consent: true,
+      property_id: propertyId ?? null,
+      property_code: propertyCode ?? null,
+      source: source || "Site",
+      source_page: typeof window !== "undefined" ? window.location.pathname : null,
+      status: "novo",
+      temperature: "quente",
+      transaction_type: v.interest === "locacao" ? "alugar" : "comprar",
+      timeline: [
+        {
+          id: `act-${Date.now()}`,
+          created_at: new Date().toISOString(),
+          author_name: "Sistema (Site)",
+          type: "contact",
+          content: `Mensagem enviada pelo cliente através de ${source || "Site"}.`,
+        },
+      ],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    saveLocalLead(newLeadObj);
+
     const { error } = await supabase.from("leads").insert({
+      id: localLeadId,
       name: v.name, phone: v.phone, email: v.email || null, message: v.message || null,
       interest: v.interest, consent: true, property_id: propertyId ?? null, property_code: propertyCode ?? null,
       source, source_page: typeof window !== "undefined" ? window.location.pathname : null,

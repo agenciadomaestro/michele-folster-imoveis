@@ -113,7 +113,7 @@ function AuthPage() {
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
-            <label className="label">Login ou E-mail</label>
+            <label className="label">E-mail</label>
             <input
               name="identifier"
               type="text"
@@ -121,7 +121,7 @@ function AuthPage() {
               onChange={(e) => setIdentifier(e.target.value)}
               required
               className="field"
-              placeholder="agbipe ou seu e-mail"
+              placeholder="e-mail"
               autoComplete="username"
             />
           </div>
