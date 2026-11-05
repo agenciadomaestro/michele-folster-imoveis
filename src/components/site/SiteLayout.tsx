@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Clock,
 } from "lucide-react";
-import { AGENCY } from "@/lib/realty";
+import { AGENCY, getWhatsappUrl } from "@/lib/realty";
 
 const NAV = [
   { to: "/venda", label: "Comprar" },
@@ -46,9 +46,7 @@ export function Logo({ light = false }: { light?: boolean }) {
 export function SiteLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
-  const whatsappUrl = `https://wa.me/${AGENCY.whatsapp}?text=${encodeURIComponent(
-    "Olá! Gostaria de mais informações sobre os imóveis da Michele Folster Imóveis."
-  )}`;
+  const whatsappUrl = getWhatsappUrl();
 
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary/20 selection:text-primary">
@@ -62,7 +60,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             </span>
             <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
               <Clock className="size-3 text-primary" />
-              <span>Atendimento: Seg a Sex, 09h às 19h</span>
+              <span>Atendimento: Seg a Sex, 09h às 17h30h</span>
             </span>
           </div>
 

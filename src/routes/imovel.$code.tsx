@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { BedDouble, Bath, Car, Ruler, MapPin, Share2, X, ChevronLeft, ChevronRight, Check, ImageOff } from "lucide-react";
+import { BedDouble, Bath, Car, Ruler, MapPin, Share2, X, ChevronLeft, ChevronRight, Check, ImageOff, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { LeadForm } from "@/components/site/LeadForm";
 import { supabase } from "@/integrations/supabase/client";
-import { AGENCY, brl, priceLabel, PURPOSE_LABEL, type Property } from "@/lib/realty";
+import { AGENCY, brl, priceLabel, PURPOSE_LABEL, getWhatsappUrl, type Property } from "@/lib/realty";
 
 export const Route = createFileRoute("/imovel/$code")({
   head: ({ params }) => ({
@@ -146,6 +146,17 @@ function PropertyPage() {
             <p className="font-semibold">Fale com {AGENCY.name}</p>
             <p className="mt-1 text-sm text-muted-foreground">Responderemos o mais rápido possível.</p>
             <div className="mt-5"><LeadForm propertyId={p.id} propertyCode={p.code} source="pagina_imovel" /></div>
+            <div className="mt-4 border-t border-border pt-4">
+              <a
+                href={getWhatsappUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn bg-emerald-600 hover:bg-emerald-500 text-white w-full text-xs font-bold gap-2 shadow-xs"
+              >
+                <MessageCircle className="size-4" />
+                <span>Conversar no WhatsApp ({AGENCY.phone})</span>
+              </a>
+            </div>
           </aside>
         </div>
 

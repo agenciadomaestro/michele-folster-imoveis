@@ -20,7 +20,7 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { SearchBox } from "@/components/site/SearchBox";
 import { PropertyCard, CardSkeleton } from "@/components/site/PropertyCard";
 import { supabase } from "@/integrations/supabase/client";
-import { AGENCY, type Property } from "@/lib/realty";
+import { AGENCY, getWhatsappUrl, type Property } from "@/lib/realty";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -97,9 +97,7 @@ function Index() {
     },
   ];
 
-  const whatsappUrl = `https://wa.me/${AGENCY.whatsapp}?text=${encodeURIComponent(
-    "Olá Michele! Gostaria de agendar uma consulta sobre imóveis ou avaliação do meu patrimônio."
-  )}`;
+  const whatsappUrl = getWhatsappUrl();
 
   return (
     <SiteLayout>

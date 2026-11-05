@@ -8,14 +8,21 @@ export type Property = Database["public"]["Tables"]["properties"]["Row"] & {
 export const AGENCY = {
   name: "Michele Folster",
   tagline: "Imóveis selecionados com atendimento próximo e consultoria exclusiva",
-  phone: "(48) 99182-3456",
-  whatsapp: "5548991823456",
+  phone: "(12)98146-77549",
+  whatsapp: "55129814677549",
+  whatsappMessage: "Olá! Vim pelo site e preciso de ajuda.",
   email: "contato@michelefolster.com.br",
   creci: "CRECI 38.412-J",
-  city: "Florianópolis",
-  state: "SC",
-  address: "Av. dos Búzios, 1200 - Jurerê Internacional, Florianópolis - SC",
+  city: "Caçapava",
+  state: "SP",
+  address: "Caçapava-SP",
+  hours: "Atendimento: Seg a Sex, 09h às 17h30h",
   instagram: "@michelefolsterimoveis",
+};
+
+export const getWhatsappUrl = (customMsg?: string) => {
+  const msg = customMsg || AGENCY.whatsappMessage;
+  return `https://wa.me/${AGENCY.whatsapp}?text=${encodeURIComponent(msg)}`;
 };
 
 export const PROPERTY_TYPES = [
