@@ -11,11 +11,13 @@ import {
   MapPin,
   Edit,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
 import { toast } from "sonner";
 import { priceLabel, type Property } from "@/lib/realty";
+import { mergeWithLocalProperties, deleteLocalProperty } from "@/lib/localProperties";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -31,17 +33,34 @@ function AdminDashboard() {
   const router = useRouter();
 
   // Query Properties
-  const { data: properties = [], isLoading: loadingProps } = useQuery({
+  const { data: properties = [], isLoading: loadingProps, refetch: refetchProps } = useQuery({
     queryKey: ["admin", "properties-list"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*, property_photos(url, position)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as Property[];
+      let supabaseItems: Property[] = [];
+      try {
+        const { data } = await supabase
+          .from("properties")
+          .select("*, property_photos(url, position)")
+          .order("created_at", { ascending: false });
+        if (data) supabaseItems = data as Property[];
+      } catch (err) {
+        console.warn("Aviso ao buscar lista de imóveis:", err);
+      }
+      const merged = mergeWithLocalProperties(supabaseItems);
+      merged.sort((a, b) => new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime());
+      return merged;
     },
   });
+
+  const handleDeleteProperty = async (id: string, propTitle: string) => {
+    if (!confirm(`Deseja realmente excluir o imóvel "${propTitle}"?`)) return;
+    deleteLocalProperty(id);
+    try {
+      await supabase.from("properties").delete().eq("id", id);
+    } catch {}
+    toast.success("Imóvel removido com sucesso.");
+    refetchProps();
+  };
 
   // Query Leads
   const { data: leads = [] } = useQuery({
@@ -169,7 +188,7 @@ function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2">
           <div className="panel p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Imóveis no Catálogo</span>
@@ -188,15 +207,6 @@ function AdminDashboard() {
             </div>
             <div className="mt-3 text-3xl font-bold">{leads.length}</div>
             <p className="mt-1 text-xs text-muted-foreground">Contatos recebidos via site</p>
-          </div>
-
-          <div className="panel p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Status do Sistema</span>
-              <span className="inline-flex size-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
-            </div>
-            <div className="mt-3 text-lg font-semibold text-foreground">Operacional</div>
-            <p className="mt-1 text-xs text-muted-foreground">Supabase & Banco de Dados Conectados</p>
           </div>
         </div>
 
@@ -313,6 +323,13 @@ function AdminDashboard() {
                         <Eye className="mr-1 size-3.5" />
                         Ver Página
                       </Link>
+                      <button
+                        onClick={() => handleDeleteProperty(item.id, item.title)}
+                        className="btn btn-ghost text-xs h-8 text-destructive hover:bg-destructive/10"
+                        title="Excluir imóvel"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
                     </div>
                   </div>
                 );

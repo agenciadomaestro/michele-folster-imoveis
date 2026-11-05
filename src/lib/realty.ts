@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { mergeWithLocalProperties } from "./localProperties";
 
 export type Property = Database["public"]["Tables"]["properties"]["Row"] & {
   property_photos?: { url: string; position: number }[];
@@ -129,43 +130,121 @@ export function parseTextQuery(text: string, cities: string[] = []): { filters: 
 export const PAGE_SIZE = 9;
 
 export async function searchProperties(f: SearchFilters) {
-  let q = supabase
-    .from("properties")
-    .select("*, property_photos(url, position)", { count: "exact" })
-    .eq("status", "publicado");
-  if (f.code) q = q.ilike("code", f.code);
-  if (f.purpose === "venda") q = q.in("purpose", ["venda", "ambos"]);
-  if (f.purpose === "locacao") q = q.in("purpose", ["locacao", "ambos"]);
-  if (f.type) q = q.eq("type", f.type);
-  if (f.city) q = q.ilike("city", `%${f.city}%`);
-  if (f.neighborhood) q = q.ilike("neighborhood", `%${f.neighborhood}%`);
-  if (f.bedrooms) q = q.gte("bedrooms", f.bedrooms);
-  if (f.bathrooms) q = q.gte("bathrooms", f.bathrooms);
-  if (f.parking) q = q.gte("parking", f.parking);
-  const priceCol = f.purpose === "locacao" ? "rent_price" : "sale_price";
-  if (f.minPrice) q = q.gte(priceCol, f.minPrice);
-  if (f.maxPrice) q = q.lte(priceCol, f.maxPrice);
-  if (f.minArea) q = q.or(`area_built.gte.${f.minArea},area_land.gte.${f.minArea}`);
-  if (f.maxArea) q = q.lte("area_built", f.maxArea);
-  if (f.q) {
-    const term = f.q.replace(/[%,()]/g, " ").trim();
-    if (term) q = q.or(`title.ilike.%${term}%,description.ilike.%${term}%,neighborhood.ilike.%${term}%`);
+  let supabaseItems: Property[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("properties")
+      .select("*, property_photos(url, position)")
+      .eq("status", "publicado")
+      .order("featured", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      supabaseItems = data as Property[];
+    }
+  } catch (err) {
+    console.warn("Aviso ao buscar propriedades do Supabase:", err);
   }
-  if (f.sort === "menor") q = q.order(priceCol, { ascending: true, nullsFirst: false });
-  else if (f.sort === "maior") q = q.order(priceCol, { ascending: false, nullsFirst: false });
-  else q = q.order("featured", { ascending: false }).order("created_at", { ascending: false });
+
+  // Mescla imóveis do Supabase com imóveis cadastrados localmente
+  const allMerged = mergeWithLocalProperties(supabaseItems).filter((p) => p.status === "publicado");
+
+  // Aplica filtros sobre a lista mesclada completa
+  let filtered = allMerged;
+
+  if (f.code) {
+    const codeTerm = f.code.trim().toUpperCase();
+    filtered = filtered.filter((p) => p.code?.toUpperCase().includes(codeTerm));
+  }
+  if (f.purpose === "venda") {
+    filtered = filtered.filter((p) => p.purpose === "venda" || p.purpose === "ambos");
+  }
+  if (f.purpose === "locacao") {
+    filtered = filtered.filter((p) => p.purpose === "locacao" || p.purpose === "ambos");
+  }
+  if (f.type) {
+    filtered = filtered.filter((p) => p.type === f.type);
+  }
+  if (f.city) {
+    const cityTerm = strip(f.city);
+    filtered = filtered.filter((p) => strip(p.city || "").includes(cityTerm));
+  }
+  if (f.neighborhood) {
+    const neighTerm = strip(f.neighborhood);
+    filtered = filtered.filter((p) => strip(p.neighborhood || "").includes(neighTerm));
+  }
+  if (f.bedrooms) {
+    filtered = filtered.filter((p) => (p.bedrooms ?? 0) >= f.bedrooms!);
+  }
+  if (f.bathrooms) {
+    filtered = filtered.filter((p) => (p.bathrooms ?? 0) >= f.bathrooms!);
+  }
+  if (f.parking) {
+    filtered = filtered.filter((p) => (p.parking ?? 0) >= f.parking!);
+  }
+
+  const priceProp = f.purpose === "locacao" ? "rent_price" : "sale_price";
+  if (f.minPrice) {
+    filtered = filtered.filter((p) => (p[priceProp] ?? 0) >= f.minPrice!);
+  }
+  if (f.maxPrice) {
+    filtered = filtered.filter((p) => (p[priceProp] ?? 0) <= f.maxPrice!);
+  }
+  if (f.minArea) {
+    filtered = filtered.filter(
+      (p) => (p.area_built ?? 0) >= f.minArea! || (p.area_land ?? 0) >= f.minArea!
+    );
+  }
+  if (f.maxArea) {
+    filtered = filtered.filter((p) => (p.area_built ?? 0) <= f.maxArea!);
+  }
+  if (f.q) {
+    const term = strip(f.q);
+    filtered = filtered.filter(
+      (p) =>
+        strip(p.title || "").includes(term) ||
+        strip(p.description || "").includes(term) ||
+        strip(p.neighborhood || "").includes(term) ||
+        strip(p.city || "").includes(term) ||
+        strip(p.code || "").includes(term)
+    );
+  }
+
+  // Ordenação
+  if (f.sort === "menor") {
+    filtered.sort((a, b) => (a[priceProp] ?? 0) - (b[priceProp] ?? 0));
+  } else if (f.sort === "maior") {
+    filtered.sort((a, b) => (b[priceProp] ?? 0) - (a[priceProp] ?? 0));
+  } else {
+    filtered.sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime();
+    });
+  }
+
   const page = Math.max(1, f.page ?? 1);
-  q = q.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-  const { data, count, error } = await q;
-  if (error) throw error;
-  return { items: (data ?? []) as Property[], total: count ?? 0 };
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  return { items: paginated, total: filtered.length };
 }
 
 export async function fetchLocations() {
-  const { data, error } = await supabase.from("properties").select("city, neighborhood, state").eq("status", "publicado");
-  if (error) throw error;
-  const cities = Array.from(new Set((data ?? []).map((d) => d.city))).sort();
-  const neighborhoods = Array.from(new Set((data ?? []).map((d) => d.neighborhood).filter(Boolean) as string[])).sort();
+  let supabaseItems: Property[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("properties")
+      .select("city, neighborhood, state, status")
+      .eq("status", "publicado");
+    if (!error && data) {
+      supabaseItems = data as Property[];
+    }
+  } catch (err) {
+    console.warn("Aviso ao buscar localidades:", err);
+  }
+
+  const allMerged = mergeWithLocalProperties(supabaseItems).filter((p) => p.status === "publicado");
+  const cities = Array.from(new Set(allMerged.map((d) => d.city).filter(Boolean) as string[])).sort();
+  const neighborhoods = Array.from(new Set(allMerged.map((d) => d.neighborhood).filter(Boolean) as string[])).sort();
   return { cities, neighborhoods };
 }
 

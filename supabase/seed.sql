@@ -113,3 +113,6 @@ BEGIN
   ON CONFLICT (user_id, role) DO NOTHING;
 END $$;
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.properties TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.property_photos TO anon, authenticated;
+

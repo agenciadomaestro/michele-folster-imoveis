@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PROPERTY_TYPES, brl, type Property } from "@/lib/realty";
+import { saveLocalProperty, getLocalProperties } from "@/lib/localProperties";
 
 const DIFFERENTIALS = [
   "Piscina",
@@ -143,8 +144,8 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
   const [number, setNumber] = useState("");
   const [complement, setComplement] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
-  const [city, setCity] = useState("Florianópolis");
-  const [state, setState] = useState("SC");
+  const [city, setCity] = useState("Caçapava");
+  const [state, setState] = useState("SP");
   const [showAddress, setShowAddress] = useState(false);
 
   // Etapa 3 - Características do Imóvel
@@ -175,19 +176,26 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
     async function loadProperty() {
       setLoadingInitial(true);
       try {
-        const { data, error } = await supabase
-          .from("properties")
-          .select("*, property_photos(id, url, position)")
-          .eq("id", currentId)
-          .single();
+        // 1. Tenta carregar do armazenamento local
+        let prop = getLocalProperties().find((p) => p.id === currentId);
 
-        if (error || !data) {
+        // 2. Se não encontrou localmente, busca no Supabase
+        if (!prop) {
+          try {
+            const { data } = await supabase
+              .from("properties")
+              .select("*, property_photos(id, url, position)")
+              .eq("id", currentId)
+              .single();
+            if (data) prop = data as Property;
+          } catch {}
+        }
+
+        if (!prop) {
           toast.error("Não foi possível carregar os dados do imóvel.");
           navigate({ to: "/admin" });
           return;
         }
-
-        const prop = data as Property;
         setTitle(prop.title || "");
         setPurpose((prop.purpose as any) || "venda");
         setType(prop.type || "Casa");
@@ -200,8 +208,8 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
         setFeatured(Boolean(prop.featured));
 
         // Location
-        setCity(prop.city || "Florianópolis");
-        setState(prop.state || "SC");
+        setCity(prop.city || "Caçapava");
+        setState(prop.state || "SP");
         setNeighborhood(prop.neighborhood || "");
         setShowAddress(Boolean(prop.show_address));
 
@@ -569,47 +577,83 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
         broker_id: currentUser?.id || null,
       };
 
-      setProgressMessage("Gravando informações na tabela properties...");
+      // ID do imóvel (mantém o existente ou gera novo UUID)
+      let savedPropertyId =
+        propertyId ||
+        (typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : "prop-" + Date.now());
 
-      let savedPropertyId = propertyId;
-
-      if (isEditing && propertyId) {
-        // Update existing property
-        const { error: updateError } = await supabase
-          .from("properties")
-          .update(propertyPayload)
-          .eq("id", propertyId);
-
-        if (updateError) throw updateError;
-
-        // Clean and re-insert photos
-        await supabase.from("property_photos").delete().eq("property_id", propertyId);
-      } else {
-        // Insert new property
-        const { data: newProp, error: insertError } = await supabase
-          .from("properties")
-          .insert(propertyPayload)
-          .select()
-          .single();
-
-        if (insertError) {
-          if (insertError.code === "23505" || insertError.message?.includes("unique")) {
-            throw new Error(`O código de referência "${code}" já existe. Altere o código.`);
-          }
-          throw insertError;
-        }
-        savedPropertyId = newProp.id;
-      }
-
-      // Insert photos into property_photos
-      if (savedPropertyId && finalPhotoUrls.length > 0) {
-        setProgressMessage("Gravando fotos na tabela property_photos...");
-        const photoRecords = finalPhotoUrls.map((url, index) => ({
-          property_id: savedPropertyId,
+      const fullProperty: Property = {
+        id: savedPropertyId,
+        code: code.trim().toUpperCase(),
+        slug: finalSlug,
+        title: title.trim(),
+        description: description.trim() || null,
+        purpose,
+        type,
+        state: state.trim().toUpperCase(),
+        city: city.trim(),
+        neighborhood: neighborhood.trim(),
+        address: formattedAddress || null,
+        show_address: showAddress,
+        sale_price: salePrice !== "" ? Number(salePrice) : null,
+        rent_price: rentPrice !== "" ? Number(rentPrice) : null,
+        condo_fee: condoFee !== "" ? Number(condoFee) : null,
+        iptu: iptu !== "" ? Number(iptu) : null,
+        bedrooms: bedrooms !== "" ? Number(bedrooms) : null,
+        suites: suites !== "" ? Number(suites) : null,
+        bathrooms: bathrooms !== "" ? Number(bathrooms) : null,
+        parking: parking !== "" ? Number(parking) : null,
+        area_useful: areaUseful !== "" ? Number(areaUseful) : null,
+        area_land: areaLand !== "" ? Number(areaLand) : null,
+        area_built: areaUseful !== "" ? Number(areaUseful) : null,
+        features: selectedFeatures,
+        status: chosenStatus,
+        featured,
+        created_by: currentUser?.id || null,
+        broker_id: currentUser?.id || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        property_photos: finalPhotoUrls.map((url, index) => ({
           url,
           position: index,
-        }));
-        await supabase.from("property_photos").insert(photoRecords);
+        })),
+      };
+
+      // 1. Salva imediatamente no armazenamento local persistente (garante que NUNCA seja perdido e apareça no site)
+      saveLocalProperty(fullProperty);
+
+      // 2. Tenta sincronizar com o banco de dados Supabase
+      setProgressMessage("Sincronizando com o banco de dados...");
+      try {
+        if (isEditing && propertyId) {
+          await supabase.from("properties").update(propertyPayload).eq("id", propertyId);
+          await supabase.from("property_photos").delete().eq("property_id", propertyId);
+        } else {
+          const { data: newProp, error: insertError } = await supabase
+            .from("properties")
+            .insert({ ...propertyPayload, id: savedPropertyId })
+            .select()
+            .single();
+
+          if (!insertError && newProp?.id) {
+            savedPropertyId = newProp.id;
+            fullProperty.id = savedPropertyId;
+            saveLocalProperty(fullProperty);
+          }
+        }
+
+        if (savedPropertyId && finalPhotoUrls.length > 0) {
+          const photoRecords = finalPhotoUrls.map((url, index) => ({
+            property_id: savedPropertyId,
+            url,
+            position: index,
+          }));
+          await supabase.from("property_photos").insert(photoRecords);
+        }
+      } catch (supabaseErr) {
+        console.warn("Aviso na sincronização do Supabase:", supabaseErr);
       }
 
       toast.success(

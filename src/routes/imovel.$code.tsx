@@ -8,6 +8,7 @@ import { PropertyCard } from "@/components/site/PropertyCard";
 import { LeadForm } from "@/components/site/LeadForm";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENCY, brl, priceLabel, PURPOSE_LABEL, getWhatsappUrl, type Property } from "@/lib/realty";
+import { mergeWithLocalProperties, getLocalProperties } from "@/lib/localProperties";
 
 export const Route = createFileRoute("/imovel/$code")({
   head: ({ params }) => ({
@@ -28,18 +29,44 @@ function PropertyPage() {
   const { data: p, isLoading } = useQuery({
     queryKey: ["property", code],
     queryFn: async () => {
-      const { data, error } = await supabase.from("properties").select("*, property_photos(url, position)").ilike("code", code).maybeSingle();
-      if (error) throw error;
-      return data as Property | null;
+      // 1. Verifica se existe localmente
+      const local = getLocalProperties().find(
+        (item) => item.code?.toUpperCase() === code.toUpperCase()
+      );
+      if (local) return local;
+
+      // 2. Consulta no Supabase
+      try {
+        const { data } = await supabase
+          .from("properties")
+          .select("*, property_photos(url, position)")
+          .ilike("code", code)
+          .maybeSingle();
+        if (data) return data as Property;
+      } catch (err) {
+        console.warn("Aviso ao buscar detalhes do imóvel no Supabase:", err);
+      }
+      return null;
     },
   });
   const { data: related } = useQuery({
     enabled: !!p,
     queryKey: ["related", p?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("properties").select("*, property_photos(url, position)")
-        .eq("status", "publicado").neq("id", p!.id).or(`type.eq.${p!.type},city.eq.${p!.city}`).limit(3);
-      return (data ?? []) as Property[];
+      let supabaseItems: Property[] = [];
+      try {
+        const { data } = await supabase
+          .from("properties")
+          .select("*, property_photos(url, position)")
+          .eq("status", "publicado")
+          .neq("id", p!.id)
+          .limit(6);
+        if (data) supabaseItems = data as Property[];
+      } catch {}
+      const merged = mergeWithLocalProperties(supabaseItems).filter(
+        (item) => item.id !== p!.id && item.status === "publicado"
+      );
+      return merged.slice(0, 3);
     },
   });
 

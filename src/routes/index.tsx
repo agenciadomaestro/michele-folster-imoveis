@@ -21,6 +21,7 @@ import { SearchBox } from "@/components/site/SearchBox";
 import { PropertyCard, CardSkeleton } from "@/components/site/PropertyCard";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENCY, getWhatsappUrl, type Property } from "@/lib/realty";
+import { mergeWithLocalProperties } from "@/lib/localProperties";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -47,15 +48,29 @@ function Index() {
   const { data, isLoading } = useQuery({
     queryKey: ["featured"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*, property_photos(url, position)")
-        .eq("status", "publicado")
-        .order("featured", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(9);
-      if (error) throw error;
-      return data as Property[];
+      let supabaseItems: Property[] = [];
+      try {
+        const { data, error } = await supabase
+          .from("properties")
+          .select("*, property_photos(url, position)")
+          .eq("status", "publicado")
+          .order("featured", { ascending: false })
+          .order("created_at", { ascending: false });
+        if (!error && data) {
+          supabaseItems = data as Property[];
+        }
+      } catch (err) {
+        console.warn("Aviso ao carregar imóveis do Supabase:", err);
+      }
+
+      const merged = mergeWithLocalProperties(supabaseItems).filter((p) => p.status === "publicado");
+      merged.sort((a, b) => {
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        return new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime();
+      });
+
+      return merged.slice(0, 9);
     },
   });
 

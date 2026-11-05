@@ -83,3 +83,4 @@ BEGIN
   VALUES (_user_id, 'owner'::public.app_role)
   ON CONFLICT (user_id, role) DO NOTHING;
 END $$;
+
