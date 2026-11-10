@@ -100,7 +100,10 @@ function AdminDashboard() {
         "postgres_changes",
         { event: "*", schema: "public", table: "properties" },
         () => {
+          queryClient.invalidateQueries({ queryKey: ["properties"] });
           queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+          queryClient.invalidateQueries({ queryKey: ["featured"] });
+          queryClient.invalidateQueries({ queryKey: ["search"] });
         }
       )
       .on(
@@ -161,6 +164,7 @@ function AdminDashboard() {
       }
 
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["properties"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
         queryClient.invalidateQueries({ queryKey: ["featured"] }),
         queryClient.invalidateQueries({ queryKey: ["search"] }),
@@ -192,6 +196,7 @@ function AdminDashboard() {
       }
 
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["properties"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
         queryClient.invalidateQueries({ queryKey: ["featured"] }),
         queryClient.invalidateQueries({ queryKey: ["search"] }),
@@ -214,6 +219,7 @@ function AdminDashboard() {
         prev.filter((p) => p.id !== id)
       );
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["properties"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
         queryClient.invalidateQueries({ queryKey: ["featured"] }),
         queryClient.invalidateQueries({ queryKey: ["search"] }),
@@ -238,6 +244,7 @@ function AdminDashboard() {
       }
 
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["properties"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
         queryClient.invalidateQueries({ queryKey: ["featured"] }),
         queryClient.invalidateQueries({ queryKey: ["search"] }),

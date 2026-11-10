@@ -546,6 +546,30 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
 
       const finalSlug = generateSlug(title, code);
 
+      const isUuid = (val: string | null | undefined): boolean => {
+        if (!val || typeof val !== "string") return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+      };
+
+      const generateUuid = (): string => {
+        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+          return crypto.randomUUID();
+        }
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+      };
+
+      const validUserId = currentUser?.id && isUuid(currentUser.id) ? currentUser.id : null;
+
+      // ID do imóvel (mantém o existente válido ou gera novo UUID RFC-compatível)
+      let savedPropertyId =
+        propertyId && isUuid(propertyId)
+          ? propertyId
+          : generateUuid();
+
       const propertyPayload = {
         code: code.trim().toUpperCase(),
         slug: finalSlug,
@@ -572,52 +596,8 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
         features: selectedFeatures,
         status: chosenStatus,
         featured,
-        created_by: currentUser?.id || null,
-        broker_id: currentUser?.id || null,
-      };
-
-      // ID do imóvel (mantém o existente ou gera novo UUID)
-      let savedPropertyId =
-        propertyId ||
-        (typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : "prop-" + Date.now());
-
-      const fullProperty: Property = {
-        id: savedPropertyId,
-        code: code.trim().toUpperCase(),
-        slug: finalSlug,
-        title: title.trim(),
-        description: description.trim() || null,
-        purpose,
-        type,
-        state: state.trim().toUpperCase(),
-        city: city.trim(),
-        neighborhood: neighborhood.trim(),
-        address: formattedAddress || null,
-        show_address: showAddress,
-        sale_price: salePrice !== "" ? Number(salePrice) : null,
-        rent_price: rentPrice !== "" ? Number(rentPrice) : null,
-        condo_fee: condoFee !== "" ? Number(condoFee) : null,
-        iptu: iptu !== "" ? Number(iptu) : null,
-        bedrooms: bedrooms !== "" ? Number(bedrooms) : null,
-        suites: suites !== "" ? Number(suites) : null,
-        bathrooms: bathrooms !== "" ? Number(bathrooms) : null,
-        parking: parking !== "" ? Number(parking) : null,
-        area_useful: areaUseful !== "" ? Number(areaUseful) : null,
-        area_land: areaLand !== "" ? Number(areaLand) : null,
-        area_built: areaUseful !== "" ? Number(areaUseful) : null,
-        features: selectedFeatures,
-        status: chosenStatus,
-        featured,
-        created_by: currentUser?.id || null,
-        broker_id: currentUser?.id || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        property_photos: finalPhotoUrls.map((url, index) => ({
-          url,
-          position: index,
-        })),
+        created_by: validUserId,
+        broker_id: validUserId,
       };
 
       // Persiste diretamente no banco de dados Supabase
@@ -625,12 +605,15 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
       if (isEditing && propertyId) {
         const { error: updateError } = await supabase
           .from("properties")
-          .update(propertyPayload)
+          .update({
+            ...propertyPayload,
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", propertyId);
 
         if (updateError) {
           console.error("Erro ao salvar no Supabase:", updateError.message);
-          toast.error(`Falha ao salvar: ${updateError.message}`);
+          toast.error(`Falha ao salvar imóvel: ${updateError.message}`);
           return;
         }
 
@@ -641,13 +624,18 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
       } else {
         const { data: newProp, error: insertError } = await supabase
           .from("properties")
-          .insert({ ...propertyPayload, id: savedPropertyId })
+          .insert({
+            ...propertyPayload,
+            id: savedPropertyId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
           .select()
           .single();
 
         if (insertError) {
           console.error("Erro ao salvar no Supabase:", insertError.message);
-          toast.error(`Falha ao cadastrar: ${insertError.message}`);
+          toast.error(`Falha ao cadastrar imóvel: ${insertError.message}`);
           return;
         }
         if (newProp?.id) {
@@ -655,7 +643,9 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
         }
       }
 
+      // Inserção na tabela property_photos aguarda retorno positivo
       if (savedPropertyId && finalPhotoUrls.length > 0) {
+        setProgressMessage("Gravando fotos no banco de dados Supabase...");
         const photoRecords = finalPhotoUrls.map((url, index) => ({
           property_id: savedPropertyId,
           url,
@@ -665,18 +655,24 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
         if (photoInsertError) {
           console.error("Erro ao vincular fotos no Supabase:", photoInsertError.message);
           toast.error(`Imóvel salvo, mas falha ao vincular fotos: ${photoInsertError.message}`);
+          return;
         }
       }
 
-      // Força a invalidação e recarregamento imediato das queries de imóveis
-      await queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
-      await queryClient.invalidateQueries({ queryKey: ["featured"] });
-      await queryClient.invalidateQueries({ queryKey: ["search"] });
-      await queryClient.invalidateQueries({ queryKey: ["locations"] });
-      if (isEditing && propertyId) {
-        await queryClient.invalidateQueries({ queryKey: ["property"] });
-        await queryClient.invalidateQueries({ queryKey: ["related"] });
-      }
+      // Força a invalidação e recarregamento imediato das queries de catálogo
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["properties"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["featured"] }),
+        queryClient.invalidateQueries({ queryKey: ["search"] }),
+        queryClient.invalidateQueries({ queryKey: ["locations"] }),
+        ...(isEditing && propertyId
+          ? [
+              queryClient.invalidateQueries({ queryKey: ["property"] }),
+              queryClient.invalidateQueries({ queryKey: ["related"] }),
+            ]
+          : []),
+      ]);
 
       toast.success(
         isEditing

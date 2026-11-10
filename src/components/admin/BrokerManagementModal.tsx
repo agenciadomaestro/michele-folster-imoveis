@@ -230,6 +230,7 @@ export function BrokerManagementModal({
       }
       await refreshList();
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["properties"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
