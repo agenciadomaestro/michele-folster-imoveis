@@ -572,18 +572,19 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           ? propertyId
           : generateUuid();
 
-      const propertyPayload = {
-        code: code.trim().toUpperCase(),
-        slug: finalSlug,
-        title: title.trim(),
-        description: description.trim() || null,
-        purpose,
-        type,
-        state: state.trim().toUpperCase(),
-        city: city.trim(),
-        neighborhood: neighborhood.trim(),
+      // Monta os campos obrigatórios e opcionais do imóvel
+      const basePropertyPayload: Record<string, any> = {
+        title: title.trim() || "Imóvel Sem Título",
+        purpose: purpose || "venda",
+        type: type.trim() || "Casa",
+        code: code.trim().toUpperCase() || generateCode(type || "Casa"),
+        slug: finalSlug || generateSlug(title || "imovel", code),
+        city: city.trim() || "Caçapava",
+        state: state.trim().toUpperCase() || "SP",
+        neighborhood: neighborhood.trim() || null,
         address: formattedAddress || null,
-        show_address: showAddress,
+        show_address: Boolean(showAddress),
+        description: description.trim() || null,
         sale_price: salePrice !== "" ? Number(salePrice) : null,
         rent_price: rentPrice !== "" ? Number(rentPrice) : null,
         condo_fee: condoFee !== "" ? Number(condoFee) : null,
@@ -595,27 +596,46 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         area_useful: areaUseful !== "" ? Number(areaUseful) : null,
         area_land: areaLand !== "" ? Number(areaLand) : null,
         area_built: areaUseful !== "" ? Number(areaUseful) : null,
-        features: selectedFeatures,
-        status: chosenStatus,
-        featured,
+        features: selectedFeatures || [],
+        status: chosenStatus || "publicado",
+        featured: Boolean(featured),
         created_by: validUserId,
         broker_id: validUserId,
+        updated_at: new Date().toISOString(),
       };
 
-      // Persiste diretamente no banco de dados Supabase
-      setProgressMessage("Salvando imóvel no banco de dados Supabase...");
+      // 1. Cadastra ou atualiza o imóvel na tabela properties e aguarda resposta positiva
+      setProgressMessage("Gravando dados do imóvel no Supabase...");
       let propertyDbId: string = "";
 
       if (isEditing && propertyId) {
-        const { data: updatedProp, error: updateError } = await supabase
+        let updatePayload: Record<string, any> = {
+          ...basePropertyPayload,
+          purpose: purpose || "venda",
+        };
+
+        let { data: updatedProp, error: updateError } = await supabase
           .from("properties")
-          .update({
-            ...propertyPayload,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload as any)
           .eq("id", propertyId)
           .select("id")
           .single();
+
+        // Se o banco tiver a coluna transaction_type obrigatória/adicionada
+        if (updateError && updateError.message?.toLowerCase().includes("transaction_type")) {
+          updatePayload = {
+            ...updatePayload,
+            transaction_type: purpose || "venda",
+          };
+          const retryUpdate = await supabase
+            .from("properties")
+            .update(updatePayload as any)
+            .eq("id", propertyId)
+            .select("id")
+            .single();
+          updatedProp = retryUpdate.data;
+          updateError = retryUpdate.error;
+        }
 
         if (updateError) {
           console.error("Erro ao salvar no Supabase:", updateError.message);
@@ -634,27 +654,36 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           console.warn("Aviso ao remover fotos antigas no Supabase:", delPhotosError.message);
         }
       } else {
-        const insertPayload = isUuid(savedPropertyId)
-          ? {
-              ...propertyPayload,
-              id: savedPropertyId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }
-          : {
-              ...propertyPayload,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
+        let insertPayload: Record<string, any> = {
+          ...basePropertyPayload,
+          purpose: purpose || "venda",
+          ...(isUuid(savedPropertyId) ? { id: savedPropertyId } : {}),
+          created_at: new Date().toISOString(),
+        };
 
-        const { data: newProp, error: insertError } = await supabase
+        let { data: newProp, error: insertError } = await supabase
           .from("properties")
-          .insert(insertPayload)
+          .insert(insertPayload as any)
           .select("id")
           .single();
 
+        // Se o banco tiver a coluna transaction_type obrigatória/adicionada
+        if (insertError && insertError.message?.toLowerCase().includes("transaction_type")) {
+          insertPayload = {
+            ...insertPayload,
+            transaction_type: purpose || "venda",
+          };
+          const retryInsert = await supabase
+            .from("properties")
+            .insert(insertPayload as any)
+            .select("id")
+            .single();
+          newProp = retryInsert.data;
+          insertError = retryInsert.error;
+        }
+
         if (insertError) {
-          console.error("Erro ao salvar no Supabase:", insertError.message);
+          console.error("Erro ao cadastrar imóvel no Supabase:", insertError.message);
           toast.error(`Falha ao cadastrar imóvel: ${insertError.message}`);
           return;
         }
