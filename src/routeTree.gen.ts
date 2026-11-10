@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as AnuncieRouteImport } from './routes/anuncie'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as ImoveisRouteImport } from './routes/imoveis'
@@ -18,7 +19,9 @@ import { Route as LocacaoRouteImport } from './routes/locacao'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as VendaRouteImport } from './routes/venda'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminCorretoresRouteImport } from './routes/admin/corretores'
 import { Route as AdminLeadsRouteImport } from './routes/admin/leads'
+import { Route as AdminMensagensRouteImport } from './routes/admin/mensagens'
 import { Route as AdminNovoRouteImport } from './routes/admin/novo'
 import { Route as ImovelCodeRouteImport } from './routes/imovel.$code'
 import { Route as AdminImoveisIdRouteImport } from './routes/admin/imoveis/$id'
@@ -32,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnuncieRoute = AnuncieRouteImport.update({
+  id: '/anuncie',
+  path: '/anuncie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -69,9 +77,19 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminCorretoresRoute = AdminCorretoresRouteImport.update({
+  id: '/corretores',
+  path: '/corretores',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminLeadsRoute = AdminLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminMensagensRoute = AdminMensagensRouteImport.update({
+  id: '/mensagens',
+  path: '/mensagens',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminNovoRoute = AdminNovoRouteImport.update({
@@ -98,13 +116,16 @@ const AdminImoveisNovoRoute = AdminImoveisNovoRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
+  '/anuncie': typeof AnuncieRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/imoveis': typeof ImoveisRoute
   '/locacao': typeof LocacaoRoute
   '/sobre': typeof SobreRoute
   '/venda': typeof VendaRoute
+  '/admin/corretores': typeof AdminCorretoresRoute
   '/admin/leads': typeof AdminLeadsRoute
+  '/admin/mensagens': typeof AdminMensagensRoute
   '/admin/novo': typeof AdminNovoRoute
   '/imovel/$code': typeof ImovelCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -113,13 +134,16 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/anuncie': typeof AnuncieRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/imoveis': typeof ImoveisRoute
   '/locacao': typeof LocacaoRoute
   '/sobre': typeof SobreRoute
   '/venda': typeof VendaRoute
+  '/admin/corretores': typeof AdminCorretoresRoute
   '/admin/leads': typeof AdminLeadsRoute
+  '/admin/mensagens': typeof AdminMensagensRoute
   '/admin/novo': typeof AdminNovoRoute
   '/imovel/$code': typeof ImovelCodeRoute
   '/admin': typeof AdminIndexRoute
@@ -130,13 +154,16 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
+  '/anuncie': typeof AnuncieRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/imoveis': typeof ImoveisRoute
   '/locacao': typeof LocacaoRoute
   '/sobre': typeof SobreRoute
   '/venda': typeof VendaRoute
+  '/admin/corretores': typeof AdminCorretoresRoute
   '/admin/leads': typeof AdminLeadsRoute
+  '/admin/mensagens': typeof AdminMensagensRoute
   '/admin/novo': typeof AdminNovoRoute
   '/imovel/$code': typeof ImovelCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -148,13 +175,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/anuncie'
     | '/auth'
     | '/contato'
     | '/imoveis'
     | '/locacao'
     | '/sobre'
     | '/venda'
+    | '/admin/corretores'
     | '/admin/leads'
+    | '/admin/mensagens'
     | '/admin/novo'
     | '/imovel/$code'
     | '/admin/'
@@ -163,13 +193,16 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/anuncie'
     | '/auth'
     | '/contato'
     | '/imoveis'
     | '/locacao'
     | '/sobre'
     | '/venda'
+    | '/admin/corretores'
     | '/admin/leads'
+    | '/admin/mensagens'
     | '/admin/novo'
     | '/imovel/$code'
     | '/admin'
@@ -179,13 +212,16 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/anuncie'
     | '/auth'
     | '/contato'
     | '/imoveis'
     | '/locacao'
     | '/sobre'
     | '/venda'
+    | '/admin/corretores'
     | '/admin/leads'
+    | '/admin/mensagens'
     | '/admin/novo'
     | '/imovel/$code'
     | '/admin/'
@@ -196,6 +232,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  AnuncieRoute: typeof AnuncieRoute
   AuthRoute: typeof AuthRoute
   ContatoRoute: typeof ContatoRoute
   ImoveisRoute: typeof ImoveisRoute
@@ -219,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anuncie': {
+      id: '/anuncie'
+      path: '/anuncie'
+      fullPath: '/anuncie'
+      preLoaderRoute: typeof AnuncieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -270,11 +314,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/corretores': {
+      id: '/admin/corretores'
+      path: '/corretores'
+      fullPath: '/admin/corretores'
+      preLoaderRoute: typeof AdminCorretoresRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/leads': {
       id: '/admin/leads'
       path: '/leads'
       fullPath: '/admin/leads'
       preLoaderRoute: typeof AdminLeadsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/mensagens': {
+      id: '/admin/mensagens'
+      path: '/mensagens'
+      fullPath: '/admin/mensagens'
+      preLoaderRoute: typeof AdminMensagensRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/novo': {
@@ -309,7 +367,9 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminCorretoresRoute: typeof AdminCorretoresRoute
   AdminLeadsRoute: typeof AdminLeadsRoute
+  AdminMensagensRoute: typeof AdminMensagensRoute
   AdminNovoRoute: typeof AdminNovoRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminImoveisIdRoute: typeof AdminImoveisIdRoute
@@ -317,7 +377,9 @@ interface AdminRouteRouteChildren {
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminCorretoresRoute: AdminCorretoresRoute,
   AdminLeadsRoute: AdminLeadsRoute,
+  AdminMensagensRoute: AdminMensagensRoute,
   AdminNovoRoute: AdminNovoRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminImoveisIdRoute: AdminImoveisIdRoute,
@@ -331,6 +393,7 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
+  AnuncieRoute: AnuncieRoute,
   AuthRoute: AuthRoute,
   ContatoRoute: ContatoRoute,
   ImoveisRoute: ImoveisRoute,

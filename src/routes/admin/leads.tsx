@@ -44,6 +44,8 @@ import { KanbanCard } from "@/components/admin/KanbanCard";
 import { LeadDetailsModal } from "@/components/admin/LeadDetailsModal";
 import { brl } from "@/lib/realty";
 
+import { getCurrentUserProfile, getLocalBrokers } from "@/lib/brokers";
+
 export const Route = createFileRoute("/admin/leads")({
   head: () => ({
     meta: [
@@ -71,68 +73,26 @@ function LeadsManagementPage() {
   // 1. Current User & RBAC Verification
   const { data: currentUser } = useQuery({
     queryKey: ["admin", "current-user-info"],
-    queryFn: async () => {
-      let masterUser: any = null;
-      if (typeof window !== "undefined") {
-        const stored = localStorage.getItem("master_auth_user");
-        if (stored) {
-          try {
-            masterUser = JSON.parse(stored);
-          } catch {}
-        }
-      }
-
-      const { data } = await supabase.auth.getUser();
-      const user = data?.user || masterUser;
-      if (!user) return null;
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      const isMasterOrAdmin =
-        user.email === "agbipe@agenciabipe.com" ||
-        user.email === "contato@agenciabipe.com" ||
-        Boolean(masterUser) ||
-        (roles || []).some((r: any) => r.role === "admin" || r.role === "owner");
-
-      return {
-        id: user.id,
-        email: user.email,
-        name:
-          user.user_metadata?.["full_name"] ||
-          (user.email?.includes("agbipe") ? "Master Agbipe" : "Corretor"),
-        isAdmin: isMasterOrAdmin,
-      };
-    },
+    queryFn: getCurrentUserProfile,
   });
 
   const isAdmin = currentUser?.isAdmin ?? true;
   const currentUserId = currentUser?.id;
-  const currentUserName = currentUser?.name || "Corretor";
+  const currentUserName = currentUser?.name || "Michele Folster";
+  const currentUserRoleLabel = currentUser?.roleLabel || "Gestora/Administradora";
 
-  // 2. Query Brokers List (Active profiles in platform)
-  const { data: brokers = DEFAULT_BROKERS } = useQuery({
+  // 2. Query Brokers List (Active profiles in platform, Super Admin hidden)
+  const { data: brokers = [] } = useQuery({
     queryKey: ["admin", "active-brokers"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, full_name, active")
-          .eq("active", true);
-
-        if (!error && data && data.length > 0) {
-          return data.map((p: any) => ({
-            id: p.id,
-            name: p.full_name || "Corretor",
-            email: "",
-            role: "broker" as const,
-            active: p.active,
-          }));
-        }
-      } catch {}
-      return DEFAULT_BROKERS;
+      const list = getLocalBrokers(false);
+      return list.map((b) => ({
+        id: b.id,
+        name: b.name,
+        email: b.email,
+        role: b.role === "admin" ? ("admin" as const) : ("broker" as const),
+        active: b.active,
+      }));
     },
   });
 
@@ -157,14 +117,14 @@ function LeadsManagementPage() {
   // 4. Access Control Filter (RBAC)
   // Admins see all leads (or filter by broker); Standard brokers see ONLY their assigned leads
   const roleFilteredLeads = useMemo(() => {
-    if (isAdmin) {
+    if (isAdmin || currentUser?.permissions.pode_ver_ofertas_gerais) {
       if (filterBrokerId === "all") return allLeads;
       if (filterBrokerId === "unassigned") return allLeads.filter((l) => !l.broker_id);
       return allLeads.filter((l) => l.broker_id === filterBrokerId);
     }
     // Standard broker can ONLY see leads assigned to them
     return allLeads.filter((l) => l.broker_id === currentUserId);
-  }, [allLeads, isAdmin, filterBrokerId, currentUserId]);
+  }, [allLeads, isAdmin, currentUser, filterBrokerId, currentUserId]);
 
   // 5. Search & Additional Filters
   const filteredLeads = useMemo(() => {
@@ -342,12 +302,19 @@ function LeadsManagementPage() {
               </button>
             </div>
 
+            <Link
+              to="/admin/mensagens"
+              className="btn btn-ghost text-xs h-8 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
+            >
+              Central de Mensagens
+            </Link>
+
             {/* User Badge */}
             <div className="hidden md:flex items-center gap-2 pl-3 border-l border-border">
               <div className="text-right">
                 <p className="text-xs font-bold text-foreground">{currentUserName}</p>
                 <p className="text-[10px] text-primary font-semibold uppercase">
-                  {isAdmin ? "Administrador Master" : "Corretor"}
+                  {currentUserRoleLabel}
                 </p>
               </div>
             </div>

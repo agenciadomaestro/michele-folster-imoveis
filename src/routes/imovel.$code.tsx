@@ -172,10 +172,20 @@ function PropertyPage() {
           <aside className="panel h-fit p-6 lg:sticky lg:top-24">
             <p className="font-semibold">Fale com {AGENCY.name}</p>
             <p className="mt-1 text-sm text-muted-foreground">Responderemos o mais rápido possível.</p>
-            <div className="mt-5"><LeadForm propertyId={p.id} propertyCode={p.code} source="pagina_imovel" /></div>
+            <div className="mt-5">
+              <LeadForm
+                propertyId={p.id}
+                propertyCode={p.code}
+                propertyTitle={p.title}
+                brokerId={p.broker_id}
+                source="pagina_imovel"
+              />
+            </div>
             <div className="mt-4 border-t border-border pt-4">
               <a
-                href={getWhatsappUrl()}
+                href={`https://wa.me/5512981467549?text=${encodeURIComponent(
+                  `Olá, vim pelo site e preciso de ajuda referente ao imóvel Código ${p.code} - ${p.title}.`
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn bg-emerald-600 hover:bg-emerald-500 text-white w-full text-xs font-bold gap-2 shadow-xs"

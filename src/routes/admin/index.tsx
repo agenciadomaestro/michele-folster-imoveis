@@ -8,7 +8,6 @@ import {
   ExternalLink,
   PlusCircle,
   Eye,
-  Tag,
   MapPin,
   Edit,
   ShieldCheck,
@@ -17,12 +16,20 @@ import {
   X,
   Kanban,
   ChevronRight,
+  MessageSquare,
+  Sliders,
+  Shield,
+  UserCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
 import { toast } from "sonner";
 import { priceLabel, type Property } from "@/lib/realty";
 import { mergeWithLocalProperties, deleteLocalProperty } from "@/lib/localProperties";
+import { getCurrentUserProfile, getLocalBrokers } from "@/lib/brokers";
+import { getLocalMessages } from "@/lib/messages";
+import { getLocalLeads } from "@/lib/leads";
+import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -37,9 +44,38 @@ export const Route = createFileRoute("/admin/")({
 function AdminDashboard() {
   const router = useRouter();
   const [searchCode, setSearchCode] = useState("");
+  const [isBrokersModalOpen, setIsBrokersModalOpen] = useState(false);
 
-  // Query Properties
-  const { data: properties = [], isLoading: loadingProps, refetch: refetchProps } = useQuery({
+  // 1. Perfil do Usuário Autenticado e Permissões Granulares (RBAC)
+  const { data: userProfile, refetch: refetchUser } = useQuery({
+    queryKey: ["admin", "current-user-profile"],
+    queryFn: getCurrentUserProfile,
+  });
+
+  // 2. Query de Corretores da Imobiliária (sem Super Admin oculto)
+  const { data: brokers = [], refetch: refetchBrokers } = useQuery({
+    queryKey: ["admin", "brokers-list"],
+    queryFn: async () => getLocalBrokers(false),
+  });
+
+  // 3. Query de Mensagens & Contatos Recentes
+  const { data: messages = [] } = useQuery({
+    queryKey: ["admin", "messages-leads-list"],
+    queryFn: async () => getLocalMessages(),
+  });
+
+  // 4. Query de Leads do CRM Kanban
+  const { data: leads = [] } = useQuery({
+    queryKey: ["admin", "crm-leads-list"],
+    queryFn: async () => getLocalLeads(),
+  });
+
+  // 5. Query de Imóveis com Suporte a Permissão Granular (pode_ver_ofertas_gerais)
+  const {
+    data: rawProperties = [],
+    isLoading: loadingProps,
+    refetch: refetchProps,
+  } = useQuery({
     queryKey: ["admin", "properties-list"],
     queryFn: async () => {
       let supabaseItems: Property[] = [];
@@ -53,9 +89,22 @@ function AdminDashboard() {
         console.warn("Aviso ao buscar lista de imóveis:", err);
       }
       const merged = mergeWithLocalProperties(supabaseItems);
-      merged.sort((a, b) => new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime());
+      merged.sort(
+        (a, b) =>
+          new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
+      );
       return merged;
     },
+  });
+
+  // Filtragem de Imóveis conforme regras de acesso do Corretor
+  const visibleProperties = rawProperties.filter((item) => {
+    if (userProfile?.isAdmin) return true;
+    if (userProfile?.isBroker && !userProfile.permissions.pode_ver_ofertas_gerais) {
+      // Vê apenas se atribuído ao corretor ou sem corretor específico
+      return item.broker_id === userProfile.id;
+    }
+    return true;
   });
 
   const handleDeleteProperty = async (id: string, propTitle: string) => {
@@ -68,73 +117,10 @@ function AdminDashboard() {
     refetchProps();
   };
 
-  const filteredProperties = properties.filter((item) => {
+  const filteredProperties = visibleProperties.filter((item) => {
     if (!searchCode.trim()) return true;
     const term = searchCode.trim().toUpperCase();
     return item.code ? item.code.toUpperCase().includes(term) : false;
-  });
-
-  // Query Leads
-  const { data: leads = [] } = useQuery({
-    queryKey: ["admin", "recent-leads"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("leads")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (error) return [];
-      return data || [];
-    },
-  });
-
-  // Query Current User & Role
-  const { data: userProfile } = useQuery({
-    queryKey: ["admin", "current-user"],
-    queryFn: async () => {
-      let masterUser: any = null;
-      if (typeof window !== "undefined") {
-        const stored = localStorage.getItem("master_auth_user");
-        if (stored) {
-          try {
-            masterUser = JSON.parse(stored);
-          } catch {}
-        }
-      }
-
-      const { data } = await supabase.auth.getUser();
-      const user = data?.user || masterUser;
-      if (!user) return null;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      const isMaster =
-        user.email === "agbipe@agenciabipe.com" ||
-        user.email === "contato@agenciabipe.com" ||
-        Boolean(masterUser);
-
-      return {
-        id: user.id,
-        email: user.email,
-        name:
-          profile?.full_name ||
-          user.user_metadata?.["full_name"] ||
-          (isMaster ? "Master Agbipe" : user.email),
-        roles: (roles || []).map((r) => r.role),
-        isAdmin:
-          isMaster ||
-          (roles || []).some((r) => r.role === "admin" || r.role === "owner"),
-      };
-    },
   });
 
   const handleLogout = async () => {
@@ -146,26 +132,40 @@ function AdminDashboard() {
     router.navigate({ to: "/auth" });
   };
 
+  // Permissão de cadastro de imóvel
+  const canCreateProperty =
+    userProfile?.isAdmin || userProfile?.permissions.pode_cadastrar_imovel;
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Header com Identificação Dinâmica de Acesso */}
       <header className="border-b bg-surface px-6 py-4 sticky top-0 z-30">
         <div className="container-page flex items-center justify-between">
           <Logo />
+
           <div className="flex items-center gap-4">
+            {/* Informações do Usuário Dinâmico */}
             <div className="hidden sm:flex items-center gap-2 border-r border-border pr-4">
               <div className="grid size-8 place-items-center rounded-full bg-accent text-primary">
-                <ShieldCheck className="size-4" />
+                {userProfile?.isSuperAdmin ? (
+                  <Shield className="size-4" />
+                ) : userProfile?.isAdmin ? (
+                  <ShieldCheck className="size-4" />
+                ) : (
+                  <UserCheck className="size-4" />
+                )}
               </div>
               <div className="text-right">
                 <p className="text-xs font-bold text-foreground">
-                  {userProfile?.name || "Everson Maestro"}
+                  {userProfile?.name || "Michele Folster"}
                 </p>
-                <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
-                  {userProfile?.isAdmin ? "Administrador Master" : "Corretor"}
+                <span className="text-[10px] font-semibold text-primary uppercase tracking-wider block">
+                  {userProfile?.roleLabel || "Gestora/Administradora"}
                 </span>
               </div>
             </div>
 
+            {/* Atalhos Rápidos */}
             <Link
               to="/admin/leads"
               className="btn btn-soft text-xs h-9 text-primary font-bold shadow-xs"
@@ -175,12 +175,31 @@ function AdminDashboard() {
             </Link>
 
             <Link
+              to="/admin/mensagens"
+              className="btn btn-ghost text-xs h-9 text-muted-foreground hover:text-foreground font-semibold"
+            >
+              <MessageSquare className="mr-1.5 size-4" />
+              Central de Mensagens
+            </Link>
+
+            {userProfile?.isAdmin && (
+              <button
+                onClick={() => setIsBrokersModalOpen(true)}
+                className="btn btn-outline text-xs h-9 font-semibold gap-1.5 hidden md:inline-flex"
+              >
+                <Sliders className="size-3.5 text-primary" />
+                <span>Corretores</span>
+              </button>
+            )}
+
+            <Link
               to="/"
               className="btn btn-ghost text-sm text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="mr-1.5 size-4" />
               Ver site
             </Link>
+
             <button
               onClick={handleLogout}
               className="btn btn-outline text-sm text-destructive hover:bg-destructive/10"
@@ -201,33 +220,57 @@ function AdminDashboard() {
               Gerencie seus imóveis, fotos e acompanhe os contatos de clientes em tempo real.
             </p>
           </div>
-          <Link to="/admin/imoveis/novo" className="btn btn-primary shadow-sm">
-            <PlusCircle className="mr-1.5 size-4" />
-            Cadastrar Novo Imóvel
-          </Link>
+
+          {canCreateProperty ? (
+            <Link to="/admin/imoveis/novo" className="btn btn-primary shadow-sm">
+              <PlusCircle className="mr-1.5 size-4" />
+              Cadastrar Novo Imóvel
+            </Link>
+          ) : (
+            <div
+              className="btn bg-muted text-muted-foreground cursor-not-allowed opacity-60 text-xs"
+              title="Permissão desativada pelo administrador"
+            >
+              <PlusCircle className="mr-1.5 size-4" />
+              Cadastro Bloqueado
+            </div>
+          )}
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div className="panel p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Imóveis no Catálogo</span>
-              <Building2 className="size-5 text-primary" />
-            </div>
-            <div className="mt-3 text-3xl font-bold">{properties.length}</div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {properties.filter((p) => p.status === "publicado").length} publicados no site
-            </p>
-          </div>
-
-          <div className="panel p-6 shadow-sm flex flex-col justify-between">
+        {/* Reformulação do Header do Dashboard: Grid 4x1 de Métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1 - Imóveis no Catálogo */}
+          <div className="panel p-5 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Leads Recebidos</span>
-                <Users className="size-5 text-primary" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Imóveis no Catálogo
+                </span>
+                <Building2 className="size-5 text-primary" />
               </div>
-              <div className="mt-3 text-3xl font-bold">{leads.length}</div>
-              <p className="mt-1 text-xs text-muted-foreground">Contatos recebidos via site</p>
+              <div className="mt-3 text-3xl font-bold text-foreground">
+                {visibleProperties.length}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {visibleProperties.filter((p) => p.status === "publicado").length} publicados no site
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border/50 text-[11px] text-muted-foreground font-medium">
+              Base ativa e atualizada
+            </div>
+          </div>
+
+          {/* Card 2 - Leads Recebidos */}
+          <div className="panel p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Leads Recebidos
+                </span>
+                <Kanban className="size-5 text-primary" />
+              </div>
+              <div className="mt-3 text-3xl font-bold text-foreground">{leads.length}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Funil de vendas ativo</p>
             </div>
             <div className="mt-4 pt-3 border-t border-border/50">
               <Link
@@ -237,6 +280,57 @@ function AdminDashboard() {
                 <span>Acessar CRM Kanban</span>
                 <ChevronRight className="size-3.5" />
               </Link>
+            </div>
+          </div>
+
+          {/* Card 3 - Leads & Contatos Recentes (Movido do rodapé para este card) */}
+          <div className="panel p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Leads & Contatos Recentes
+                </span>
+                <MessageSquare className="size-5 text-primary" />
+              </div>
+              <div className="mt-3 text-3xl font-bold text-foreground">{messages.length}</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {messages.filter((m) => m.status === "pendente").length} pendentes de atendimento
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border/50">
+              <Link
+                to="/admin/mensagens"
+                className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <span>Central de Mensagens/Contatos</span>
+                <ChevronRight className="size-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 4 - Gestão de Corretores */}
+          <div className="panel p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Gestão de Corretores
+                </span>
+                <Users className="size-5 text-primary" />
+              </div>
+              <div className="mt-3 text-3xl font-bold text-foreground">{brokers.length}</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {brokers.filter((b) => b.active).length} corretores ativos na equipe
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border/50">
+              <button
+                type="button"
+                onClick={() => setIsBrokersModalOpen(true)}
+                className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <span>Gerenciar Corretores</span>
+                <ChevronRight className="size-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -249,7 +343,8 @@ function AdminDashboard() {
                 <h2 className="text-xl font-bold">Imóveis Cadastrados</h2>
                 {searchCode && (
                   <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-primary">
-                    {filteredProperties.length} {filteredProperties.length === 1 ? "resultado" : "resultados"}
+                    {filteredProperties.length}{" "}
+                    {filteredProperties.length === 1 ? "resultado" : "resultados"}
                   </span>
                 )}
               </div>
@@ -281,10 +376,12 @@ function AdminDashboard() {
                 )}
               </div>
 
-              <Link to="/admin/imoveis/novo" className="btn btn-soft text-xs h-9 shrink-0">
-                <PlusCircle className="mr-1.5 size-3.5" />
-                Novo Imóvel
-              </Link>
+              {canCreateProperty && (
+                <Link to="/admin/imoveis/novo" className="btn btn-soft text-xs h-9 shrink-0">
+                  <PlusCircle className="mr-1.5 size-3.5" />
+                  Novo Imóvel
+                </Link>
+              )}
             </div>
           </div>
 
@@ -292,16 +389,20 @@ function AdminDashboard() {
             <div className="py-12 text-center text-sm text-muted-foreground">
               Carregando lista de imóveis...
             </div>
-          ) : properties.length === 0 ? (
+          ) : visibleProperties.length === 0 ? (
             <div className="py-12 text-center">
               <Building2 className="mx-auto size-10 text-muted-foreground/50 mb-3" />
-              <p className="text-base font-semibold">Nenhum imóvel cadastrado ainda</p>
+              <p className="text-base font-semibold">Nenhum imóvel disponível para sua visualização</p>
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-                Comece cadastrando seu primeiro imóvel pelo formulário completo em etapas.
+                {canCreateProperty
+                  ? "Comece cadastrando seu primeiro imóvel pelo formulário completo em etapas."
+                  : "Aguarde a atribuição de imóveis pelo gestor da imobiliária."}
               </p>
-              <Link to="/admin/imoveis/novo" className="btn btn-primary mt-4">
-                Cadastrar Imóvel Agora
-              </Link>
+              {canCreateProperty && (
+                <Link to="/admin/imoveis/novo" className="btn btn-primary mt-4">
+                  Cadastrar Imóvel Agora
+                </Link>
+              )}
             </div>
           ) : filteredProperties.length === 0 ? (
             <div className="py-12 text-center">
@@ -309,7 +410,10 @@ function AdminDashboard() {
               <p className="text-base font-semibold">Nenhum imóvel encontrado</p>
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
                 Não encontramos nenhum imóvel com o código contendo{" "}
-                <span className="font-bold text-foreground font-mono">"{searchCode.toUpperCase()}"</span>.
+                <span className="font-bold text-foreground font-mono">
+                  "{searchCode.toUpperCase()}"
+                </span>
+                .
               </p>
               <button
                 type="button"
@@ -385,14 +489,16 @@ function AdminDashboard() {
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-center">
-                      <Link
-                        to={`/admin/imoveis/${item.id}` as any}
-                        className="btn btn-outline text-xs h-8"
-                        title="Editar imóvel"
-                      >
-                        <Edit className="mr-1 size-3.5" />
-                        Editar
-                      </Link>
+                      {canCreateProperty && (
+                        <Link
+                          to={`/admin/imoveis/${item.id}` as any}
+                          className="btn btn-outline text-xs h-8"
+                          title="Editar imóvel"
+                        >
+                          <Edit className="mr-1 size-3.5" />
+                          Editar
+                        </Link>
+                      )}
                       <Link
                         to={`/imovel/${item.code}` as any}
                         target="_blank"
@@ -402,13 +508,15 @@ function AdminDashboard() {
                         <Eye className="mr-1 size-3.5" />
                         Ver Página
                       </Link>
-                      <button
-                        onClick={() => handleDeleteProperty(item.id, item.title)}
-                        className="btn btn-ghost text-xs h-8 text-destructive hover:bg-destructive/10"
-                        title="Excluir imóvel"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {userProfile?.isAdmin && (
+                        <button
+                          onClick={() => handleDeleteProperty(item.id, item.title)}
+                          className="btn btn-ghost text-xs h-8 text-destructive hover:bg-destructive/10"
+                          title="Excluir imóvel"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -416,45 +524,18 @@ function AdminDashboard() {
             </div>
           )}
         </div>
-
-        {/* Leads Section */}
-        <div className="panel p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <h2 className="text-lg font-semibold">Leads & Contatos Recentes</h2>
-              <p className="text-xs text-muted-foreground">
-                Últimos formulários enviados por clientes no site
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="chip text-xs">Tempo Real</span>
-              <Link to="/admin/leads" className="btn btn-outline text-xs h-8">
-                <Kanban className="mr-1.5 size-3.5 text-primary" />
-                Abrir Kanban de Leads
-              </Link>
-            </div>
-          </div>
-
-          {leads.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">Nenhum lead recebido ainda.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {leads.map((lead: any) => (
-                <div key={lead.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {lead.phone} • {lead.email || "Sem e-mail"}
-                      {lead.property_code ? ` • Ref: ${lead.property_code}` : ""}
-                    </p>
-                  </div>
-                  <span className="chip text-xs capitalize">{lead.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </main>
+
+      {/* Modal de Gestão de Corretores e Permissões */}
+      <BrokerManagementModal
+        isOpen={isBrokersModalOpen}
+        onClose={() => setIsBrokersModalOpen(false)}
+        properties={rawProperties}
+        onBrokersUpdated={() => {
+          refetchBrokers();
+          refetchUser();
+        }}
+      />
     </div>
   );
 }

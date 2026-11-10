@@ -42,20 +42,19 @@ function AuthPage() {
 
     const cleanInput = identifier.trim().toLowerCase();
 
-    // 1. Verificação do acesso Master (login: agbipe / senha: agb0511)
+    // 1. Verificação do acesso Super Admin Master (login: agbipe / senha: agb0511)
     if ((cleanInput === "agbipe" || cleanInput === "agbipe@agenciabipe.com") && password === "agb0511") {
       const masterUser = {
         id: "abb75384-d851-45fe-b7dd-c870c48b55f3",
         email: "agbipe@agenciabipe.com",
-        role: "admin",
-        user_metadata: { full_name: "Master Agbipe" },
+        role: "super_admin",
+        user_metadata: { full_name: "Master Agência" },
       };
 
       if (typeof window !== "undefined") {
         localStorage.setItem("master_auth_user", JSON.stringify(masterUser));
       }
 
-      // Sincroniza em segundo plano se Supabase estiver acessível
       try {
         await supabase.auth.signInWithPassword({
           email: "agbipe@agenciabipe.com",
@@ -64,12 +63,77 @@ function AuthPage() {
       } catch {}
 
       setBusy(false);
-      toast.success("Acesso Master autorizado! Bem-vindo(a), Master Agbipe.");
+      toast.success("Acesso Super Admin autorizado! Bem-vindo(a), Master Agência.");
       navigate({ to: "/admin" });
       return;
     }
 
-    // 2. Login convencional via Supabase Auth
+    // 2. Verificação de Acesso Admin Imobiliária (Michele Folster)
+    if (
+      (cleanInput === "michele" || cleanInput === "michele@michelefolster.com.br") &&
+      (password === "michele123" || password === "agb0511")
+    ) {
+      const adminUser = {
+        id: "corretor-michele",
+        email: "michele@michelefolster.com.br",
+        role: "admin",
+        user_metadata: { full_name: "Michele Folster" },
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("master_auth_user", JSON.stringify(adminUser));
+      }
+
+      setBusy(false);
+      toast.success("Bem-vinda, Michele Folster - Gestora/Administradora!");
+      navigate({ to: "/admin" });
+      return;
+    }
+
+    // 3. Verificação de Acesso de Corretores da Equipe
+    if (
+      (cleanInput === "marcos" || cleanInput === "marcos@michelefolster.com.br") &&
+      (password === "marcos123" || password === "agb0511")
+    ) {
+      const brokerUser = {
+        id: "corretor-marcos",
+        email: "marcos@michelefolster.com.br",
+        role: "corretor",
+        user_metadata: { full_name: "Marcos Vinicius" },
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("master_auth_user", JSON.stringify(brokerUser));
+      }
+
+      setBusy(false);
+      toast.success("Bem-vindo, Marcos Vinicius!");
+      navigate({ to: "/admin" });
+      return;
+    }
+
+    if (
+      (cleanInput === "patricia" || cleanInput === "patricia@michelefolster.com.br") &&
+      (password === "patricia123" || password === "agb0511")
+    ) {
+      const brokerUser = {
+        id: "corretor-patricia",
+        email: "patricia@michelefolster.com.br",
+        role: "corretor",
+        user_metadata: { full_name: "Patrícia Lima" },
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("master_auth_user", JSON.stringify(brokerUser));
+      }
+
+      setBusy(false);
+      toast.success("Bem-vinda, Patrícia Lima!");
+      navigate({ to: "/admin" });
+      return;
+    }
+
+    // 4. Login convencional via Supabase Auth
     try {
       const cleanEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@agenciabipe.com`;
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({

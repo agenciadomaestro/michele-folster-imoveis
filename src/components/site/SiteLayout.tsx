@@ -116,7 +116,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             </a>
 
             <Link
-              to="/contato"
+              to="/anuncie"
               className="btn btn-outline h-10 px-4 text-xs font-semibold"
             >
               Anuncie seu Imóvel
@@ -164,9 +164,17 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               </a>
 
               <Link
+                to="/anuncie"
+                onClick={() => setOpen(false)}
+                className="btn btn-outline w-full justify-center text-xs"
+              >
+                Anuncie seu Imóvel
+              </Link>
+
+              <Link
                 to="/auth"
                 onClick={() => setOpen(false)}
-                className="btn btn-outline mt-1 w-full justify-center text-xs"
+                className="btn btn-ghost mt-1 w-full justify-center text-xs text-muted-foreground"
               >
                 <Lock className="mr-1.5 size-3.5" />
                 Área Restrita do Corretor
@@ -291,10 +299,10 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                 <span>WhatsApp: {AGENCY.phone}</span>
               </a>
               <Link
-                to="/contato"
+                to="/anuncie"
                 className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
               >
-                <span>Avaliar meu imóvel</span>
+                <span>Anuncie / Avalie seu imóvel</span>
                 <ArrowUpRight className="size-3.5 text-muted-foreground" />
               </Link>
             </div>
