@@ -40,9 +40,11 @@ export const SUPER_ADMIN_USER: Broker = {
   created_at: "2026-01-01T00:00:00.000Z",
 };
 
+export const MICHELE_BROKER_ID = "c011e701-0001-4000-8000-000000000001";
+
 export const INITIAL_BROKERS: Broker[] = [
   {
-    id: "c011e701-0001-4000-8000-000000000001",
+    id: MICHELE_BROKER_ID,
     name: "Michele Folster",
     email: "michele@michelefolster.com.br",
     phone: "(12) 98146-7549",
@@ -178,19 +180,17 @@ export function getLocalBrokers(includeHidden = false): Broker[] {
 
 export async function saveBrokerDirect(broker: Broker): Promise<Broker> {
   // 1. Salva diretamente no banco Supabase
-  try {
-    const { error } = await supabase.from("profiles").upsert({
-      id: broker.id,
-      full_name: broker.name,
-      phone: broker.phone,
-      creci: broker.creci,
-      active: broker.active,
-    });
-    if (error) {
-      console.warn("Aviso ao salvar profile no Supabase:", error.message);
-    }
-  } catch (e) {
-    console.warn("Erro ao comunicar com Supabase profiles:", e);
+  const { error } = await supabase.from("profiles").upsert({
+    id: broker.id,
+    full_name: broker.name,
+    phone: broker.phone,
+    creci: broker.creci,
+    active: broker.active,
+  });
+
+  if (error) {
+    console.error("Erro ao salvar no Supabase:", error.message);
+    throw new Error(`Falha ao salvar no Supabase: ${error.message}`);
   }
 
   // 2. Atualiza snapshot local
@@ -239,20 +239,23 @@ export async function updateBrokerPermissions(
 
   // Supabase persistência
   try {
-    await supabase.from("broker_permissions" as any).upsert({
+    const { error } = await supabase.from("broker_permissions" as any).upsert({
       user_id: brokerId,
       ...newPermissions,
       updated_at: new Date().toISOString(),
     });
+    if (error) {
+      console.warn("Aviso ao atualizar broker_permissions no Supabase:", error.message);
+    }
   } catch {}
 }
 
 export async function updateBrokerStatus(brokerId: string, active: boolean): Promise<void> {
   // 1. Atualiza diretamente no Supabase
-  try {
-    await supabase.from("profiles").update({ active }).eq("id", brokerId);
-  } catch (err) {
-    console.warn("Aviso ao atualizar status no Supabase:", err);
+  const { error } = await supabase.from("profiles").update({ active }).eq("id", brokerId);
+  if (error) {
+    console.error("Erro ao salvar no Supabase:", error.message);
+    throw new Error(`Falha ao salvar: ${error.message}`);
   }
 
   // 2. Atualiza snapshot local
@@ -311,25 +314,33 @@ export async function reassignAndDeleteBroker(
   let reassignedMsgs = 0;
 
   // 1. Atualização direta no Supabase
-  try {
-    // Reatribui imóveis
-    const { error: errProp } = await supabase
-      .from("properties")
-      .update({ broker_id: "corretor-michele", updated_at: new Date().toISOString() })
-      .eq("broker_id", brokerId);
-    if (!errProp) reassignedProps++;
+  // Reatribui imóveis
+  const { error: errProp } = await supabase
+    .from("properties")
+    .update({ broker_id: MICHELE_BROKER_ID, updated_at: new Date().toISOString() })
+    .eq("broker_id", brokerId);
+  if (errProp) {
+    console.warn("Aviso ao reatribuir imóveis no Supabase:", errProp.message);
+  } else {
+    reassignedProps++;
+  }
 
-    // Reatribui leads
-    const { error: errLead } = await supabase
-      .from("leads")
-      .update({ broker_id: "corretor-michele", updated_at: new Date().toISOString() })
-      .eq("broker_id", brokerId);
-    if (!errLead) reassignedLeads++;
+  // Reatribui leads
+  const { error: errLead } = await supabase
+    .from("leads")
+    .update({ broker_id: MICHELE_BROKER_ID, updated_at: new Date().toISOString() })
+    .eq("broker_id", brokerId);
+  if (errLead) {
+    console.warn("Aviso ao reatribuir leads no Supabase:", errLead.message);
+  } else {
+    reassignedLeads++;
+  }
 
-    // Exclui ou inativa o perfil no Supabase
-    await supabase.from("profiles").delete().eq("id", brokerId);
-  } catch (err) {
-    console.warn("Aviso na reatribuição no Supabase:", err);
+  // Exclui ou inativa o perfil no Supabase
+  const { error: errDelete } = await supabase.from("profiles").delete().eq("id", brokerId);
+  if (errDelete) {
+    console.error("Erro ao excluir no Supabase:", errDelete.message);
+    throw new Error(`Falha ao excluir corretor: ${errDelete.message}`);
   }
 
   // 2. Snapshot local

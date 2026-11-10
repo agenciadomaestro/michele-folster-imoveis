@@ -87,24 +87,27 @@ export function LeadForm({
     }
 
     // 2. Salva diretamente na tabela leads do Supabase DB
-    try {
-      await supabase.from("leads").insert({
-        id: localLeadId,
-        name: v.name,
-        phone: v.phone,
-        email: v.email || null,
-        message: v.message || null,
-        interest: v.interest,
-        consent: true,
-        property_id: propertyId ?? null,
-        property_code: propertyCode ?? null,
-        source: source || "Site",
-        source_page: typeof window !== "undefined" ? window.location.pathname : null,
-        status: "novo",
-        broker_id: brokerId ?? null,
-      });
-    } catch (err) {
-      console.warn("Aviso ao salvar lead no Supabase:", err);
+    const { error: leadError } = await supabase.from("leads").insert({
+      id: localLeadId,
+      name: v.name,
+      phone: v.phone,
+      email: v.email || null,
+      message: v.message || null,
+      interest: v.interest,
+      consent: true,
+      property_id: propertyId ?? null,
+      property_code: propertyCode ?? null,
+      source: source || "Site",
+      source_page: typeof window !== "undefined" ? window.location.pathname : null,
+      status: "novo",
+      broker_id: brokerId ?? null,
+    });
+
+    if (leadError) {
+      console.error("Erro ao salvar no Supabase:", leadError.message);
+      toast.error(`Falha ao salvar: ${leadError.message}`);
+      setSending(false);
+      return;
     }
 
     setSending(false);

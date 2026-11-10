@@ -111,9 +111,13 @@ export function BrokerManagementModal({
 
   const handleToggleActive = async (broker: Broker) => {
     const nextState = !broker.active;
-    await updateBrokerStatus(broker.id, nextState);
-    toast.success(`Corretor ${broker.name} marcado como ${nextState ? "Ativo" : "Inativo"}.`);
-    refreshList();
+    try {
+      await updateBrokerStatus(broker.id, nextState);
+      toast.success(`Corretor ${broker.name} marcado como ${nextState ? "Ativo" : "Inativo"}.`);
+      refreshList();
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao alterar status do corretor.");
+    }
   };
 
   const handleOpenPermissions = (broker: Broker) => {
@@ -126,18 +130,22 @@ export function BrokerManagementModal({
     const currentVal = selectedBroker.permissions[key];
     const nextVal = !currentVal;
 
-    await updateBrokerPermissions(selectedBroker.id, { [key]: nextVal });
+    try {
+      await updateBrokerPermissions(selectedBroker.id, { [key]: nextVal });
 
-    const updated = {
-      ...selectedBroker,
-      permissions: {
-        ...selectedBroker.permissions,
-        [key]: nextVal,
-      },
-    };
-    setSelectedBroker(updated);
-    refreshList();
-    toast.success("Permissão atualizada com sucesso.");
+      const updated = {
+        ...selectedBroker,
+        permissions: {
+          ...selectedBroker.permissions,
+          [key]: nextVal,
+        },
+      };
+      setSelectedBroker(updated);
+      refreshList();
+      toast.success("Permissão atualizada com sucesso.");
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao atualizar permissão.");
+    }
   };
 
   const handleCreateBroker = async (e: React.FormEvent) => {
@@ -169,21 +177,25 @@ export function BrokerManagementModal({
       created_at: new Date().toISOString(),
     };
 
-    await saveBrokerDirect(newBroker);
-    toast.success(`Corretor ${formName} cadastrado com sucesso!`);
-    if (formPassword.trim()) {
-      toast.info(`Credenciais criadas para ${formEmail}. Senha temporária configurada.`);
-    }
+    try {
+      await saveBrokerDirect(newBroker);
+      toast.success(`Corretor ${formName} cadastrado com sucesso!`);
+      if (formPassword.trim()) {
+        toast.info(`Credenciais criadas para ${formEmail}. Senha temporária configurada.`);
+      }
 
-    // Reset formulário
-    setFormName("");
-    setFormEmail("");
-    setFormPhone("");
-    setFormCreci("");
-    setFormPassword("");
-    setFormRole("corretor");
-    setIsNewBrokerModalOpen(false);
-    refreshList();
+      // Reset formulário
+      setFormName("");
+      setFormEmail("");
+      setFormPhone("");
+      setFormCreci("");
+      setFormPassword("");
+      setFormRole("corretor");
+      setIsNewBrokerModalOpen(false);
+      refreshList();
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao cadastrar corretor no Supabase.");
+    }
   };
 
   // Confirmação de exclusão com reatribuição automática
@@ -211,8 +223,9 @@ export function BrokerManagementModal({
         setSelectedBroker(null);
       }
       refreshList();
-    } catch (err) {
-      toast.error("Erro ao excluir corretor. Tente novamente.");
+    } catch (err: any) {
+      console.error("Erro ao excluir no Supabase:", err);
+      toast.error(err?.message || "Falha ao excluir corretor.");
     } finally {
       setIsDeleting(false);
     }

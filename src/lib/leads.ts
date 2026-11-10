@@ -516,7 +516,10 @@ export async function fetchLeads(): Promise<Lead[]> {
   return INITIAL_DEMO_LEADS;
 }
 
-export async function updateLeadStatusInDb(id: string, newStatus: LeadStatus): Promise<void> {
+export async function updateLeadStatusInDb(
+  id: string,
+  newStatus: LeadStatus
+): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
       .from("leads")
@@ -525,19 +528,29 @@ export async function updateLeadStatusInDb(id: string, newStatus: LeadStatus): P
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
+
     if (error) {
-      console.warn("Aviso ao atualizar status no Supabase:", error.message);
+      console.error("Erro ao salvar no Supabase:", error.message);
+      return { success: false, error: error.message };
     }
-  } catch (err) {
-    console.warn("Erro ao atualizar status do lead no Supabase:", err);
+    return { success: true };
+  } catch (err: any) {
+    console.error("Erro ao atualizar status do lead no Supabase:", err);
+    return { success: false, error: err?.message || String(err) };
   }
 }
 
-export async function deleteLeadInDb(id: string): Promise<void> {
+export async function deleteLeadInDb(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await supabase.from("leads").delete().eq("id", id);
-  } catch (err) {
-    console.warn("Erro ao excluir lead no Supabase:", err);
+    const { error } = await supabase.from("leads").delete().eq("id", id);
+    if (error) {
+      console.error("Erro ao excluir no Supabase:", error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("Erro ao excluir lead no Supabase:", err);
+    return { success: false, error: err?.message || String(err) };
   }
 }
 

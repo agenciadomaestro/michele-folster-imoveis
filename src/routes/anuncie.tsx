@@ -113,11 +113,14 @@ function AnunciePage() {
         cidade_bairro: cidadeBairro.trim() || "Caçapava-SP",
         valor_pretendido: valorPretendido ? Number(valorPretendido.replace(/\D/g, "")) : null,
         foto_imovel_url: photoUrl,
-        corretor_atribuido_id: "corretor-michele", // Atribuição inicial padrão para a Michele
+        corretor_atribuido_id: "c011e701-0001-4000-8000-000000000001", // Atribuição inicial para Michele Folster
         corretor_nome: "Michele Folster",
       });
-    } catch (err) {
-      console.warn("Erro ao registrar captação:", err);
+    } catch (err: any) {
+      console.error("Erro ao salvar captação no Supabase:", err);
+      toast.error(`Falha ao registrar captação: ${err?.message || err}`);
+      setSubmitting(false);
+      return;
     }
 
     setSubmitting(false);

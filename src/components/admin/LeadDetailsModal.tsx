@@ -79,16 +79,25 @@ export function LeadDetailsModal({
     };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from("leads")
         .update({
           status: updated.status,
           notes: updated.notes || null,
           broker_id: updated.broker_id || null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", updated.id);
-    } catch (err) {
-      console.warn("Aviso ao salvar lead no Supabase:", err);
+
+      if (error) {
+        console.error("Erro ao salvar no Supabase:", error.message);
+        toast.error(`Falha ao salvar: ${error.message}`);
+        return;
+      }
+    } catch (err: any) {
+      console.error("Erro inesperado ao salvar lead no Supabase:", err);
+      toast.error(`Falha ao salvar: ${err?.message || err}`);
+      return;
     }
 
     onUpdate(updated);
@@ -117,14 +126,23 @@ export function LeadDetailsModal({
     };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from("leads")
         .update({
           notes: updated.notes ?? null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", updated.id);
-    } catch (err) {
-      console.warn("Aviso ao salvar nota no Supabase:", err);
+
+      if (error) {
+        console.error("Erro ao salvar no Supabase:", error.message);
+        toast.error(`Falha ao salvar: ${error.message}`);
+        return;
+      }
+    } catch (err: any) {
+      console.error("Erro inesperado ao salvar nota no Supabase:", err);
+      toast.error(`Falha ao salvar: ${err?.message || err}`);
+      return;
     }
 
     onUpdate(updated);

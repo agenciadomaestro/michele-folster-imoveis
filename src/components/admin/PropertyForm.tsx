@@ -620,38 +620,50 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
 
       // Persiste diretamente no banco de dados Supabase
       setProgressMessage("Salvando no banco de dados Supabase...");
-      try {
-        if (isEditing && propertyId) {
-          const { error: updateError } = await supabase
-            .from("properties")
-            .update(propertyPayload)
-            .eq("id", propertyId);
-          if (updateError) throw updateError;
+      if (isEditing && propertyId) {
+        const { error: updateError } = await supabase
+          .from("properties")
+          .update(propertyPayload)
+          .eq("id", propertyId);
 
-          await supabase.from("property_photos").delete().eq("property_id", propertyId);
-        } else {
-          const { data: newProp, error: insertError } = await supabase
-            .from("properties")
-            .insert({ ...propertyPayload, id: savedPropertyId })
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-          if (newProp?.id) {
-            savedPropertyId = newProp.id;
-          }
+        if (updateError) {
+          console.error("Erro ao salvar no Supabase:", updateError.message);
+          toast.error(`Falha ao salvar: ${updateError.message}`);
+          return;
         }
 
-        if (savedPropertyId && finalPhotoUrls.length > 0) {
-          const photoRecords = finalPhotoUrls.map((url, index) => ({
-            property_id: savedPropertyId,
-            url,
-            position: index,
-          }));
-          await supabase.from("property_photos").insert(photoRecords);
+        const { error: delPhotosError } = await supabase.from("property_photos").delete().eq("property_id", propertyId);
+        if (delPhotosError) {
+          console.warn("Aviso ao remover fotos antigas no Supabase:", delPhotosError.message);
         }
-      } catch (supabaseErr) {
-        console.warn("Aviso na sincronização do Supabase:", supabaseErr);
+      } else {
+        const { data: newProp, error: insertError } = await supabase
+          .from("properties")
+          .insert({ ...propertyPayload, id: savedPropertyId })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Erro ao salvar no Supabase:", insertError.message);
+          toast.error(`Falha ao cadastrar: ${insertError.message}`);
+          return;
+        }
+        if (newProp?.id) {
+          savedPropertyId = newProp.id;
+        }
+      }
+
+      if (savedPropertyId && finalPhotoUrls.length > 0) {
+        const photoRecords = finalPhotoUrls.map((url, index) => ({
+          property_id: savedPropertyId,
+          url,
+          position: index,
+        }));
+        const { error: photoInsertError } = await supabase.from("property_photos").insert(photoRecords);
+        if (photoInsertError) {
+          console.error("Erro ao vincular fotos no Supabase:", photoInsertError.message);
+          toast.error(`Imóvel salvo, mas falha ao vincular fotos: ${photoInsertError.message}`);
+        }
       }
 
       toast.success(

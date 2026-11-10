@@ -255,54 +255,86 @@ export async function saveMessageLead(payload: {
     updated_at: now,
   };
   // Persiste diretamente na tabela leads do Supabase
-  try {
-    await supabase.from("leads").insert({
-      id: newId,
-      name: payload.nome_cliente,
-      phone: payload.telefone_cliente,
-      email: payload.email_cliente ?? null,
-      message: payload.mensagem,
-      interest: payload.interesse,
-      consent: true,
-      property_id: payload.imovel_id ?? null,
-      property_code: payload.codigo_imovel ?? null,
-      source: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : "Site",
-      status: "novo",
-      broker_id: payload.corretor_atribuido_id === "c011e701-0001-4000-8000-000000000001" ? null : payload.corretor_atribuido_id ?? null,
-    });
-  } catch (err) {
-    console.warn("Aviso ao sincronizar novo lead no Supabase:", err);
+  const { error } = await supabase.from("leads").insert({
+    id: newId,
+    name: payload.nome_cliente,
+    phone: payload.telefone_cliente,
+    email: payload.email_cliente ?? null,
+    message: payload.mensagem,
+    interest: payload.interesse,
+    consent: true,
+    property_id: payload.imovel_id ?? null,
+    property_code: payload.codigo_imovel ?? null,
+    source: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : "Site",
+    status: "novo",
+    broker_id: payload.corretor_atribuido_id === "c011e701-0001-4000-8000-000000000001" ? null : payload.corretor_atribuido_id ?? null,
+  });
+
+  if (error) {
+    console.error("Erro ao salvar no Supabase:", error.message);
+    throw new Error(`Falha ao salvar no Supabase: ${error.message}`);
   }
 
   return newMessage;
 }
 
-export async function updateMessageStatus(id: string, newStatus: MessageStatus): Promise<void> {
+export async function updateMessageStatus(
+  id: string,
+  newStatus: MessageStatus
+): Promise<{ success: boolean; error?: string }> {
   const statusMap: Record<MessageStatus, string> = {
     pendente: "novo",
     em_atendimento: "em_atendimento",
     concluido: "fechado",
   };
   try {
-    await supabase.from("leads").update({ status: statusMap[newStatus] || "novo" }).eq("id", id);
-  } catch (err) {
-    console.warn("Aviso ao atualizar status da mensagem no Supabase:", err);
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: statusMap[newStatus] || "novo", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      console.error("Erro ao salvar no Supabase:", error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("Erro ao atualizar status da mensagem no Supabase:", err);
+    return { success: false, error: err?.message || String(err) };
   }
 }
 
-export async function assignMessageBroker(id: string, brokerId: string, brokerName: string): Promise<void> {
+export async function assignMessageBroker(
+  id: string,
+  brokerId: string,
+  brokerName: string
+): Promise<{ success: boolean; error?: string }> {
   try {
-    await supabase.from("leads").update({ broker_id: brokerId }).eq("id", id);
-  } catch (err) {
-    console.warn("Aviso ao atribuir corretor no Supabase:", err);
+    const { error } = await supabase
+      .from("leads")
+      .update({ broker_id: brokerId, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      console.error("Erro ao salvar no Supabase:", error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("Erro ao atribuir corretor no Supabase:", err);
+    return { success: false, error: err?.message || String(err) };
   }
 }
 
-export async function deleteLocalMessage(id: string): Promise<void> {
+export async function deleteLocalMessage(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await supabase.from("leads").delete().eq("id", id);
-  } catch (err) {
-    console.warn("Aviso ao excluir mensagem no Supabase:", err);
+    const { error } = await supabase.from("leads").delete().eq("id", id);
+    if (error) {
+      console.error("Erro ao excluir no Supabase:", error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("Erro ao excluir mensagem no Supabase:", err);
+    return { success: false, error: err?.message || String(err) };
   }
 }
 

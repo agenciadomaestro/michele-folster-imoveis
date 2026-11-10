@@ -175,7 +175,12 @@ function LeadsManagementPage() {
     const newStatusCol = KANBAN_COLUMNS.find((c) => c.id === newStatus)?.title;
 
     // Persistência direta no Supabase DB
-    await updateLeadStatusInDb(leadId, newStatus);
+    const res = await updateLeadStatusInDb(leadId, newStatus);
+    if (!res.success) {
+      toast.error(`Falha ao salvar no Supabase: ${res.error}`);
+      return;
+    }
+
     queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
     toast.success(`Lead movido para "${newStatusCol}"`);
   };
@@ -212,7 +217,11 @@ function LeadsManagementPage() {
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    await deleteLeadInDb(leadId);
+    const res = await deleteLeadInDb(leadId);
+    if (!res.success) {
+      toast.error(`Falha ao excluir no Supabase: ${res.error}`);
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
     toast.success("Lead removido com sucesso.");
   };

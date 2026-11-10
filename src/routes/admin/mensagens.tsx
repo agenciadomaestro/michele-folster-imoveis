@@ -89,7 +89,11 @@ function AdminMessagesPage() {
   }, [queryClient]);
 
   const handleStatusChange = async (id: string, newStatus: MessageStatus) => {
-    await updateMessageStatus(id, newStatus);
+    const res = await updateMessageStatus(id, newStatus);
+    if (!res.success) {
+      toast.error(`Falha ao salvar no Supabase: ${res.error}`);
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
     toast.success(`Status da mensagem atualizado para "${newStatus.replace("_", " ")}".`);
   };
@@ -97,14 +101,22 @@ function AdminMessagesPage() {
   const handleBrokerAssign = async (id: string, brokerId: string) => {
     const broker = brokers.find((b) => b.id === brokerId);
     if (!broker) return;
-    await assignMessageBroker(id, broker.id, broker.name);
+    const res = await assignMessageBroker(id, broker.id, broker.name);
+    if (!res.success) {
+      toast.error(`Falha ao salvar no Supabase: ${res.error}`);
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
     toast.success(`Mensagem atribuída a ${broker.name}.`);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente remover esta mensagem da listagem?")) return;
-    await deleteLocalMessage(id);
+    const res = await deleteLocalMessage(id);
+    if (!res.success) {
+      toast.error(`Falha ao excluir no Supabase: ${res.error}`);
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
     toast.success("Mensagem removida com sucesso.");
   };

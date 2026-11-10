@@ -144,14 +144,19 @@ function AdminDashboard() {
         .from("properties")
         .update({ featured: nextFeatured, updated_at: new Date().toISOString() })
         .eq("id", property.id);
+
       if (error) {
-        console.warn("Aviso ao atualizar destaque no Supabase:", error.message);
+        console.error("Erro ao atualizar destaque no Supabase:", error.message);
+        toast.error(`Falha ao alterar destaque: ${error.message}`);
+        return;
       }
-    } catch (err) {
-      console.warn("Erro ao comunicar destaque no Supabase:", err);
+
+      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
+    } catch (err: any) {
+      console.error("Erro inesperado ao salvar destaque no Supabase:", err);
+      toast.error(`Falha inesperada ao alterar destaque: ${err?.message || err}`);
     }
-    queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
-    toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
   };
 
   // Alternar Status no Supabase (publicado / rascunho)
@@ -162,14 +167,19 @@ function AdminDashboard() {
         .from("properties")
         .update({ status: nextStatus, updated_at: new Date().toISOString() })
         .eq("id", property.id);
+
       if (error) {
-        console.warn("Aviso ao atualizar status no Supabase:", error.message);
+        console.error("Erro ao atualizar status no Supabase:", error.message);
+        toast.error(`Falha ao alterar status: ${error.message}`);
+        return;
       }
-    } catch (err) {
-      console.warn("Erro ao comunicar status no Supabase:", err);
+
+      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      toast.success(`Status alterado para "${nextStatus}".`);
+    } catch (err: any) {
+      console.error("Erro inesperado ao salvar status no Supabase:", err);
+      toast.error(`Falha inesperada ao alterar status: ${err?.message || err}`);
     }
-    queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
-    toast.success(`Status alterado para "${nextStatus}".`);
   };
 
   // Excluir Imóvel diretamente no Supabase DB e Storage
@@ -177,16 +187,24 @@ function AdminDashboard() {
     if (!confirm(`Deseja realmente excluir o imóvel "${propTitle}"?`)) return;
     try {
       // Deleta primeiro as fotos vinculadas para evitar conflitos de chave estrangeira
-      await supabase.from("property_photos").delete().eq("property_id", id);
+      const { error: photosError } = await supabase.from("property_photos").delete().eq("property_id", id);
+      if (photosError) {
+        console.warn("Aviso ao excluir fotos vinculadas no Supabase:", photosError.message);
+      }
+
       const { error } = await supabase.from("properties").delete().eq("id", id);
       if (error) {
-        console.warn("Aviso ao excluir imóvel no Supabase:", error.message);
+        console.error("Erro ao excluir imóvel no Supabase:", error.message);
+        toast.error(`Falha ao excluir imóvel: ${error.message}`);
+        return;
       }
-    } catch (err) {
-      console.warn("Erro ao excluir imóvel no Supabase:", err);
+
+      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      toast.success("Imóvel removido com sucesso.");
+    } catch (err: any) {
+      console.error("Erro inesperado ao excluir imóvel no Supabase:", err);
+      toast.error(`Falha inesperada ao excluir imóvel: ${err?.message || err}`);
     }
-    queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
-    toast.success("Imóvel removido com sucesso.");
   };
 
   const filteredProperties = visibleProperties.filter((item) => {
