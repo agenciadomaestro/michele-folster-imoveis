@@ -42,7 +42,7 @@ export const SUPER_ADMIN_USER: Broker = {
 
 export const INITIAL_BROKERS: Broker[] = [
   {
-    id: "corretor-michele",
+    id: "c011e701-0001-4000-8000-000000000001",
     name: "Michele Folster",
     email: "michele@michelefolster.com.br",
     phone: "(12) 98146-7549",
@@ -59,7 +59,7 @@ export const INITIAL_BROKERS: Broker[] = [
     created_at: "2026-01-10T10:00:00.000Z",
   },
   {
-    id: "corretor-marcos",
+    id: "c011e701-0002-4000-8000-000000000002",
     name: "Marcos Vinicius",
     email: "marcos@michelefolster.com.br",
     phone: "(12) 99123-8877",
@@ -76,7 +76,7 @@ export const INITIAL_BROKERS: Broker[] = [
     created_at: "2026-02-15T14:30:00.000Z",
   },
   {
-    id: "corretor-patricia",
+    id: "c011e701-0003-4000-8000-000000000003",
     name: "Patrícia Lima",
     email: "patricia@michelefolster.com.br",
     phone: "(12) 98845-6622",
@@ -414,7 +414,7 @@ export async function getCurrentUserProfile(): Promise<{
     (storedUser && storedUser.email?.includes("michele"))
   ) {
     return {
-      id: authUser?.id || "corretor-michele",
+      id: authUser?.id || "c011e701-0001-4000-8000-000000000001",
       name: "Michele Folster",
       email: authUser?.email || "michele@michelefolster.com.br",
       role: "admin",
@@ -431,8 +431,35 @@ export async function getCurrentUserProfile(): Promise<{
   }
 
   // Corretor
-  const brokers = getLocalBrokers(false);
-  const matched = brokers.find((b) => b.email.toLowerCase() === email || b.id === authUser?.id);
+  let brokersList: Broker[] = INITIAL_BROKERS;
+  try {
+    const { data: dbProfiles } = await supabase.from("profiles").select("*");
+    if (dbProfiles && dbProfiles.length > 0) {
+      brokersList = dbProfiles.map((p) => {
+        const isMichele = Boolean(
+          p.id === "c011e701-0001-4000-8000-000000000001" ||
+          p.full_name?.toLowerCase().includes("michele")
+        );
+        return {
+          id: p.id,
+          name: p.full_name || "Corretor",
+          email: `${p.full_name?.toLowerCase().replace(/\s+/g, "") || "corretor"}@michelefolster.com.br`,
+          phone: p.phone || "(12) 98146-7549",
+          creci: p.creci || "Sem CRECI",
+          role: isMichele ? "admin" : "corretor",
+          active: p.active ?? true,
+          permissions: {
+            pode_cadastrar_imovel: true,
+            pode_ver_ofertas_gerais: isMichele,
+            pode_ver_captacoes: isMichele,
+          },
+          created_at: p.created_at || new Date().toISOString(),
+        };
+      });
+    }
+  } catch {}
+
+  const matched = brokersList.find((b) => b.email.toLowerCase() === email || b.id === authUser?.id);
 
   if (matched) {
     return {

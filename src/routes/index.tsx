@@ -21,7 +21,6 @@ import { SearchBox } from "@/components/site/SearchBox";
 import { PropertyCard, CardSkeleton } from "@/components/site/PropertyCard";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENCY, getWhatsappUrl, type Property } from "@/lib/realty";
-import { mergeWithLocalProperties } from "@/lib/localProperties";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -82,14 +81,14 @@ function Index() {
         console.warn("Aviso ao carregar imóveis do Supabase:", err);
       }
 
-      const merged = mergeWithLocalProperties(supabaseItems).filter((p) => p.status === "publicado");
-      merged.sort((a, b) => {
+      const list = [...supabaseItems];
+      list.sort((a, b) => {
         if (a.featured && !b.featured) return -1;
         if (!a.featured && b.featured) return 1;
         return new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime();
       });
 
-      return merged.slice(0, 9);
+      return list.slice(0, 9);
     },
   });
 

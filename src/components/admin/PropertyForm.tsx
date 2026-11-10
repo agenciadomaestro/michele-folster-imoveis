@@ -29,7 +29,6 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PROPERTY_TYPES, brl, type Property } from "@/lib/realty";
-import { saveLocalProperty, getLocalProperties } from "@/lib/localProperties";
 
 const DIFFERENTIALS = [
   "Piscina",
@@ -176,23 +175,21 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
     async function loadProperty() {
       setLoadingInitial(true);
       try {
-        // 1. Tenta carregar do armazenamento local
-        let prop = getLocalProperties().find((p) => p.id === currentId);
-
-        // 2. Se não encontrou localmente, busca no Supabase
-        if (!prop) {
-          try {
-            const { data } = await supabase
-              .from("properties")
-              .select("*, property_photos(id, url, position)")
-              .eq("id", currentId)
-              .single();
-            if (data) prop = data as Property;
-          } catch {}
+        // Busca o imóvel diretamente no Supabase
+        let prop: Property | null = null;
+        try {
+          const { data, error } = await supabase
+            .from("properties")
+            .select("*, property_photos(id, url, position)")
+            .eq("id", currentId)
+            .maybeSingle();
+          if (!error && data) prop = data as Property;
+        } catch (err) {
+          console.warn("Aviso ao buscar detalhes do imóvel no Supabase:", err);
         }
 
         if (!prop) {
-          toast.error("Não foi possível carregar os dados do imóvel.");
+          toast.error("Não foi possível carregar os dados do imóvel no Supabase.");
           navigate({ to: "/admin" });
           return;
         }
@@ -621,14 +618,16 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
         })),
       };
 
-      // 1. Salva imediatamente no armazenamento local persistente (garante que NUNCA seja perdido e apareça no site)
-      saveLocalProperty(fullProperty);
-
-      // 2. Tenta sincronizar com o banco de dados Supabase
-      setProgressMessage("Sincronizando com o banco de dados...");
+      // Persiste diretamente no banco de dados Supabase
+      setProgressMessage("Salvando no banco de dados Supabase...");
       try {
         if (isEditing && propertyId) {
-          await supabase.from("properties").update(propertyPayload).eq("id", propertyId);
+          const { error: updateError } = await supabase
+            .from("properties")
+            .update(propertyPayload)
+            .eq("id", propertyId);
+          if (updateError) throw updateError;
+
           await supabase.from("property_photos").delete().eq("property_id", propertyId);
         } else {
           const { data: newProp, error: insertError } = await supabase
@@ -637,10 +636,9 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
             .select()
             .single();
 
-          if (!insertError && newProp?.id) {
+          if (insertError) throw insertError;
+          if (newProp?.id) {
             savedPropertyId = newProp.id;
-            fullProperty.id = savedPropertyId;
-            saveLocalProperty(fullProperty);
           }
         }
 

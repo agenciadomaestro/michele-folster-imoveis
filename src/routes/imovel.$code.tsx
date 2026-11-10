@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { BedDouble, Bath, Car, Ruler, MapPin, Share2, X, ChevronLeft, ChevronRight, Check, ImageOff, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/site/SiteLayout";
@@ -8,7 +8,6 @@ import { PropertyCard } from "@/components/site/PropertyCard";
 import { LeadForm } from "@/components/site/LeadForm";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENCY, brl, priceLabel, PURPOSE_LABEL, getWhatsappUrl, type Property } from "@/lib/realty";
-import { mergeWithLocalProperties, getLocalProperties } from "@/lib/localProperties";
 
 export const Route = createFileRoute("/imovel/$code")({
   head: ({ params }) => ({
@@ -24,25 +23,39 @@ export const Route = createFileRoute("/imovel/$code")({
 
 function PropertyPage() {
   const { code } = Route.useParams();
+  const queryClient = useQueryClient();
   const [idx, setIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
+
+  // Sincronização Realtime do imóvel
+  useEffect(() => {
+    const channel = supabase
+      .channel(`property-detail-${code.toLowerCase()}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "properties" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["property", code] });
+          queryClient.invalidateQueries({ queryKey: ["related"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [code, queryClient]);
+
   const { data: p, isLoading } = useQuery({
     queryKey: ["property", code],
     queryFn: async () => {
-      // 1. Verifica se existe localmente
-      const local = getLocalProperties().find(
-        (item) => item.code?.toUpperCase() === code.toUpperCase()
-      );
-      if (local) return local;
-
-      // 2. Consulta no Supabase
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("properties")
           .select("*, property_photos(url, position)")
           .ilike("code", code)
           .maybeSingle();
-        if (data) return data as Property;
+        if (!error && data) return data as Property;
       } catch (err) {
         console.warn("Aviso ao buscar detalhes do imóvel no Supabase:", err);
       }
@@ -60,13 +73,10 @@ function PropertyPage() {
           .select("*, property_photos(url, position)")
           .eq("status", "publicado")
           .neq("id", p!.id)
-          .limit(6);
+          .limit(3);
         if (data) supabaseItems = data as Property[];
       } catch {}
-      const merged = mergeWithLocalProperties(supabaseItems).filter(
-        (item) => item.id !== p!.id && item.status === "publicado"
-      );
-      return merged.slice(0, 3);
+      return supabaseItems;
     },
   });
 

@@ -5,7 +5,6 @@ import { Search, Hash, SlidersHorizontal, Sparkles, MapPin, Home, BedDouble, Dol
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchLocations, parseTextQuery, PROPERTY_TYPES } from "@/lib/realty";
-import { getLocalProperties } from "@/lib/localProperties";
 
 type Mode = "filtros" | "codigo" | "texto";
 
@@ -24,16 +23,7 @@ export function SearchBox() {
       return;
     }
 
-    // 1. Verifica no armazenamento local
-    const local = getLocalProperties().find(
-      (p) => p.code?.toUpperCase() === c && p.status === "publicado"
-    );
-    if (local) {
-      navigate({ to: "/imovel/$code", params: { code: local.code } });
-      return;
-    }
-
-    // 2. Consulta no Supabase
+    // Consulta direta no Supabase
     try {
       const { data } = await supabase
         .from("properties")

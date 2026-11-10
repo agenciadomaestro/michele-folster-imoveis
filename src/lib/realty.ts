@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { mergeWithLocalProperties } from "./localProperties";
 
 export type Property = Database["public"]["Tables"]["properties"]["Row"] & {
   property_photos?: { url: string; position: number }[];
@@ -145,11 +144,11 @@ export async function searchProperties(f: SearchFilters) {
     console.warn("Aviso ao buscar propriedades do Supabase:", err);
   }
 
-  // Mescla imóveis do Supabase com imóveis cadastrados localmente
-  const allMerged = mergeWithLocalProperties(supabaseItems).filter((p) => p.status === "publicado");
+  // Imóveis ativos diretamente do banco de dados Supabase
+  const allProperties = supabaseItems.filter((p) => p.status === "publicado");
 
-  // Aplica filtros sobre a lista mesclada completa
-  let filtered = allMerged;
+  // Aplica filtros sobre a lista completa do Supabase
+  let filtered = allProperties;
 
   if (f.code) {
     const codeTerm = f.code.trim().toUpperCase();
@@ -242,9 +241,9 @@ export async function fetchLocations() {
     console.warn("Aviso ao buscar localidades:", err);
   }
 
-  const allMerged = mergeWithLocalProperties(supabaseItems).filter((p) => p.status === "publicado");
-  const cities = Array.from(new Set(allMerged.map((d) => d.city).filter(Boolean) as string[])).sort();
-  const neighborhoods = Array.from(new Set(allMerged.map((d) => d.neighborhood).filter(Boolean) as string[])).sort();
+  const allProperties = supabaseItems.filter((p) => p.status === "publicado");
+  const cities = Array.from(new Set(allProperties.map((d) => d.city).filter(Boolean) as string[])).sort();
+  const neighborhoods = Array.from(new Set(allProperties.map((d) => d.neighborhood).filter(Boolean) as string[])).sort();
   return { cities, neighborhoods };
 }
 

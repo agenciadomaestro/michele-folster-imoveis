@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import {
   MessageSquare,
@@ -26,13 +26,13 @@ import {
   type MessageLead,
   type MessageStatus,
   type MessageType,
-  getLocalMessages,
+  fetchMessages,
   updateMessageStatus,
   assignMessageBroker,
   deleteLocalMessage,
   buildClientWhatsappReplyUrl,
 } from "@/lib/messages";
-import { getLocalBrokers, getCurrentUserProfile } from "@/lib/brokers";
+import { fetchBrokers, getCurrentUserProfile } from "@/lib/brokers";
 import { brl } from "@/lib/realty";
 
 export const Route = createFileRoute("/admin/mensagens")({
@@ -46,11 +46,11 @@ export const Route = createFileRoute("/admin/mensagens")({
 });
 
 function AdminMessagesPage() {
+  const queryClient = useQueryClient();
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterBroker, setFilterBroker] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [messagesList, setMessagesList] = useState<MessageLead[]>(() => getLocalMessages());
 
   // Perfil do usuário atual
   const { data: currentUser } = useQuery({
@@ -58,11 +58,17 @@ function AdminMessagesPage() {
     queryFn: getCurrentUserProfile,
   });
 
-  const brokers = useMemo(() => getLocalBrokers(false), []);
+  // Lista de mensagens do Supabase
+  const { data: messagesList = [] } = useQuery({
+    queryKey: ["admin", "messages-leads-list"],
+    queryFn: fetchMessages,
+  });
 
-  const refreshMessages = () => {
-    setMessagesList(getLocalMessages());
-  };
+  // Lista de corretores do Supabase
+  const { data: brokers = [] } = useQuery({
+    queryKey: ["admin", "brokers-list"],
+    queryFn: () => fetchBrokers(false),
+  });
 
   // Sincronização em tempo real para novas mensagens e leads
   useEffect(() => {
@@ -72,7 +78,7 @@ function AdminMessagesPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "leads" },
         () => {
-          refreshMessages();
+          queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
         }
       )
       .subscribe();
@@ -80,26 +86,26 @@ function AdminMessagesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [queryClient]);
 
-  const handleStatusChange = (id: string, newStatus: MessageStatus) => {
-    updateMessageStatus(id, newStatus);
-    refreshMessages();
+  const handleStatusChange = async (id: string, newStatus: MessageStatus) => {
+    await updateMessageStatus(id, newStatus);
+    queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
     toast.success(`Status da mensagem atualizado para "${newStatus.replace("_", " ")}".`);
   };
 
-  const handleBrokerAssign = (id: string, brokerId: string) => {
+  const handleBrokerAssign = async (id: string, brokerId: string) => {
     const broker = brokers.find((b) => b.id === brokerId);
     if (!broker) return;
-    assignMessageBroker(id, broker.id, broker.name);
-    refreshMessages();
+    await assignMessageBroker(id, broker.id, broker.name);
+    queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
     toast.success(`Mensagem atribuída a ${broker.name}.`);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente remover esta mensagem da listagem?")) return;
-    deleteLocalMessage(id);
-    refreshMessages();
+    await deleteLocalMessage(id);
+    queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
     toast.success("Mensagem removida com sucesso.");
   };
 

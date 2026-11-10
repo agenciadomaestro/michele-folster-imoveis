@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import {
   Users,
@@ -38,16 +38,13 @@ import {
   fetchLeads,
   updateLeadStatusInDb,
   deleteLeadInDb,
-  mergeWithLocalLeads,
-  saveLocalLead,
-  deleteLocalLead,
   buildWhatsappChatUrl,
 } from "@/lib/leads";
 import { KanbanCard } from "@/components/admin/KanbanCard";
 import { LeadDetailsModal } from "@/components/admin/LeadDetailsModal";
 import { brl } from "@/lib/realty";
 
-import { getCurrentUserProfile, fetchBrokers, getLocalBrokers } from "@/lib/brokers";
+import { getCurrentUserProfile, fetchBrokers } from "@/lib/brokers";
 
 export const Route = createFileRoute("/admin/leads")({
   head: () => ({
@@ -61,6 +58,7 @@ export const Route = createFileRoute("/admin/leads")({
 
 function LeadsManagementPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // State
   const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
@@ -99,8 +97,8 @@ function LeadsManagementPage() {
     },
   });
 
-  // 3. Query Leads from Supabase + Local persistence
-  const { data: allLeads = [], refetch: refetchLeads } = useQuery({
+  // 3. Query Leads from Supabase
+  const { data: allLeads = [] } = useQuery({
     queryKey: ["admin", "leads-crm-list"],
     queryFn: fetchLeads,
   });
@@ -113,7 +111,7 @@ function LeadsManagementPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "leads" },
         () => {
-          refetchLeads();
+          queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
         }
       )
       .subscribe();
@@ -121,7 +119,7 @@ function LeadsManagementPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetchLeads]);
+  }, [queryClient]);
 
   // 4. Access Control Filter (RBAC)
   // Admins see all leads (or filter by broker); Standard brokers see ONLY their assigned leads
@@ -174,30 +172,11 @@ function LeadsManagementPage() {
     const targetLead = allLeads.find((l) => l.id === leadId);
     if (!targetLead || targetLead.status === newStatus) return;
 
-    const oldStatusCol = KANBAN_COLUMNS.find((c) => c.id === targetLead.status)?.title;
     const newStatusCol = KANBAN_COLUMNS.find((c) => c.id === newStatus)?.title;
-
-    const statusChangeActivity = {
-      id: `act-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      author_name: currentUserName,
-      type: "status_change" as const,
-      content: `Etapa alterada de "${oldStatusCol}" para "${newStatusCol}".`,
-    };
-
-    const updatedLead: Lead = {
-      ...targetLead,
-      status: newStatus,
-      timeline: [statusChangeActivity, ...(targetLead.timeline || [])],
-      updated_at: new Date().toISOString(),
-    };
-
-    saveLocalLead(updatedLead);
 
     // Persistência direta no Supabase DB
     await updateLeadStatusInDb(leadId, newStatus);
-
-    refetchLeads();
+    queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
     toast.success(`Lead movido para "${newStatusCol}"`);
   };
 
@@ -228,13 +207,13 @@ function LeadsManagementPage() {
   };
 
   const handleLeadUpdated = (updated: Lead) => {
-    refetchLeads();
+    queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
     setSelectedLead(updated);
   };
 
   const handleDeleteLead = async (leadId: string) => {
     await deleteLeadInDb(leadId);
-    refetchLeads();
+    queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
     toast.success("Lead removido com sucesso.");
   };
 

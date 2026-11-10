@@ -74,7 +74,7 @@ function AuthPage() {
       (password === "michele123" || password === "agb0511")
     ) {
       const adminUser = {
-        id: "corretor-michele",
+        id: "c011e701-0001-4000-8000-000000000001",
         email: "michele@michelefolster.com.br",
         role: "admin",
         user_metadata: { full_name: "Michele Folster" },
@@ -96,7 +96,7 @@ function AuthPage() {
       (password === "marcos123" || password === "agb0511")
     ) {
       const brokerUser = {
-        id: "corretor-marcos",
+        id: "c011e701-0002-4000-8000-000000000002",
         email: "marcos@michelefolster.com.br",
         role: "corretor",
         user_metadata: { full_name: "Marcos Vinicius" },
@@ -117,7 +117,7 @@ function AuthPage() {
       (password === "patricia123" || password === "agb0511")
     ) {
       const brokerUser = {
-        id: "corretor-patricia",
+        id: "c011e701-0003-4000-8000-000000000003",
         email: "patricia@michelefolster.com.br",
         role: "corretor",
         user_metadata: { full_name: "Patrícia Lima" },

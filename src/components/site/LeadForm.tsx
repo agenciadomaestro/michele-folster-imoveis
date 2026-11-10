@@ -3,7 +3,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { saveLocalLead, type Lead } from "@/lib/leads";
+import { type Lead } from "@/lib/leads";
 import { saveMessageLead } from "@/lib/messages";
 
 const schema = z.object({
@@ -86,39 +86,7 @@ export function LeadForm({
       console.warn("Aviso ao registrar mensagem do lead:", err);
     }
 
-    // 2. Salva localmente para refletir de imediato no CRM Kanban
-    const newLeadObj: Lead = {
-      id: localLeadId,
-      name: v.name,
-      phone: v.phone,
-      email: v.email || null,
-      message: v.message || null,
-      interest: v.interest,
-      consent: true,
-      property_id: propertyId ?? null,
-      property_code: propertyCode ?? null,
-      property_title: propertyTitle ?? null,
-      source: source || "Site",
-      source_page: typeof window !== "undefined" ? window.location.pathname : null,
-      status: "novo",
-      temperature: "quente",
-      transaction_type: v.interest.toLowerCase().includes("alugar") ? "alugar" : "comprar",
-      broker_id: brokerId ?? null,
-      timeline: [
-        {
-          id: `act-${Date.now()}`,
-          created_at: new Date().toISOString(),
-          author_name: "Sistema (Site)",
-          type: "contact",
-          content: `Mensagem enviada pelo cliente através de ${source || "Site"}. Assunto: ${v.interest}.`,
-        },
-      ],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    saveLocalLead(newLeadObj);
-
-    // 3. Tenta salvar na tabela leads do Supabase
+    // 2. Salva diretamente na tabela leads do Supabase DB
     try {
       await supabase.from("leads").insert({
         id: localLeadId,
@@ -130,10 +98,14 @@ export function LeadForm({
         consent: true,
         property_id: propertyId ?? null,
         property_code: propertyCode ?? null,
-        source,
+        source: source || "Site",
         source_page: typeof window !== "undefined" ? window.location.pathname : null,
+        status: "novo",
+        broker_id: brokerId ?? null,
       });
-    } catch {}
+    } catch (err) {
+      console.warn("Aviso ao salvar lead no Supabase:", err);
+    }
 
     setSending(false);
     setDone(true);

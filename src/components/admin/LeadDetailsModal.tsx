@@ -29,7 +29,6 @@ import {
   KANBAN_COLUMNS,
   TEMPERATURE_CONFIG,
   buildWhatsappChatUrl,
-  saveLocalLead,
 } from "@/lib/leads";
 import { brl } from "@/lib/realty";
 
@@ -79,7 +78,6 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    saveLocalLead(updated);
     try {
       await supabase
         .from("leads")
@@ -118,7 +116,6 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    saveLocalLead(updated);
     try {
       await supabase
         .from("leads")

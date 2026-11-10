@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Users,
   Shield,
@@ -23,7 +24,6 @@ import {
   type Broker,
   type BrokerPermissions,
   fetchBrokers,
-  getLocalBrokers,
   saveBrokerDirect,
   updateBrokerPermissions,
   updateBrokerStatus,
@@ -45,7 +45,8 @@ export function BrokerManagementModal({
   properties = [],
   onBrokersUpdated,
 }: BrokerManagementModalProps) {
-  const [brokers, setBrokers] = useState<Broker[]>(() => getLocalBrokers(false));
+  const queryClient = useQueryClient();
+  const [brokers, setBrokers] = useState<Broker[]>([]);
   const [selectedBroker, setSelectedBroker] = useState<Broker | null>(null);
   const [isEditingPermissions, setIsEditingPermissions] = useState(false);
   const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
@@ -66,6 +67,8 @@ export function BrokerManagementModal({
         async () => {
           const updatedList = await fetchBrokers(false);
           setBrokers(updatedList);
+          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] });
           if (onBrokersUpdated) onBrokersUpdated();
         }
       )
@@ -74,7 +77,7 @@ export function BrokerManagementModal({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isOpen]);
+  }, [isOpen, queryClient]);
 
   // Estado para exclusão e reatribuição de corretor
   const [brokerToDelete, setBrokerToDelete] = useState<Broker | null>(null);
@@ -93,6 +96,8 @@ export function BrokerManagementModal({
   const refreshList = async () => {
     const list = await fetchBrokers(false);
     setBrokers(list);
+    queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
+    queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] });
     if (onBrokersUpdated) onBrokersUpdated();
   };
 
@@ -142,7 +147,11 @@ export function BrokerManagementModal({
       return;
     }
 
-    const newBrokerId = `corretor-${Date.now()}`;
+    const newBrokerId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `c011e701-9999-4000-8000-${Date.now().toString().slice(-12).padStart(12, "0")}`;
+
     const newBroker: Broker = {
       id: newBrokerId,
       name: formName.trim(),

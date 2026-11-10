@@ -26,9 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
 import { toast } from "sonner";
 import { priceLabel, type Property } from "@/lib/realty";
-import { mergeWithLocalProperties, saveLocalProperty, deleteLocalProperty } from "@/lib/localProperties";
 import { getCurrentUserProfile, fetchBrokers } from "@/lib/brokers";
-import { getLocalMessages } from "@/lib/messages";
+import { fetchMessages } from "@/lib/messages";
 import { fetchLeads } from "@/lib/leads";
 import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal";
 
@@ -49,34 +48,33 @@ function AdminDashboard() {
   const [isBrokersModalOpen, setIsBrokersModalOpen] = useState(false);
 
   // 1. Perfil do Usuário Autenticado e Permissões Granulares (RBAC)
-  const { data: userProfile, refetch: refetchUser } = useQuery({
+  const { data: userProfile } = useQuery({
     queryKey: ["admin", "current-user-profile"],
     queryFn: getCurrentUserProfile,
   });
 
   // 2. Query de Corretores da Imobiliária (persistidos no Supabase profiles)
-  const { data: brokers = [], refetch: refetchBrokers } = useQuery({
+  const { data: brokers = [] } = useQuery({
     queryKey: ["admin", "brokers-list"],
     queryFn: async () => fetchBrokers(false),
   });
 
-  // 3. Query de Mensagens & Contatos Recentes
-  const { data: messages = [], refetch: refetchMessages } = useQuery({
+  // 3. Query de Mensagens & Contatos Recentes do Supabase
+  const { data: messages = [] } = useQuery({
     queryKey: ["admin", "messages-leads-list"],
-    queryFn: async () => getLocalMessages(),
+    queryFn: fetchMessages,
   });
 
   // 4. Query de Leads do CRM Kanban (persistidos no Supabase leads)
-  const { data: leads = [], refetch: refetchLeads } = useQuery({
+  const { data: leads = [] } = useQuery({
     queryKey: ["admin", "crm-leads-list"],
-    queryFn: async () => fetchLeads(),
+    queryFn: fetchLeads,
   });
 
   // 5. Query de Imóveis com Suporte a Permissão Granular (pode_ver_ofertas_gerais)
   const {
     data: rawProperties = [],
     isLoading: loadingProps,
-    refetch: refetchProps,
   } = useQuery({
     queryKey: ["admin", "properties-list"],
     queryFn: async () => {
@@ -90,12 +88,7 @@ function AdminDashboard() {
       } catch (err) {
         console.warn("Aviso ao buscar lista de imóveis:", err);
       }
-      const merged = mergeWithLocalProperties(supabaseItems);
-      merged.sort(
-        (a, b) =>
-          new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
-      );
-      return merged;
+      return supabaseItems;
     },
   });
 
@@ -107,23 +100,23 @@ function AdminDashboard() {
         "postgres_changes",
         { event: "*", schema: "public", table: "properties" },
         () => {
-          refetchProps();
+          queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "profiles" },
         () => {
-          refetchBrokers();
-          refetchUser();
+          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "current-user-profile"] });
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "leads" },
         () => {
-          refetchLeads();
-          refetchMessages();
+          queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
         }
       )
       .subscribe();
@@ -131,7 +124,7 @@ function AdminDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetchProps, refetchBrokers, refetchUser, refetchLeads, refetchMessages]);
+  }, [queryClient]);
 
   // Filtragem de Imóveis conforme regras de acesso do Corretor
   const visibleProperties = rawProperties.filter((item) => {
@@ -146,7 +139,6 @@ function AdminDashboard() {
   // Alternar Destaque no Supabase com sincronização imediata
   const handleToggleFeatured = async (property: Property) => {
     const nextFeatured = !property.featured;
-    saveLocalProperty({ ...property, featured: nextFeatured });
     try {
       const { error } = await supabase
         .from("properties")
@@ -158,14 +150,13 @@ function AdminDashboard() {
     } catch (err) {
       console.warn("Erro ao comunicar destaque no Supabase:", err);
     }
+    queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
     toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
-    refetchProps();
   };
 
   // Alternar Status no Supabase (publicado / rascunho)
   const handleToggleStatus = async (property: Property) => {
     const nextStatus = property.status === "publicado" ? "rascunho" : "publicado";
-    saveLocalProperty({ ...property, status: nextStatus });
     try {
       const { error } = await supabase
         .from("properties")
@@ -177,14 +168,13 @@ function AdminDashboard() {
     } catch (err) {
       console.warn("Erro ao comunicar status no Supabase:", err);
     }
+    queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
     toast.success(`Status alterado para "${nextStatus}".`);
-    refetchProps();
   };
 
   // Excluir Imóvel diretamente no Supabase DB e Storage
   const handleDeleteProperty = async (id: string, propTitle: string) => {
     if (!confirm(`Deseja realmente excluir o imóvel "${propTitle}"?`)) return;
-    deleteLocalProperty(id);
     try {
       // Deleta primeiro as fotos vinculadas para evitar conflitos de chave estrangeira
       await supabase.from("property_photos").delete().eq("property_id", id);
@@ -195,8 +185,8 @@ function AdminDashboard() {
     } catch (err) {
       console.warn("Erro ao excluir imóvel no Supabase:", err);
     }
+    queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
     toast.success("Imóvel removido com sucesso.");
-    refetchProps();
   };
 
   const filteredProperties = visibleProperties.filter((item) => {
@@ -661,8 +651,8 @@ function AdminDashboard() {
         onClose={() => setIsBrokersModalOpen(false)}
         properties={rawProperties}
         onBrokersUpdated={() => {
-          refetchBrokers();
-          refetchUser();
+          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "current-user-profile"] });
         }}
       />
     </div>

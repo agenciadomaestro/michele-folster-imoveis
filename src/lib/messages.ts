@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { saveLocalLead, type Lead } from "./leads";
+import { type Lead } from "./leads";
 
 export type MessageType = "imovel" | "captacao" | "geral";
 export type MessageStatus = "pendente" | "em_atendimento" | "concluido";
@@ -103,18 +103,66 @@ export const INITIAL_MESSAGES: MessageLead[] = [
 
 const LOCAL_STORAGE_MESSAGES_KEY = "app_messages_leads";
 
-export function getLocalMessages(): MessageLead[] {
-  if (typeof window === "undefined") return INITIAL_MESSAGES;
+export async function fetchMessages(): Promise<MessageLead[]> {
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_MESSAGES_KEY);
-    if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify(INITIAL_MESSAGES));
-      return INITIAL_MESSAGES;
+    const { data: dbLeads, error } = await supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!error && dbLeads && dbLeads.length > 0) {
+      return dbLeads.map((l: any) => {
+        const isCaptacao =
+          l.source === "Anuncie Seu Imóvel" ||
+          l.interest?.toLowerCase().includes("anunciar");
+        const isImovel = Boolean(l.property_code);
+        const tipo: MessageType = isCaptacao ? "captacao" : isImovel ? "imovel" : "geral";
+
+        const statusMap: Record<string, MessageStatus> = {
+          novo: "pendente",
+          em_contato: "em_atendimento",
+          em_atendimento: "em_atendimento",
+          visita_agendada: "em_atendimento",
+          proposta: "em_atendimento",
+          em_negociacao: "em_atendimento",
+          fechado: "concluido",
+          perdido: "concluido",
+        };
+        const status: MessageStatus = statusMap[l.status] || "pendente";
+
+        return {
+          id: l.id,
+          tipo,
+          nome_cliente: l.name,
+          telefone_cliente: l.phone,
+          email_cliente: l.email || null,
+          interesse: l.interest || "Atendimento",
+          mensagem: l.message || "Solicitação recebida pelo site.",
+          imovel_id: l.property_id || null,
+          codigo_imovel: l.property_code || null,
+          titulo_imovel: l.property_title || null,
+          corretor_atribuido_id: l.broker_id || null,
+          corretor_nome: l.broker_name || null,
+          status,
+          tipo_imovel: null,
+          cidade_bairro: null,
+          valor_pretendido: null,
+          foto_imovel_url: null,
+          dados_cliente: {},
+          data_envio: l.created_at || new Date().toISOString(),
+          created_at: l.created_at || new Date().toISOString(),
+        };
+      });
     }
-    return JSON.parse(raw);
-  } catch {
-    return INITIAL_MESSAGES;
+  } catch (err) {
+    console.warn("Aviso ao buscar mensagens no Supabase:", err);
   }
+
+  return INITIAL_MESSAGES;
+}
+
+export function getLocalMessages(): MessageLead[] {
+  return INITIAL_MESSAGES;
 }
 
 export async function saveMessageLead(payload: {
@@ -206,46 +254,21 @@ export async function saveMessageLead(payload: {
     created_at: now,
     updated_at: now,
   };
-  saveLocalLead(newLeadObj);
-
-  // 3. Tenta salvar na tabela messages_leads e leads do Supabase
-  try {
-    await supabase.from("messages_leads" as any).insert({
-      id: newId,
-      tipo: payload.tipo,
-      nome_cliente: payload.nome_cliente,
-      telefone_cliente: payload.telefone_cliente,
-      email_cliente: payload.email_cliente ?? null,
-      interesse: payload.interesse,
-      mensagem: payload.mensagem,
-      imovel_id: payload.imovel_id ?? null,
-      codigo_imovel: payload.codigo_imovel ?? null,
-      titulo_imovel: payload.titulo_imovel ?? null,
-      corretor_atribuido_id: payload.corretor_atribuido_id ?? null,
-      status: "pendente",
-      tipo_imovel: payload.tipo_imovel ?? null,
-      cidade_bairro: payload.cidade_bairro ?? null,
-      valor_pretendido: payload.valor_pretendido ? Number(payload.valor_pretendido) : null,
-      foto_imovel_url: payload.foto_imovel_url ?? null,
-      dados_cliente: payload.dados_cliente ?? {},
-      data_envio: now,
-    });
-  } catch (err) {
-    console.warn("Aviso ao sincronizar messages_leads no Supabase:", err);
-  }
-
+  // Persiste diretamente na tabela leads do Supabase
   try {
     await supabase.from("leads").insert({
+      id: newId,
       name: payload.nome_cliente,
       phone: payload.telefone_cliente,
       email: payload.email_cliente ?? null,
       message: payload.mensagem,
       interest: payload.interesse,
       consent: true,
+      property_id: payload.imovel_id ?? null,
       property_code: payload.codigo_imovel ?? null,
       source: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : "Site",
       status: "novo",
-      broker_id: payload.corretor_atribuido_id === "corretor-michele" ? null : payload.corretor_atribuido_id ?? null,
+      broker_id: payload.corretor_atribuido_id === "c011e701-0001-4000-8000-000000000001" ? null : payload.corretor_atribuido_id ?? null,
     });
   } catch (err) {
     console.warn("Aviso ao sincronizar novo lead no Supabase:", err);
@@ -254,57 +277,33 @@ export async function saveMessageLead(payload: {
   return newMessage;
 }
 
-export function updateMessageStatus(id: string, newStatus: MessageStatus): void {
-  if (typeof window !== "undefined") {
-    try {
-      const current = getLocalMessages();
-      const updated = current.map((m) => (m.id === id ? { ...m, status: newStatus } : m));
-      localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify(updated));
-    } catch {}
+export async function updateMessageStatus(id: string, newStatus: MessageStatus): Promise<void> {
+  const statusMap: Record<MessageStatus, string> = {
+    pendente: "novo",
+    em_atendimento: "em_atendimento",
+    concluido: "fechado",
+  };
+  try {
+    await supabase.from("leads").update({ status: statusMap[newStatus] || "novo" }).eq("id", id);
+  } catch (err) {
+    console.warn("Aviso ao atualizar status da mensagem no Supabase:", err);
   }
-
-  Promise.resolve(
-    supabase
-      .from("messages_leads" as any)
-      .update({ status: newStatus })
-      .eq("id", id)
-  ).catch(() => {});
 }
 
-export function assignMessageBroker(id: string, brokerId: string, brokerName: string): void {
-  if (typeof window !== "undefined") {
-    try {
-      const current = getLocalMessages();
-      const updated = current.map((m) =>
-        m.id === id ? { ...m, corretor_atribuido_id: brokerId, corretor_nome: brokerName } : m
-      );
-      localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify(updated));
-    } catch {}
+export async function assignMessageBroker(id: string, brokerId: string, brokerName: string): Promise<void> {
+  try {
+    await supabase.from("leads").update({ broker_id: brokerId }).eq("id", id);
+  } catch (err) {
+    console.warn("Aviso ao atribuir corretor no Supabase:", err);
   }
-
-  Promise.resolve(
-    supabase
-      .from("messages_leads" as any)
-      .update({ corretor_atribuido_id: brokerId })
-      .eq("id", id)
-  ).catch(() => {});
 }
 
-export function deleteLocalMessage(id: string): void {
-  if (typeof window !== "undefined") {
-    try {
-      const current = getLocalMessages();
-      const filtered = current.filter((m) => m.id !== id);
-      localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify(filtered));
-    } catch {}
+export async function deleteLocalMessage(id: string): Promise<void> {
+  try {
+    await supabase.from("leads").delete().eq("id", id);
+  } catch (err) {
+    console.warn("Aviso ao excluir mensagem no Supabase:", err);
   }
-
-  Promise.resolve(
-    supabase
-      .from("messages_leads" as any)
-      .delete()
-      .eq("id", id)
-  ).catch(() => {});
 }
 
 /**

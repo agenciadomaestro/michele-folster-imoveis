@@ -6,12 +6,10 @@ import { Logo } from "@/components/site/SiteLayout";
 import {
   type Broker,
   type BrokerPermissions,
-  getLocalBrokers,
   updateBrokerPermissions,
   updateBrokerStatus,
 } from "@/lib/brokers";
 import { supabase } from "@/integrations/supabase/client";
-import { mergeWithLocalProperties } from "@/lib/localProperties";
 import { Property } from "@/lib/realty";
 import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal";
 
@@ -36,7 +34,7 @@ function AdminBrokersPage() {
         const { data } = await supabase.from("properties").select("*");
         if (data) supabaseItems = data as Property[];
       } catch {}
-      return mergeWithLocalProperties(supabaseItems);
+      return supabaseItems;
     },
   });
 

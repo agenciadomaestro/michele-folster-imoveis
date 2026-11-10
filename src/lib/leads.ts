@@ -445,7 +445,32 @@ export async function fetchLeads(): Promise<Lead[]> {
       .order("created_at", { ascending: false });
 
     if (!error && supabaseLeads && supabaseLeads.length > 0) {
-      return mergeWithLocalLeads(supabaseLeads);
+      return supabaseLeads.map((sl: any) => ({
+        id: sl.id,
+        name: sl.name,
+        phone: sl.phone,
+        email: sl.email || null,
+        message: sl.message || null,
+        interest: sl.interest || "Atendimento",
+        consent: sl.consent ?? true,
+        property_id: sl.property_id || null,
+        property_code: sl.property_code || null,
+        property_title: sl.property_title || null,
+        source: sl.source || "Site",
+        source_page: sl.source_page || null,
+        status: (sl.status as LeadStatus) || "novo",
+        temperature: (sl.temperature as LeadTemperature) || "quente",
+        transaction_type: (sl.transaction_type as any) || "comprar",
+        broker_id: sl.broker_id || null,
+        broker_name: sl.broker_name || null,
+        loss_reason: sl.loss_reason || null,
+        next_action: sl.next_action || null,
+        next_action_date: sl.next_action_date || null,
+        notes: sl.notes || null,
+        timeline: sl.timeline || [],
+        created_at: sl.created_at || new Date().toISOString(),
+        updated_at: sl.updated_at || new Date().toISOString(),
+      }));
     }
 
     // Se estiver vazio no Supabase, semeia os leads iniciais diretamente no banco
@@ -474,7 +499,7 @@ export async function fetchLeads(): Promise<Lead[]> {
           property_code: l.property_code || null,
           source: l.source || "Site",
           status: l.status,
-          broker_id: l.broker_id === "corretor-michele" ? null : l.broker_id || null,
+          broker_id: l.broker_id === "c011e701-0001-4000-8000-000000000001" ? null : l.broker_id || null,
           notes: l.notes || null,
         };
         if (!l.id.startsWith("lead-demo")) {
@@ -482,16 +507,16 @@ export async function fetchLeads(): Promise<Lead[]> {
         }
         await supabase.from("leads").insert(payload);
       }
+      return INITIAL_DEMO_LEADS;
     }
   } catch (err) {
     console.warn("Aviso ao buscar leads no Supabase:", err);
   }
 
-  return getLocalLeads();
+  return INITIAL_DEMO_LEADS;
 }
 
 export async function updateLeadStatusInDb(id: string, newStatus: LeadStatus): Promise<void> {
-  // 1. Atualiza diretamente no Supabase DB
   try {
     const { error } = await supabase
       .from("leads")
@@ -506,17 +531,6 @@ export async function updateLeadStatusInDb(id: string, newStatus: LeadStatus): P
   } catch (err) {
     console.warn("Erro ao atualizar status do lead no Supabase:", err);
   }
-
-  // 2. Atualiza snapshot local
-  if (typeof window !== "undefined") {
-    try {
-      const current = getLocalLeads();
-      const updated = current.map((l) =>
-        l.id === id ? { ...l, status: newStatus, updated_at: new Date().toISOString() } : l
-      );
-      localStorage.setItem(LOCAL_STORAGE_LEADS_KEY, JSON.stringify(updated));
-    } catch {}
-  }
 }
 
 export async function deleteLeadInDb(id: string): Promise<void> {
@@ -525,7 +539,6 @@ export async function deleteLeadInDb(id: string): Promise<void> {
   } catch (err) {
     console.warn("Erro ao excluir lead no Supabase:", err);
   }
-  deleteLocalLead(id);
 }
 
 export function deleteLocalLead(id: string): void {
