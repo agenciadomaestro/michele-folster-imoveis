@@ -87,3 +87,4 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.reassign_and_delete_broker(text, text) TO anon, authenticated;
+

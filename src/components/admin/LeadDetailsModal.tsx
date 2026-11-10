@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   type Lead,
   type LeadStatus,
@@ -63,7 +64,7 @@ export function LeadDetailsModal({
   const [lossReason, setLossReason] = useState(lead.loss_reason || "");
   const [newNote, setNewNote] = useState("");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const assignedBroker = brokers.find((b) => b.id === brokerId);
 
     const updated: Lead = {
@@ -79,12 +80,25 @@ export function LeadDetailsModal({
     };
 
     saveLocalLead(updated);
+    try {
+      await supabase
+        .from("leads")
+        .update({
+          status: updated.status,
+          notes: updated.notes || null,
+          broker_id: updated.broker_id || null,
+        })
+        .eq("id", updated.id);
+    } catch (err) {
+      console.warn("Aviso ao salvar lead no Supabase:", err);
+    }
+
     onUpdate(updated);
     toast.success("Lead atualizado com sucesso!");
     onClose();
   };
 
-  const handleAddNote = (e: React.FormEvent) => {
+  const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.trim()) return;
 
@@ -105,6 +119,17 @@ export function LeadDetailsModal({
     };
 
     saveLocalLead(updated);
+    try {
+      await supabase
+        .from("leads")
+        .update({
+          notes: updated.notes ?? null,
+        })
+        .eq("id", updated.id);
+    } catch (err) {
+      console.warn("Aviso ao salvar nota no Supabase:", err);
+    }
+
     onUpdate(updated);
     setNewNote("");
     toast.success("Anotação adicionada ao histórico da conversa!");

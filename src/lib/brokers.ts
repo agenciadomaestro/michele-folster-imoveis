@@ -31,7 +31,7 @@ export const SUPER_ADMIN_USER: Broker = {
   creci: "00000-J",
   role: "super_admin",
   active: true,
-  is_hidden: true, // Totalmente oculto de listagens públicas e da equipe da imobiliária
+  is_hidden: true,
   permissions: {
     pode_cadastrar_imovel: true,
     pode_ver_ofertas_gerais: true,
@@ -70,8 +70,8 @@ export const INITIAL_BROKERS: Broker[] = [
     is_hidden: false,
     permissions: {
       pode_cadastrar_imovel: true,
-      pode_ver_ofertas_gerais: false, // Apenas suas ofertas e leads por padrão
-      pode_ver_captacoes: true,       // Pode ver captações
+      pode_ver_ofertas_gerais: false,
+      pode_ver_captacoes: true,
     },
     created_at: "2026-02-15T14:30:00.000Z",
   },
@@ -96,6 +96,69 @@ export const INITIAL_BROKERS: Broker[] = [
 
 const LOCAL_STORAGE_BROKERS_KEY = "app_crm_brokers";
 
+/**
+ * Busca a lista de corretores diretamente da tabela 'profiles' no Supabase.
+ * Se a tabela estiver vazia, sincroniza os perfis padrão no banco.
+ */
+export async function fetchBrokers(includeHidden = false): Promise<Broker[]> {
+  try {
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (!error && profiles && profiles.length > 0) {
+      const list: Broker[] = profiles.map((p) => {
+        const isMichele = Boolean(
+          p.id === "corretor-michele" ||
+          p.full_name?.toLowerCase().includes("michele")
+        );
+        
+        return {
+          id: p.id,
+          name: p.full_name || "Corretor",
+          email: `${p.full_name?.toLowerCase().replace(/\s+/g, "") || "corretor"}@michelefolster.com.br`,
+          phone: p.phone || "(12) 98146-7549",
+          creci: p.creci || "Sem CRECI",
+          role: isMichele ? "admin" : "corretor",
+          active: p.active ?? true,
+          is_hidden: false,
+          permissions: {
+            pode_cadastrar_imovel: true,
+            pode_ver_ofertas_gerais: isMichele,
+            pode_ver_captacoes: isMichele,
+          },
+          created_at: p.created_at || new Date().toISOString(),
+        };
+      });
+
+      // Salva snapshot local
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(list));
+      }
+
+      return includeHidden ? [SUPER_ADMIN_USER, ...list] : list;
+    }
+
+    // Se estiver vazio no Supabase, tenta semear os perfis padrão no Supabase
+    if (!error && profiles && profiles.length === 0) {
+      for (const b of INITIAL_BROKERS) {
+        await supabase.from("profiles").upsert({
+          id: b.id,
+          full_name: b.name,
+          phone: b.phone,
+          creci: b.creci,
+          active: b.active,
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao buscar corretores no Supabase:", err);
+  }
+
+  return getLocalBrokers(includeHidden);
+}
+
 export function getLocalBrokers(includeHidden = false): Broker[] {
   if (typeof window === "undefined") {
     return includeHidden ? [SUPER_ADMIN_USER, ...INITIAL_BROKERS] : INITIAL_BROKERS;
@@ -113,11 +176,29 @@ export function getLocalBrokers(includeHidden = false): Broker[] {
   }
 }
 
-export function saveLocalBroker(broker: Broker): Broker {
-  if (typeof window === "undefined") return broker;
+export async function saveBrokerDirect(broker: Broker): Promise<Broker> {
+  // 1. Salva diretamente no banco Supabase
   try {
+    const { error } = await supabase.from("profiles").upsert({
+      id: broker.id,
+      full_name: broker.name,
+      phone: broker.phone,
+      creci: broker.creci,
+      active: broker.active,
+    });
+    if (error) {
+      console.warn("Aviso ao salvar profile no Supabase:", error.message);
+    }
+  } catch (e) {
+    console.warn("Erro ao comunicar com Supabase profiles:", e);
+  }
+
+  // 2. Atualiza snapshot local
+  if (typeof window !== "undefined") {
     const current = getLocalBrokers(false);
-    const index = current.findIndex((b) => b.id === broker.id || b.email.toLowerCase() === broker.email.toLowerCase());
+    const index = current.findIndex(
+      (b) => b.id === broker.id || b.email.toLowerCase() === broker.email.toLowerCase()
+    );
     let updated: Broker[];
     if (index >= 0) {
       updated = [...current];
@@ -126,71 +207,72 @@ export function saveLocalBroker(broker: Broker): Broker {
       updated = [broker, ...current];
     }
     localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.warn("Aviso ao salvar corretor localmente:", e);
   }
   return broker;
 }
 
-export function updateBrokerPermissions(
+export const saveLocalBroker = saveBrokerDirect;
+
+export async function updateBrokerPermissions(
   brokerId: string,
   newPermissions: Partial<BrokerPermissions>
-): void {
-  if (typeof window === "undefined") return;
-  try {
-    const current = getLocalBrokers(false);
-    const updated = current.map((b) => {
-      if (b.id === brokerId) {
-        return {
-          ...b,
-          permissions: {
-            ...b.permissions,
-            ...newPermissions,
-          },
-        };
-      }
-      return b;
-    });
-    localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(updated));
+): Promise<void> {
+  // Snapshot local imediato
+  if (typeof window !== "undefined") {
+    try {
+      const current = getLocalBrokers(false);
+      const updated = current.map((b) => {
+        if (b.id === brokerId) {
+          return {
+            ...b,
+            permissions: {
+              ...b.permissions,
+              ...newPermissions,
+            },
+          };
+        }
+        return b;
+      });
+      localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(updated));
+    } catch {}
+  }
 
-    // Sincroniza em segundo plano com Supabase se disponível
-    Promise.resolve(
-      supabase
-        .from("broker_permissions" as any)
-        .upsert({
-          user_id: brokerId,
-          ...newPermissions,
-          updated_at: new Date().toISOString(),
-        })
-    ).catch(() => {});
-  } catch (e) {
-    console.warn("Erro ao atualizar permissões do corretor:", e);
+  // Supabase persistência
+  try {
+    await supabase.from("broker_permissions" as any).upsert({
+      user_id: brokerId,
+      ...newPermissions,
+      updated_at: new Date().toISOString(),
+    });
+  } catch {}
+}
+
+export async function updateBrokerStatus(brokerId: string, active: boolean): Promise<void> {
+  // 1. Atualiza diretamente no Supabase
+  try {
+    await supabase.from("profiles").update({ active }).eq("id", brokerId);
+  } catch (err) {
+    console.warn("Aviso ao atualizar status no Supabase:", err);
+  }
+
+  // 2. Atualiza snapshot local
+  if (typeof window !== "undefined") {
+    try {
+      const current = getLocalBrokers(false);
+      const updated = current.map((b) => (b.id === brokerId ? { ...b, active } : b));
+      localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(updated));
+    } catch {}
   }
 }
 
-export function updateBrokerStatus(brokerId: string, active: boolean): void {
-  if (typeof window === "undefined") return;
-  try {
-    const current = getLocalBrokers(false);
-    const updated = current.map((b) => (b.id === brokerId ? { ...b, active } : b));
-    localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(updated));
-
-    Promise.resolve(
-      supabase
-        .from("profiles")
-        .update({ active })
-        .eq("id", brokerId)
-    ).catch(() => {});
-  } catch {}
-}
-
 export function deleteLocalBroker(brokerId: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    const current = getLocalBrokers(false);
-    const filtered = current.filter((b) => b.id !== brokerId);
-    localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(filtered));
-  } catch {}
+  if (typeof window !== "undefined") {
+    try {
+      const current = getLocalBrokers(false);
+      const filtered = current.filter((b) => b.id !== brokerId);
+      localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(filtered));
+    } catch {}
+  }
 }
 
 export function formatMembershipDuration(createdAtStr?: string): string {
@@ -217,8 +299,8 @@ export function formatMembershipDuration(createdAtStr?: string): string {
 /**
  * Exclui o corretor garantindo integridade total:
  * 1. Não apaga nenhum imóvel cadastrado
- * 2. Reatribui todos os imóveis, leads e mensagens vinculados para a Michele Folster
- * 3. Remove ou desativa o acesso do corretor
+ * 2. Reatribui todos os imóveis, leads e mensagens vinculados para a Michele Folster diretamente no Supabase
+ * 3. Remove ou desativa o acesso do corretor no Supabase
  */
 export async function reassignAndDeleteBroker(
   brokerId: string,
@@ -228,138 +310,58 @@ export async function reassignAndDeleteBroker(
   let reassignedLeads = 0;
   let reassignedMsgs = 0;
 
+  // 1. Atualização direta no Supabase
+  try {
+    // Reatribui imóveis
+    const { error: errProp } = await supabase
+      .from("properties")
+      .update({ broker_id: "corretor-michele", updated_at: new Date().toISOString() })
+      .eq("broker_id", brokerId);
+    if (!errProp) reassignedProps++;
+
+    // Reatribui leads
+    const { error: errLead } = await supabase
+      .from("leads")
+      .update({ broker_id: "corretor-michele", updated_at: new Date().toISOString() })
+      .eq("broker_id", brokerId);
+    if (!errLead) reassignedLeads++;
+
+    // Exclui ou inativa o perfil no Supabase
+    await supabase.from("profiles").delete().eq("id", brokerId);
+  } catch (err) {
+    console.warn("Aviso na reatribuição no Supabase:", err);
+  }
+
+  // 2. Snapshot local
   if (typeof window !== "undefined") {
-    // 1. Reatribui Imóveis locais
     try {
       const rawProps = localStorage.getItem("app_custom_properties");
       if (rawProps) {
         const props = JSON.parse(rawProps);
-        const updated = props.map((p: any) => {
-          if (p.broker_id === brokerId) {
-            reassignedProps++;
-            return {
-              ...p,
-              broker_id: "corretor-michele",
-              updated_at: new Date().toISOString(),
-            };
-          }
-          return p;
-        });
+        const updated = props.map((p: any) =>
+          p.broker_id === brokerId ? { ...p, broker_id: "corretor-michele" } : p
+        );
         localStorage.setItem("app_custom_properties", JSON.stringify(updated));
       }
-    } catch (e) {
-      console.warn("Aviso ao reatribuir imóveis:", e);
-    }
+    } catch {}
 
-    // 2. Reatribui Leads locais no CRM
     try {
       const rawLeads = localStorage.getItem("app_crm_leads");
       if (rawLeads) {
         const leads = JSON.parse(rawLeads);
-        const updated = leads.map((l: any) => {
-          if (l.broker_id === brokerId) {
-            reassignedLeads++;
-            return {
-              ...l,
-              broker_id: "corretor-michele",
-              broker_name: "Michele Folster",
-              timeline: [
-                ...(l.timeline || []),
-                {
-                  id: `act-reassign-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                  created_at: new Date().toISOString(),
-                  author_name: "Sistema",
-                  type: "broker_assigned",
-                  content: `Lead reatribuído automaticamente para Michele Folster devido à exclusão de ${brokerName}.`,
-                },
-              ],
-              updated_at: new Date().toISOString(),
-            };
-          }
-          return l;
-        });
+        const updated = leads.map((l: any) =>
+          l.broker_id === brokerId ? { ...l, broker_id: "corretor-michele", broker_name: "Michele Folster" } : l
+        );
         localStorage.setItem("app_crm_leads", JSON.stringify(updated));
       }
-    } catch (e) {
-      console.warn("Aviso ao reatribuir leads:", e);
-    }
+    } catch {}
 
-    // 3. Reatribui Mensagens locais
-    try {
-      const rawMsgs = localStorage.getItem("app_messages_leads");
-      if (rawMsgs) {
-        const msgs = JSON.parse(rawMsgs);
-        const updated = msgs.map((m: any) => {
-          if (m.corretor_atribuido_id === brokerId) {
-            reassignedMsgs++;
-            return {
-              ...m,
-              corretor_atribuido_id: "corretor-michele",
-              corretor_nome: "Michele Folster",
-            };
-          }
-          return m;
-        });
-        localStorage.setItem("app_messages_leads", JSON.stringify(updated));
-      }
-    } catch (e) {
-      console.warn("Aviso ao reatribuir mensagens:", e);
-    }
-
-    // 4. Remove o corretor da lista local
     deleteLocalBroker(brokerId);
   }
-
-  // 5. Executa a reatribuição no Supabase em segundo plano
-  Promise.resolve(
-    supabase.rpc("reassign_and_delete_broker" as any, {
-      _broker_id: brokerId,
-      _target_admin_email: "michele@michelefolster.com.br",
-    })
-  ).catch(() => {});
-
-  Promise.resolve(
-    supabase
-      .from("properties")
-      .update({ broker_id: "corretor-michele" })
-      .eq("broker_id", brokerId)
-  ).catch(() => {});
-
-  Promise.resolve(
-    supabase
-      .from("leads")
-      .update({ broker_id: "corretor-michele" })
-      .eq("broker_id", brokerId)
-  ).catch(() => {});
-
-  Promise.resolve(
-    supabase
-      .from("messages_leads" as any)
-      .update({ corretor_atribuido_id: null, corretor_nome: "Michele Folster" })
-      .eq("corretor_atribuido_id", brokerId)
-  ).catch(() => {});
-
-  Promise.resolve(
-    supabase
-      .from("profiles")
-      .update({ active: false })
-      .eq("id", brokerId)
-  ).catch(() => {});
-
-  Promise.resolve(
-    supabase
-      .from("broker_permissions" as any)
-      .delete()
-      .eq("user_id", brokerId)
-  ).catch(() => {});
 
   return { reassignedProps, reassignedLeads, reassignedMsgs };
 }
 
-/**
- * Retorna o perfil completo do usuário autenticado no momento,
- * calculando sua role (super_admin, admin ou corretor) e permissões granulares.
- */
 export async function getCurrentUserProfile(): Promise<{
   id: string;
   name: string;
@@ -383,10 +385,9 @@ export async function getCurrentUserProfile(): Promise<{
 
   const { data } = await supabase.auth.getUser();
   const authUser = data?.user || storedUser;
-
   const email = (authUser?.email || "").toLowerCase();
 
-  // 1. Super Admin (Master Agência - Oculto/Privado)
+  // Super Admin
   if (
     email === "agbipe@agenciabipe.com" ||
     email === "contato@agenciabipe.com" ||
@@ -406,7 +407,7 @@ export async function getCurrentUserProfile(): Promise<{
     };
   }
 
-  // 2. Admin Imobiliária (Michele Folster)
+  // Admin Michele Folster
   if (
     email === "michele@michelefolster.com.br" ||
     email.includes("michele") ||
@@ -429,7 +430,7 @@ export async function getCurrentUserProfile(): Promise<{
     };
   }
 
-  // 3. Corretor cadastrado
+  // Corretor
   const brokers = getLocalBrokers(false);
   const matched = brokers.find((b) => b.email.toLowerCase() === email || b.id === authUser?.id);
 
@@ -447,7 +448,6 @@ export async function getCurrentUserProfile(): Promise<{
     };
   }
 
-  // Padrão de fallback
   const fallbackName = authUser?.user_metadata?.full_name || email || "Corretor";
   return {
     id: authUser?.id || "temp-corretor",

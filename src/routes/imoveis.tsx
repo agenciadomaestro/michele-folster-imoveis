@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { z } from "zod";
 import { SearchX, ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { PropertyCard, CardSkeleton } from "@/components/site/PropertyCard";
 import { fetchLocations, PAGE_SIZE, PROPERTY_TYPES, searchProperties, type SearchFilters } from "@/lib/realty";
@@ -34,11 +36,31 @@ export const Route = createFileRoute("/imoveis")({
 });
 
 export function ResultsPage({ fixedPurpose, title }: { fixedPurpose?: "venda" | "locacao"; title?: string }) {
+  const queryClient = useQueryClient();
   const raw = useSearch({ strict: false }) as SearchFilters;
   const search: SearchFilters = fixedPurpose ? { ...raw, purpose: fixedPurpose } : raw;
   const navigate = useNavigate();
   const set = (patch: Partial<SearchFilters>) =>
     navigate({ to: fixedPurpose ? (fixedPurpose === "venda" ? "/venda" : "/locacao") : "/imoveis", search: { ...raw, ...patch, page: patch.page ?? undefined } as never });
+
+  // Sincronização em tempo real de imóveis na busca pública
+  useEffect(() => {
+    const channel = supabase
+      .channel("public-imoveis-search-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "properties" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["search"] });
+          queryClient.invalidateQueries({ queryKey: ["locations"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: loc } = useQuery({ queryKey: ["locations"], queryFn: fetchLocations });
   const { data, isFetching, isLoading } = useQuery({

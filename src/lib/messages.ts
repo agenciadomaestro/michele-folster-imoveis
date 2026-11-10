@@ -234,6 +234,23 @@ export async function saveMessageLead(payload: {
     console.warn("Aviso ao sincronizar messages_leads no Supabase:", err);
   }
 
+  try {
+    await supabase.from("leads").insert({
+      name: payload.nome_cliente,
+      phone: payload.telefone_cliente,
+      email: payload.email_cliente ?? null,
+      message: payload.mensagem,
+      interest: payload.interesse,
+      consent: true,
+      property_code: payload.codigo_imovel ?? null,
+      source: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : "Site",
+      status: "novo",
+      broker_id: payload.corretor_atribuido_id === "corretor-michele" ? null : payload.corretor_atribuido_id ?? null,
+    });
+  } catch (err) {
+    console.warn("Aviso ao sincronizar novo lead no Supabase:", err);
+  }
+
   return newMessage;
 }
 

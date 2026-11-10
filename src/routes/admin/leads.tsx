@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Users,
   Search,
@@ -35,6 +35,9 @@ import {
   KANBAN_COLUMNS,
   DEFAULT_BROKERS,
   TEMPERATURE_CONFIG,
+  fetchLeads,
+  updateLeadStatusInDb,
+  deleteLeadInDb,
   mergeWithLocalLeads,
   saveLocalLead,
   deleteLocalLead,
@@ -44,7 +47,7 @@ import { KanbanCard } from "@/components/admin/KanbanCard";
 import { LeadDetailsModal } from "@/components/admin/LeadDetailsModal";
 import { brl } from "@/lib/realty";
 
-import { getCurrentUserProfile, getLocalBrokers } from "@/lib/brokers";
+import { getCurrentUserProfile, fetchBrokers, getLocalBrokers } from "@/lib/brokers";
 
 export const Route = createFileRoute("/admin/leads")({
   head: () => ({
@@ -85,7 +88,7 @@ function LeadsManagementPage() {
   const { data: brokers = [] } = useQuery({
     queryKey: ["admin", "active-brokers"],
     queryFn: async () => {
-      const list = getLocalBrokers(false);
+      const list = await fetchBrokers(false);
       return list.map((b) => ({
         id: b.id,
         name: b.name,
@@ -99,20 +102,26 @@ function LeadsManagementPage() {
   // 3. Query Leads from Supabase + Local persistence
   const { data: allLeads = [], refetch: refetchLeads } = useQuery({
     queryKey: ["admin", "leads-crm-list"],
-    queryFn: async () => {
-      let supabaseItems: any[] = [];
-      try {
-        const { data } = await supabase
-          .from("leads")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (data) supabaseItems = data;
-      } catch (err) {
-        console.warn("Aviso ao buscar leads do Supabase:", err);
-      }
-      return mergeWithLocalLeads(supabaseItems);
-    },
+    queryFn: fetchLeads,
   });
+
+  // Listener em tempo real para sincronização instantânea de leads entre navegadores
+  useEffect(() => {
+    const channel = supabase
+      .channel("crm-leads-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads" },
+        () => {
+          refetchLeads();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetchLeads]);
 
   // 4. Access Control Filter (RBAC)
   // Admins see all leads (or filter by broker); Standard brokers see ONLY their assigned leads
@@ -185,21 +194,8 @@ function LeadsManagementPage() {
 
     saveLocalLead(updatedLead);
 
-    // Try background update to Supabase
-    try {
-      const dbStatus =
-        newStatus === "em_contato" || newStatus === "em_negociacao"
-          ? "em_atendimento"
-          : newStatus;
-      await supabase
-        .from("leads")
-        .update({
-          status: dbStatus,
-          notes: targetLead.notes || null,
-          broker_id: targetLead.broker_id || null,
-        })
-        .eq("id", leadId);
-    } catch {}
+    // Persistência direta no Supabase DB
+    await updateLeadStatusInDb(leadId, newStatus);
 
     refetchLeads();
     toast.success(`Lead movido para "${newStatusCol}"`);
@@ -237,10 +233,7 @@ function LeadsManagementPage() {
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    deleteLocalLead(leadId);
-    try {
-      await supabase.from("leads").delete().eq("id", leadId);
-    } catch {}
+    await deleteLeadInDb(leadId);
     refetchLeads();
     toast.success("Lead removido com sucesso.");
   };

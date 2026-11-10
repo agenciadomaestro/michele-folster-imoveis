@@ -437,6 +437,97 @@ export function saveLocalLead(lead: Lead): Lead {
   return lead;
 }
 
+export async function fetchLeads(): Promise<Lead[]> {
+  try {
+    const { data: supabaseLeads, error } = await supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!error && supabaseLeads && supabaseLeads.length > 0) {
+      return mergeWithLocalLeads(supabaseLeads);
+    }
+
+    // Se estiver vazio no Supabase, semeia os leads iniciais diretamente no banco
+    if (!error && supabaseLeads && supabaseLeads.length === 0) {
+      for (const l of INITIAL_DEMO_LEADS) {
+        const payload: {
+          id?: string;
+          name: string;
+          phone: string;
+          email: string | null;
+          message: string | null;
+          interest: string;
+          consent: boolean;
+          property_code: string | null;
+          source: string;
+          status: LeadStatus;
+          broker_id: string | null;
+          notes: string | null;
+        } = {
+          name: l.name,
+          phone: l.phone,
+          email: l.email || null,
+          message: l.message || null,
+          interest: l.interest || "Mais informações",
+          consent: true,
+          property_code: l.property_code || null,
+          source: l.source || "Site",
+          status: l.status,
+          broker_id: l.broker_id === "corretor-michele" ? null : l.broker_id || null,
+          notes: l.notes || null,
+        };
+        if (!l.id.startsWith("lead-demo")) {
+          payload.id = l.id;
+        }
+        await supabase.from("leads").insert(payload);
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso ao buscar leads no Supabase:", err);
+  }
+
+  return getLocalLeads();
+}
+
+export async function updateLeadStatusInDb(id: string, newStatus: LeadStatus): Promise<void> {
+  // 1. Atualiza diretamente no Supabase DB
+  try {
+    const { error } = await supabase
+      .from("leads")
+      .update({
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) {
+      console.warn("Aviso ao atualizar status no Supabase:", error.message);
+    }
+  } catch (err) {
+    console.warn("Erro ao atualizar status do lead no Supabase:", err);
+  }
+
+  // 2. Atualiza snapshot local
+  if (typeof window !== "undefined") {
+    try {
+      const current = getLocalLeads();
+      const updated = current.map((l) =>
+        l.id === id ? { ...l, status: newStatus, updated_at: new Date().toISOString() } : l
+      );
+      localStorage.setItem(LOCAL_STORAGE_LEADS_KEY, JSON.stringify(updated));
+    } catch {}
+  }
+}
+
+export async function deleteLeadInDb(id: string): Promise<void> {
+  try {
+    await supabase.from("leads").delete().eq("id", id);
+  } catch (err) {
+    console.warn("Erro ao excluir lead no Supabase:", err);
+  }
+  deleteLocalLead(id);
+}
+
 export function deleteLocalLead(id: string): void {
   if (typeof window === "undefined") return;
   try {

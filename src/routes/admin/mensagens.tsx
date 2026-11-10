@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   MessageSquare,
   Search,
@@ -20,6 +20,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
 import {
   type MessageLead,
@@ -62,6 +63,24 @@ function AdminMessagesPage() {
   const refreshMessages = () => {
     setMessagesList(getLocalMessages());
   };
+
+  // Sincronização em tempo real para novas mensagens e leads
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-mensagens-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads" },
+        () => {
+          refreshMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleStatusChange = (id: string, newStatus: MessageStatus) => {
     updateMessageStatus(id, newStatus);

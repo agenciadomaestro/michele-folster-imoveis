@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   Shield,
@@ -18,11 +18,13 @@ import {
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   type Broker,
   type BrokerPermissions,
+  fetchBrokers,
   getLocalBrokers,
-  saveLocalBroker,
+  saveBrokerDirect,
   updateBrokerPermissions,
   updateBrokerStatus,
   reassignAndDeleteBroker,
@@ -48,6 +50,32 @@ export function BrokerManagementModal({
   const [isEditingPermissions, setIsEditingPermissions] = useState(false);
   const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
 
+  // Sincronização inicial e listener em tempo real no Supabase profiles
+  useEffect(() => {
+    if (!isOpen) return;
+
+    fetchBrokers(false).then((list) => {
+      setBrokers(list);
+    });
+
+    const channel = supabase
+      .channel("broker-modal-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        async () => {
+          const updatedList = await fetchBrokers(false);
+          setBrokers(updatedList);
+          if (onBrokersUpdated) onBrokersUpdated();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen]);
+
   // Estado para exclusão e reatribuição de corretor
   const [brokerToDelete, setBrokerToDelete] = useState<Broker | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -62,8 +90,8 @@ export function BrokerManagementModal({
 
   if (!isOpen) return null;
 
-  const refreshList = () => {
-    const list = getLocalBrokers(false);
+  const refreshList = async () => {
+    const list = await fetchBrokers(false);
     setBrokers(list);
     if (onBrokersUpdated) onBrokersUpdated();
   };
@@ -76,9 +104,9 @@ export function BrokerManagementModal({
     ).length;
   };
 
-  const handleToggleActive = (broker: Broker) => {
+  const handleToggleActive = async (broker: Broker) => {
     const nextState = !broker.active;
-    updateBrokerStatus(broker.id, nextState);
+    await updateBrokerStatus(broker.id, nextState);
     toast.success(`Corretor ${broker.name} marcado como ${nextState ? "Ativo" : "Inativo"}.`);
     refreshList();
   };
@@ -88,12 +116,12 @@ export function BrokerManagementModal({
     setIsEditingPermissions(true);
   };
 
-  const handleTogglePermission = (key: keyof BrokerPermissions) => {
+  const handleTogglePermission = async (key: keyof BrokerPermissions) => {
     if (!selectedBroker) return;
     const currentVal = selectedBroker.permissions[key];
     const nextVal = !currentVal;
 
-    updateBrokerPermissions(selectedBroker.id, { [key]: nextVal });
+    await updateBrokerPermissions(selectedBroker.id, { [key]: nextVal });
 
     const updated = {
       ...selectedBroker,
@@ -107,7 +135,7 @@ export function BrokerManagementModal({
     toast.success("Permissão atualizada com sucesso.");
   };
 
-  const handleCreateBroker = (e: React.FormEvent) => {
+  const handleCreateBroker = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formEmail.trim()) {
       toast.error("Preencha ao menos Nome e E-mail.");
@@ -132,7 +160,7 @@ export function BrokerManagementModal({
       created_at: new Date().toISOString(),
     };
 
-    saveLocalBroker(newBroker);
+    await saveBrokerDirect(newBroker);
     toast.success(`Corretor ${formName} cadastrado com sucesso!`);
     if (formPassword.trim()) {
       toast.info(`Credenciais criadas para ${formEmail}. Senha temporária configurada.`);

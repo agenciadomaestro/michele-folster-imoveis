@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import {
   Building2,
   Users,
@@ -20,15 +20,16 @@ import {
   Sliders,
   Shield,
   UserCheck,
+  Star,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
 import { toast } from "sonner";
 import { priceLabel, type Property } from "@/lib/realty";
-import { mergeWithLocalProperties, deleteLocalProperty } from "@/lib/localProperties";
-import { getCurrentUserProfile, getLocalBrokers } from "@/lib/brokers";
+import { mergeWithLocalProperties, saveLocalProperty, deleteLocalProperty } from "@/lib/localProperties";
+import { getCurrentUserProfile, fetchBrokers } from "@/lib/brokers";
 import { getLocalMessages } from "@/lib/messages";
-import { getLocalLeads } from "@/lib/leads";
+import { fetchLeads } from "@/lib/leads";
 import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal";
 
 export const Route = createFileRoute("/admin/")({
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminDashboard() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchCode, setSearchCode] = useState("");
   const [isBrokersModalOpen, setIsBrokersModalOpen] = useState(false);
 
@@ -52,22 +54,22 @@ function AdminDashboard() {
     queryFn: getCurrentUserProfile,
   });
 
-  // 2. Query de Corretores da Imobiliária (sem Super Admin oculto)
+  // 2. Query de Corretores da Imobiliária (persistidos no Supabase profiles)
   const { data: brokers = [], refetch: refetchBrokers } = useQuery({
     queryKey: ["admin", "brokers-list"],
-    queryFn: async () => getLocalBrokers(false),
+    queryFn: async () => fetchBrokers(false),
   });
 
   // 3. Query de Mensagens & Contatos Recentes
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: ["admin", "messages-leads-list"],
     queryFn: async () => getLocalMessages(),
   });
 
-  // 4. Query de Leads do CRM Kanban
-  const { data: leads = [] } = useQuery({
+  // 4. Query de Leads do CRM Kanban (persistidos no Supabase leads)
+  const { data: leads = [], refetch: refetchLeads } = useQuery({
     queryKey: ["admin", "crm-leads-list"],
-    queryFn: async () => getLocalLeads(),
+    queryFn: async () => fetchLeads(),
   });
 
   // 5. Query de Imóveis com Suporte a Permissão Granular (pode_ver_ofertas_gerais)
@@ -80,11 +82,11 @@ function AdminDashboard() {
     queryFn: async () => {
       let supabaseItems: Property[] = [];
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("properties")
           .select("*, property_photos(url, position)")
           .order("created_at", { ascending: false });
-        if (data) supabaseItems = data as Property[];
+        if (!error && data) supabaseItems = data as Property[];
       } catch (err) {
         console.warn("Aviso ao buscar lista de imóveis:", err);
       }
@@ -97,6 +99,40 @@ function AdminDashboard() {
     },
   });
 
+  // Sincronização em Tempo Real (Supabase Realtime Subscriptions)
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-dashboard-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "properties" },
+        () => {
+          refetchProps();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          refetchBrokers();
+          refetchUser();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads" },
+        () => {
+          refetchLeads();
+          refetchMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetchProps, refetchBrokers, refetchUser, refetchLeads, refetchMessages]);
+
   // Filtragem de Imóveis conforme regras de acesso do Corretor
   const visibleProperties = rawProperties.filter((item) => {
     if (userProfile?.isAdmin) return true;
@@ -107,12 +143,58 @@ function AdminDashboard() {
     return true;
   });
 
+  // Alternar Destaque no Supabase com sincronização imediata
+  const handleToggleFeatured = async (property: Property) => {
+    const nextFeatured = !property.featured;
+    saveLocalProperty({ ...property, featured: nextFeatured });
+    try {
+      const { error } = await supabase
+        .from("properties")
+        .update({ featured: nextFeatured, updated_at: new Date().toISOString() })
+        .eq("id", property.id);
+      if (error) {
+        console.warn("Aviso ao atualizar destaque no Supabase:", error.message);
+      }
+    } catch (err) {
+      console.warn("Erro ao comunicar destaque no Supabase:", err);
+    }
+    toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
+    refetchProps();
+  };
+
+  // Alternar Status no Supabase (publicado / rascunho)
+  const handleToggleStatus = async (property: Property) => {
+    const nextStatus = property.status === "publicado" ? "rascunho" : "publicado";
+    saveLocalProperty({ ...property, status: nextStatus });
+    try {
+      const { error } = await supabase
+        .from("properties")
+        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .eq("id", property.id);
+      if (error) {
+        console.warn("Aviso ao atualizar status no Supabase:", error.message);
+      }
+    } catch (err) {
+      console.warn("Erro ao comunicar status no Supabase:", err);
+    }
+    toast.success(`Status alterado para "${nextStatus}".`);
+    refetchProps();
+  };
+
+  // Excluir Imóvel diretamente no Supabase DB e Storage
   const handleDeleteProperty = async (id: string, propTitle: string) => {
     if (!confirm(`Deseja realmente excluir o imóvel "${propTitle}"?`)) return;
     deleteLocalProperty(id);
     try {
-      await supabase.from("properties").delete().eq("id", id);
-    } catch {}
+      // Deleta primeiro as fotos vinculadas para evitar conflitos de chave estrangeira
+      await supabase.from("property_photos").delete().eq("property_id", id);
+      const { error } = await supabase.from("properties").delete().eq("id", id);
+      if (error) {
+        console.warn("Aviso ao excluir imóvel no Supabase:", error.message);
+      }
+    } catch (err) {
+      console.warn("Erro ao excluir imóvel no Supabase:", err);
+    }
     toast.success("Imóvel removido com sucesso.");
     refetchProps();
   };
@@ -456,20 +538,67 @@ function AdminDashboard() {
                           <span className="chip text-[11px] h-5 capitalize">
                             {item.purpose}
                           </span>
-                          <span
-                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                              item.status === "publicado"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-amber-100 text-amber-800"
-                            }`}
-                          >
-                            {item.status}
-                          </span>
-                          {item.featured && (
-                            <span className="text-[11px] bg-purple-100 text-purple-800 font-semibold px-1.5 py-0.5 rounded">
-                              Destaque
+
+                          {/* Status Toggle interativo com persistência no Supabase */}
+                          {userProfile?.isAdmin ? (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(item)}
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full transition-all cursor-pointer flex items-center gap-1 shadow-2xs hover:opacity-85 ${
+                                item.status === "publicado"
+                                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                  : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                              }`}
+                              title="Clique para alternar entre Publicado e Rascunho no banco de dados"
+                            >
+                              <span
+                                className={`size-1.5 rounded-full ${
+                                  item.status === "publicado" ? "bg-emerald-600" : "bg-amber-600"
+                                }`}
+                              />
+                              <span className="capitalize">{item.status}</span>
+                            </button>
+                          ) : (
+                            <span
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                                item.status === "publicado"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-800"
+                              }`}
+                            >
+                              {item.status}
                             </span>
                           )}
+
+                          {/* Destaque Toggle interativo com persistência no Supabase */}
+                          {userProfile?.isAdmin ? (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFeatured(item)}
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                                item.featured
+                                  ? "bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-200"
+                                  : "bg-secondary text-muted-foreground hover:bg-secondary/80 border border-border/40"
+                              }`}
+                              title={
+                                item.featured
+                                  ? "Imóvel em Destaque no site. Clique para remover do destaque."
+                                  : "Clique para destacar este imóvel no topo do site."
+                              }
+                            >
+                              <Star
+                                className={`size-3 ${
+                                  item.featured ? "fill-purple-600 text-purple-600" : "text-muted-foreground"
+                                }`}
+                              />
+                              <span>{item.featured ? "Destaque" : "Normal"}</span>
+                            </button>
+                          ) : item.featured ? (
+                            <span className="text-[11px] bg-purple-100 text-purple-800 font-semibold px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <Star className="size-3 fill-purple-600 text-purple-600" />
+                              Destaque
+                            </span>
+                          ) : null}
                         </div>
                         <h3 className="font-semibold text-sm mt-1 text-foreground">
                           {item.title}
