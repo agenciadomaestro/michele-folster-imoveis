@@ -97,9 +97,14 @@ export function BrokerManagementModal({
   const refreshList = async () => {
     const list = await fetchBrokers(false);
     setBrokers(list);
-    queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
-    queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] });
-    if (onBrokersUpdated) onBrokersUpdated();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "current-user-profile"] }),
+    ]);
+    if (onBrokersUpdated) {
+      await onBrokersUpdated();
+    }
   };
 
   const getAssignedCount = (brokerId: string, brokerName: string) => {
@@ -223,7 +228,13 @@ export function BrokerManagementModal({
         setIsEditingPermissions(false);
         setSelectedBroker(null);
       }
-      refreshList();
+      await refreshList();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+      ]);
     } catch (err: any) {
       console.error("Erro ao excluir no Supabase:", err);
       toast.error(err?.message || "Falha ao excluir corretor.");

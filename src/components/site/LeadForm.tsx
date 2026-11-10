@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2, MessageSquare } from "lucide-react";
@@ -30,6 +31,7 @@ export function LeadForm({
   brokerId,
   source = "site",
 }: LeadFormProps) {
+  const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -109,6 +111,12 @@ export function LeadForm({
       setSending(false);
       return;
     }
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+    ]);
 
     setSending(false);
     setDone(true);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   X,
   Phone,
@@ -54,6 +55,7 @@ export function LeadDetailsModal({
   isAdmin,
   currentUserName,
 }: LeadDetailsModalProps) {
+  const queryClient = useQueryClient();
   if (!isOpen || !lead) return null;
 
   const [status, setStatus] = useState<LeadStatus>(lead.status);
@@ -103,6 +105,12 @@ export function LeadDetailsModal({
         toast.error(`Falha ao salvar: ${error.message}`);
         return;
       }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+      ]);
     } catch (err: any) {
       console.error("Erro inesperado ao salvar lead no Supabase:", err);
       toast.error(`Falha ao salvar: ${err?.message || err}`);
@@ -156,6 +164,12 @@ export function LeadDetailsModal({
         toast.error(`Falha ao salvar: ${error.message}`);
         return;
       }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+      ]);
     } catch (err: any) {
       console.error("Erro inesperado ao salvar nota no Supabase:", err);
       toast.error(`Falha ao salvar: ${err?.message || err}`);

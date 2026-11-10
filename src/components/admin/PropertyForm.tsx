@@ -1,5 +1,6 @@
 import { useState, useEffect, useId } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Home,
   MapPin,
@@ -117,6 +118,7 @@ interface PropertyFormProps {
 
 export function PropertyForm({ propertyId }: PropertyFormProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const fileInputId = useId();
   const isEditing = Boolean(propertyId);
 
@@ -664,6 +666,16 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
           console.error("Erro ao vincular fotos no Supabase:", photoInsertError.message);
           toast.error(`Imóvel salvo, mas falha ao vincular fotos: ${photoInsertError.message}`);
         }
+      }
+
+      // Força a invalidação e recarregamento imediato das queries de imóveis
+      await queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      await queryClient.invalidateQueries({ queryKey: ["featured"] });
+      await queryClient.invalidateQueries({ queryKey: ["search"] });
+      await queryClient.invalidateQueries({ queryKey: ["locations"] });
+      if (isEditing && propertyId) {
+        await queryClient.invalidateQueries({ queryKey: ["property"] });
+        await queryClient.invalidateQueries({ queryKey: ["related"] });
       }
 
       toast.success(

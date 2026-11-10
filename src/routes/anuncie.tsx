@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   Upload,
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/anuncie")({
 });
 
 function AnunciePage() {
+  const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -116,6 +118,12 @@ function AnunciePage() {
         corretor_atribuido_id: "c011e701-0001-4000-8000-000000000001", // Atribuição inicial para Michele Folster
         corretor_nome: "Michele Folster",
       });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+      ]);
     } catch (err: any) {
       console.error("Erro ao salvar captação no Supabase:", err);
       toast.error(`Falha ao registrar captação: ${err?.message || err}`);

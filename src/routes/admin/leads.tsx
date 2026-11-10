@@ -114,6 +114,14 @@ function LeadsManagementPage() {
         { event: "*", schema: "public", table: "leads" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] });
         }
       )
       .subscribe();
@@ -194,7 +202,11 @@ function LeadsManagementPage() {
       return;
     }
 
-    queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+    ]);
     toast.success(`Lead movido para "${newStatusCol}"`);
   };
 
@@ -224,8 +236,12 @@ function LeadsManagementPage() {
     setIsModalOpen(true);
   };
 
-  const handleLeadUpdated = (updated: Lead) => {
-    queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+  const handleLeadUpdated = async (updated: Lead) => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+    ]);
     setSelectedLead(updated);
   };
 
@@ -246,7 +262,11 @@ function LeadsManagementPage() {
       toast.error(`Falha ao excluir no Supabase: ${res.error}`);
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+    ]);
     toast.success("Lead removido com sucesso.");
   };
 

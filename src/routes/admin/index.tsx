@@ -160,7 +160,11 @@ function AdminDashboard() {
         return;
       }
 
-      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["featured"] }),
+        queryClient.invalidateQueries({ queryKey: ["search"] }),
+      ]);
       toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
     } catch (err: any) {
       console.error("Erro inesperado ao salvar destaque no Supabase:", err);
@@ -187,7 +191,12 @@ function AdminDashboard() {
         return;
       }
 
-      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["featured"] }),
+        queryClient.invalidateQueries({ queryKey: ["search"] }),
+        queryClient.invalidateQueries({ queryKey: ["locations"] }),
+      ]);
       toast.success(`Status alterado para "${nextStatus}".`);
     } catch (err: any) {
       console.error("Erro inesperado ao salvar status no Supabase:", err);
@@ -204,7 +213,12 @@ function AdminDashboard() {
       queryClient.setQueryData(["admin", "properties-list"], (prev: Property[] = []) =>
         prev.filter((p) => p.id !== id)
       );
-      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["featured"] }),
+        queryClient.invalidateQueries({ queryKey: ["search"] }),
+        queryClient.invalidateQueries({ queryKey: ["locations"] }),
+      ]);
       toast.success("Imóvel removido com sucesso.");
       return;
     }
@@ -223,7 +237,12 @@ function AdminDashboard() {
         return;
       }
 
-      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
+        queryClient.invalidateQueries({ queryKey: ["featured"] }),
+        queryClient.invalidateQueries({ queryKey: ["search"] }),
+        queryClient.invalidateQueries({ queryKey: ["locations"] }),
+      ]);
       toast.success("Imóvel removido com sucesso.");
     } catch (err: any) {
       console.error("Erro inesperado ao excluir imóvel no Supabase:", err);
@@ -692,9 +711,15 @@ function AdminDashboard() {
         isOpen={isBrokersModalOpen}
         onClose={() => setIsBrokersModalOpen(false)}
         properties={rawProperties}
-        onBrokersUpdated={() => {
-          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
-          queryClient.invalidateQueries({ queryKey: ["admin", "current-user-profile"] });
+        onBrokersUpdated={async () => {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] }),
+            queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] }),
+            queryClient.invalidateQueries({ queryKey: ["admin", "current-user-profile"] }),
+            queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
+            queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+            queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+          ]);
         }}
       />
     </div>

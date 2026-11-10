@@ -80,6 +80,14 @@ function AdminMessagesPage() {
         { event: "*", schema: "public", table: "leads" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
         }
       )
       .subscribe();
@@ -105,7 +113,11 @@ function AdminMessagesPage() {
       toast.error(`Falha ao salvar no Supabase: ${res.error}`);
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+    ]);
     toast.success(`Status da mensagem atualizado para "${newStatus.replace("_", " ")}".`);
   };
 
@@ -128,7 +140,11 @@ function AdminMessagesPage() {
       toast.error(`Falha ao salvar no Supabase: ${res.error}`);
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+    ]);
     toast.success(`Mensagem atribuída a ${broker.name}.`);
   };
 
@@ -150,7 +166,11 @@ function AdminMessagesPage() {
       toast.error(`Falha ao excluir no Supabase: ${res.error}`);
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
+    ]);
     toast.success("Mensagem removida com sucesso.");
   };
 
