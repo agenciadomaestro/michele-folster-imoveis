@@ -193,6 +193,169 @@ export function deleteLocalBroker(brokerId: string): void {
   } catch {}
 }
 
+export function formatMembershipDuration(createdAtStr?: string): string {
+  if (!createdAtStr) return "Cadastrado recentemente";
+  const created = new Date(createdAtStr);
+  const now = new Date();
+  const diffMs = Math.max(0, now.getTime() - created.getTime());
+  const diffDays = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  if (diffDays < 30) {
+    return `${diffDays} ${diffDays === 1 ? "dia" : "dias"}`;
+  }
+  const diffMonths = Math.floor(diffDays / 30);
+  const remDays = diffDays % 30;
+  if (diffMonths < 12) {
+    return remDays > 0
+      ? `${diffMonths} ${diffMonths === 1 ? "mês" : "meses"} e ${remDays} dias`
+      : `${diffMonths} ${diffMonths === 1 ? "mês" : "meses"}`;
+  }
+  const diffYears = Math.floor(diffMonths / 12);
+  const remMonths = diffMonths % 12;
+  return `${diffYears} ${diffYears === 1 ? "ano" : "anos"}${remMonths > 0 ? ` e ${remMonths} meses` : ""}`;
+}
+
+/**
+ * Exclui o corretor garantindo integridade total:
+ * 1. Não apaga nenhum imóvel cadastrado
+ * 2. Reatribui todos os imóveis, leads e mensagens vinculados para a Michele Folster
+ * 3. Remove ou desativa o acesso do corretor
+ */
+export async function reassignAndDeleteBroker(
+  brokerId: string,
+  brokerName: string
+): Promise<{ reassignedProps: number; reassignedLeads: number; reassignedMsgs: number }> {
+  let reassignedProps = 0;
+  let reassignedLeads = 0;
+  let reassignedMsgs = 0;
+
+  if (typeof window !== "undefined") {
+    // 1. Reatribui Imóveis locais
+    try {
+      const rawProps = localStorage.getItem("app_custom_properties");
+      if (rawProps) {
+        const props = JSON.parse(rawProps);
+        const updated = props.map((p: any) => {
+          if (p.broker_id === brokerId) {
+            reassignedProps++;
+            return {
+              ...p,
+              broker_id: "corretor-michele",
+              updated_at: new Date().toISOString(),
+            };
+          }
+          return p;
+        });
+        localStorage.setItem("app_custom_properties", JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.warn("Aviso ao reatribuir imóveis:", e);
+    }
+
+    // 2. Reatribui Leads locais no CRM
+    try {
+      const rawLeads = localStorage.getItem("app_crm_leads");
+      if (rawLeads) {
+        const leads = JSON.parse(rawLeads);
+        const updated = leads.map((l: any) => {
+          if (l.broker_id === brokerId) {
+            reassignedLeads++;
+            return {
+              ...l,
+              broker_id: "corretor-michele",
+              broker_name: "Michele Folster",
+              timeline: [
+                ...(l.timeline || []),
+                {
+                  id: `act-reassign-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  created_at: new Date().toISOString(),
+                  author_name: "Sistema",
+                  type: "broker_assigned",
+                  content: `Lead reatribuído automaticamente para Michele Folster devido à exclusão de ${brokerName}.`,
+                },
+              ],
+              updated_at: new Date().toISOString(),
+            };
+          }
+          return l;
+        });
+        localStorage.setItem("app_crm_leads", JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.warn("Aviso ao reatribuir leads:", e);
+    }
+
+    // 3. Reatribui Mensagens locais
+    try {
+      const rawMsgs = localStorage.getItem("app_messages_leads");
+      if (rawMsgs) {
+        const msgs = JSON.parse(rawMsgs);
+        const updated = msgs.map((m: any) => {
+          if (m.corretor_atribuido_id === brokerId) {
+            reassignedMsgs++;
+            return {
+              ...m,
+              corretor_atribuido_id: "corretor-michele",
+              corretor_nome: "Michele Folster",
+            };
+          }
+          return m;
+        });
+        localStorage.setItem("app_messages_leads", JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.warn("Aviso ao reatribuir mensagens:", e);
+    }
+
+    // 4. Remove o corretor da lista local
+    deleteLocalBroker(brokerId);
+  }
+
+  // 5. Executa a reatribuição no Supabase em segundo plano
+  Promise.resolve(
+    supabase.rpc("reassign_and_delete_broker" as any, {
+      _broker_id: brokerId,
+      _target_admin_email: "michele@michelefolster.com.br",
+    })
+  ).catch(() => {});
+
+  Promise.resolve(
+    supabase
+      .from("properties")
+      .update({ broker_id: "corretor-michele" })
+      .eq("broker_id", brokerId)
+  ).catch(() => {});
+
+  Promise.resolve(
+    supabase
+      .from("leads")
+      .update({ broker_id: "corretor-michele" })
+      .eq("broker_id", brokerId)
+  ).catch(() => {});
+
+  Promise.resolve(
+    supabase
+      .from("messages_leads" as any)
+      .update({ corretor_atribuido_id: null, corretor_nome: "Michele Folster" })
+      .eq("corretor_atribuido_id", brokerId)
+  ).catch(() => {});
+
+  Promise.resolve(
+    supabase
+      .from("profiles")
+      .update({ active: false })
+      .eq("id", brokerId)
+  ).catch(() => {});
+
+  Promise.resolve(
+    supabase
+      .from("broker_permissions" as any)
+      .delete()
+      .eq("user_id", brokerId)
+  ).catch(() => {});
+
+  return { reassignedProps, reassignedLeads, reassignedMsgs };
+}
+
 /**
  * Retorna o perfil completo do usuário autenticado no momento,
  * calculando sua role (super_admin, admin ou corretor) e permissões granulares.

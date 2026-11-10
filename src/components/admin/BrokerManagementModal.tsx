@@ -6,14 +6,16 @@ import {
   Plus,
   Check,
   X,
-  Edit2,
   Mail,
   Phone,
   Building,
   UserCheck,
   UserX,
   Sliders,
-  Sparkles,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,6 +25,8 @@ import {
   saveLocalBroker,
   updateBrokerPermissions,
   updateBrokerStatus,
+  reassignAndDeleteBroker,
+  formatMembershipDuration,
 } from "@/lib/brokers";
 import { type Property } from "@/lib/realty";
 
@@ -43,6 +47,10 @@ export function BrokerManagementModal({
   const [selectedBroker, setSelectedBroker] = useState<Broker | null>(null);
   const [isEditingPermissions, setIsEditingPermissions] = useState(false);
   const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
+
+  // Estado para exclusão e reatribuição de corretor
+  const [brokerToDelete, setBrokerToDelete] = useState<Broker | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Formulário de Novo Corretor / Redefinição de Credenciais
   const [formName, setFormName] = useState("");
@@ -141,9 +149,42 @@ export function BrokerManagementModal({
     refreshList();
   };
 
+  // Confirmação de exclusão com reatribuição automática
+  const handleConfirmDelete = async () => {
+    if (!brokerToDelete) return;
+    setIsDeleting(true);
+
+    try {
+      const { reassignedProps, reassignedLeads } = await reassignAndDeleteBroker(
+        brokerToDelete.id,
+        brokerToDelete.name
+      );
+
+      toast.success(
+        `Corretor(a) ${brokerToDelete.name} excluído(a) com sucesso! ${
+          reassignedProps > 0 || reassignedLeads > 0
+            ? `${reassignedProps} imóveis e ${reassignedLeads} leads foram reatribuídos para Michele Folster.`
+            : "Todos os vínculos foram transferidos para Michele Folster."
+        }`
+      );
+
+      setBrokerToDelete(null);
+      if (selectedBroker?.id === brokerToDelete.id) {
+        setIsEditingPermissions(false);
+        setSelectedBroker(null);
+      }
+      refreshList();
+    } catch (err) {
+      toast.error("Erro ao excluir corretor. Tente novamente.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl rounded-2xl bg-surface border border-border shadow-2xl p-6 md:p-8 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+      {/* Container do Modal Ampliado para max-w-6xl */}
+      <div className="relative w-full max-w-6xl rounded-2xl bg-surface border border-border shadow-2xl p-6 md:p-8 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between pb-5 border-b border-border">
           <div className="flex items-center gap-3">
@@ -153,7 +194,7 @@ export function BrokerManagementModal({
             <div>
               <h2 className="text-xl font-bold text-foreground">Gestão de Corretores e Permissões</h2>
               <p className="text-xs text-muted-foreground">
-                Cadastre corretores, controle status e ajuste permissões individuais de acesso.
+                Cadastre corretores, controle status, gerencie permissões ou reatribua vínculos da equipe.
               </p>
             </div>
           </div>
@@ -175,25 +216,35 @@ export function BrokerManagementModal({
         </div>
 
         {/* Content Body */}
-        <div className="py-6 overflow-y-auto flex-1">
-          {/* Tabela de Corretores */}
-          <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="py-6 overflow-y-auto flex-1 space-y-6">
+          {/* Tabela de Corretores com formatação ampla e sem quebra de linhas */}
+          <div className="overflow-x-auto rounded-xl border border-border shadow-xs">
             <table className="w-full text-left text-xs">
-              <thead className="bg-secondary/60 text-muted-foreground uppercase font-semibold text-[10px] tracking-wider border-b border-border">
+              <thead className="bg-secondary/70 text-muted-foreground uppercase font-semibold text-[10px] tracking-wider border-b border-border">
                 <tr>
-                  <th className="py-3 px-4">Corretor</th>
-                  <th className="py-3 px-4">Contato</th>
-                  <th className="py-3 px-4">CRECI</th>
-                  <th className="py-3 px-4 text-center">Imóveis Atribuídos</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right">Permissões & Acesso</th>
+                  <th className="py-3 px-4 min-w-[220px]">Corretor</th>
+                  <th className="py-3 px-4 whitespace-nowrap min-w-[170px]">Contato</th>
+                  <th className="py-3 px-4 whitespace-nowrap min-w-[120px]">CRECI</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap min-w-[140px]">
+                    Imóveis Atribuídos
+                  </th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap min-w-[100px]">Status</th>
+                  <th className="py-3 px-4 text-right whitespace-nowrap min-w-[180px]">
+                    Permissões & Acesso
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {brokers.map((broker) => {
                   const assignedCount = getAssignedCount(broker.id, broker.name);
+                  const isMichelePrincipal =
+                    broker.id === "corretor-michele" ||
+                    broker.email.toLowerCase() === "michele@michelefolster.com.br" ||
+                    broker.role === "admin";
+
                   return (
                     <tr key={broker.id} className="hover:bg-secondary/20 transition-colors">
+                      {/* Corretor & Avatar */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="size-10 rounded-full overflow-hidden bg-accent border border-border/80 shrink-0">
@@ -209,47 +260,53 @@ export function BrokerManagementModal({
                               </div>
                             )}
                           </div>
-                          <div>
-                            <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                              {broker.name}
-                              {broker.role === "admin" && (
-                                <span className="chip text-[10px] bg-primary/10 text-primary border-primary/20 h-4 px-1.5 font-bold">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-sm flex items-center gap-1.5 truncate">
+                              <span>{broker.name}</span>
+                              {isMichelePrincipal && (
+                                <span className="chip text-[10px] bg-primary/10 text-primary border-primary/20 h-4 px-1.5 font-bold shrink-0">
                                   Gestora / Admin
                                 </span>
                               )}
                             </p>
-                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                              <Mail className="size-3" />
-                              {broker.email}
+                            <p className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
+                              <Mail className="size-3 shrink-0" />
+                              <span className="truncate">{broker.email}</span>
                             </p>
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Phone className="size-3 text-primary" />
-                          <span>{broker.phone}</span>
+                      {/* Contato (Linha única garantida com whitespace-nowrap) */}
+                      <td className="py-3.5 px-4 font-mono text-muted-foreground whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <Phone className="size-3.5 text-primary shrink-0" />
+                          <span className="whitespace-nowrap font-semibold text-foreground text-xs">
+                            {broker.phone}
+                          </span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <span className="font-mono font-medium text-foreground bg-secondary px-2 py-0.5 rounded">
+                      {/* CRECI (Linha única garantida com whitespace-nowrap) */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="font-mono font-medium text-foreground bg-secondary px-2.5 py-1 rounded whitespace-nowrap inline-block">
                           {broker.creci || "Sem CRECI"}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 font-bold text-foreground bg-accent/70 px-2.5 py-0.5 rounded-full text-xs">
-                          <Building className="size-3 text-primary" />
-                          {assignedCount}
+                      {/* Imóveis Atribuídos */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 font-bold text-foreground bg-accent/70 px-3 py-1 rounded-full text-xs">
+                          <Building className="size-3.5 text-primary shrink-0" />
+                          <span>{assignedCount} {assignedCount === 1 ? "imóvel" : "imóveis"}</span>
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      {/* Status */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => handleToggleActive(broker)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-colors ${
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors ${
                             broker.active
                               ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-200"
                               : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 hover:bg-rose-200"
@@ -267,14 +324,36 @@ export function BrokerManagementModal({
                         </button>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={() => handleOpenPermissions(broker)}
-                          className="btn btn-outline text-xs h-8 gap-1.5"
-                        >
-                          <Sliders className="size-3.5 text-primary" />
-                          <span>Configurar</span>
-                        </button>
+                      {/* Permissões & Ação de Apagar */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenPermissions(broker)}
+                            className="btn btn-outline text-xs h-8 gap-1.5"
+                            title="Configurar permissões"
+                          >
+                            <Sliders className="size-3.5 text-primary" />
+                            <span>Configurar</span>
+                          </button>
+
+                          {/* Botão Apagar / Excluir (Oculto/desabilitado para Michele Folster) */}
+                          {isMichelePrincipal ? (
+                            <div
+                              className="grid size-8 place-items-center rounded-lg text-muted-foreground/30 cursor-not-allowed"
+                              title="Usuário gestor principal não pode ser excluído"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setBrokerToDelete(broker)}
+                              className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 transition-colors"
+                              title={`Excluir corretor(a) ${broker.name}`}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -285,7 +364,7 @@ export function BrokerManagementModal({
 
           {/* Sub-painel de Configuração de Permissões */}
           {isEditingPermissions && selectedBroker && (
-            <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-5 animate-in fade-in slide-in-from-top-2">
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 animate-in fade-in slide-in-from-top-2">
               <div className="flex items-center justify-between pb-3 border-b border-primary/20">
                 <div className="flex items-center gap-2">
                   <Shield className="size-5 text-primary" />
@@ -321,7 +400,11 @@ export function BrokerManagementModal({
                           : "bg-muted-foreground/40"
                       }`}
                     >
-                      {selectedBroker.permissions.pode_cadastrar_imovel ? <Check className="size-3" /> : <X className="size-3" />}
+                      {selectedBroker.permissions.pode_cadastrar_imovel ? (
+                        <Check className="size-3" />
+                      ) : (
+                        <X className="size-3" />
+                      )}
                     </span>
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
@@ -347,7 +430,11 @@ export function BrokerManagementModal({
                           : "bg-muted-foreground/40"
                       }`}
                     >
-                      {selectedBroker.permissions.pode_ver_ofertas_gerais ? <Check className="size-3" /> : <X className="size-3" />}
+                      {selectedBroker.permissions.pode_ver_ofertas_gerais ? (
+                        <Check className="size-3" />
+                      ) : (
+                        <X className="size-3" />
+                      )}
                     </span>
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
@@ -373,7 +460,11 @@ export function BrokerManagementModal({
                           : "bg-muted-foreground/40"
                       }`}
                     >
-                      {selectedBroker.permissions.pode_ver_captacoes ? <Check className="size-3" /> : <X className="size-3" />}
+                      {selectedBroker.permissions.pode_ver_captacoes ? (
+                        <Check className="size-3" />
+                      ) : (
+                        <X className="size-3" />
+                      )}
                     </span>
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
@@ -384,6 +475,89 @@ export function BrokerManagementModal({
             </div>
           )}
         </div>
+
+        {/* Modal de Confirmação de Exclusão com Reatribuição */}
+        {brokerToDelete && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="w-full max-w-lg rounded-2xl bg-surface border border-border p-6 md:p-8 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+              <div className="flex items-start gap-3.5">
+                <div className="grid size-12 place-items-center rounded-2xl bg-rose-500/10 text-rose-600 shrink-0">
+                  <AlertTriangle className="size-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">
+                    Excluir Corretor(a) {brokerToDelete.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Revise as informações de impacto e confirme a transferência dos dados.
+                  </p>
+                </div>
+              </div>
+
+              {/* Resumo de Impacto */}
+              <div className="grid grid-cols-2 gap-3 rounded-xl bg-secondary/50 p-4 border border-border">
+                <div>
+                  <p className="text-[11px] text-muted-foreground font-medium">Imóveis Atribuídos</p>
+                  <p className="text-base font-bold text-foreground mt-0.5 flex items-center gap-1.5">
+                    <Building className="size-4 text-primary" />
+                    <span>
+                      {getAssignedCount(brokerToDelete.id, brokerToDelete.name)}{" "}
+                      {getAssignedCount(brokerToDelete.id, brokerToDelete.name) === 1
+                        ? "imóvel"
+                        : "imóveis"}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground font-medium">Tempo de Cadastro</p>
+                  <p className="text-base font-bold text-foreground mt-0.5 flex items-center gap-1.5">
+                    <Clock className="size-4 text-primary" />
+                    <span>{formatMembershipDuration(brokerToDelete.created_at)}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Mensagem de Alerta em Destaque */}
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-200 font-medium">
+                  <strong>Aviso de integridade:</strong> Esta ação <u>não apagará</u> os imóveis ou
+                  captações cadastrados por este corretor. Todos os imóveis, leads e históricos de
+                  contato vinculados a ele serão <strong>automaticamente reatribuídos para a gestora Michele Folster</strong>.
+                </p>
+              </div>
+
+              {/* Ações */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setBrokerToDelete(null)}
+                  className="btn btn-ghost text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={handleConfirmDelete}
+                  className="btn bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold gap-2 shadow-xs"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      <span>Excluindo e Reatribuindo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="size-4" />
+                      <span>Confirmar Exclusão</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal de Cadastro de Novo Corretor */}
         {isNewBrokerModalOpen && (

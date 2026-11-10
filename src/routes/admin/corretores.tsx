@@ -81,15 +81,16 @@ function AdminBrokersPage() {
           </button>
         </div>
 
-        {/* Modal embed direto na página */}
-        <div className="panel p-6 shadow-sm">
-          <BrokerManagementModal
-            isOpen={true}
-            onClose={() => {}}
-            properties={properties}
-          />
-        </div>
+        {/* Modal interativo de corretores */}
+        <BrokerManagementModal
+          isOpen={true}
+          onClose={() => {
+            window.location.href = "/admin";
+          }}
+          properties={properties}
+        />
       </main>
     </div>
   );
 }
+
