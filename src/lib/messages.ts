@@ -28,78 +28,12 @@ export interface MessageLead {
   created_at: string;
 }
 
-export const INITIAL_MESSAGES: MessageLead[] = [
-  {
-    id: "msg-demo-1",
-    tipo: "imovel",
-    nome_cliente: "Carlos Eduardo Silveira",
-    telefone_cliente: "(12) 99765-4321",
-    email_cliente: "carlos.silveira@gmail.com",
-    interesse: "Agendar visita",
-    mensagem: "Gostaria de agendar uma visita para sábado pela manhã na casa do Jardim América. Tenho aprovação de financiamento.",
-    imovel_id: "prop-demo-1",
-    codigo_imovel: "CA0531",
-    titulo_imovel: "Casa térrea com jardim e área gourmet",
-    corretor_atribuido_id: "corretor-marcos",
-    corretor_nome: "Marcos Vinicius",
-    status: "em_atendimento",
-    data_envio: new Date(Date.now() - 3600000 * 2).toISOString(),
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: "msg-demo-2",
-    tipo: "captacao",
-    nome_cliente: "Dra. Renata Vasconcellos",
-    telefone_cliente: "(12) 98112-9988",
-    email_cliente: "renata.vasc@clinica.com.br",
-    interesse: "Anunciar meu imóvel",
-    mensagem: "Tenho um sobrado no Condomínio Terras do Vale e quero colocar para venda exclusiva. Imóvel recém reformado.",
-    tipo_imovel: "Casa em Condomínio",
-    cidade_bairro: "Caçapava - Terras do Vale",
-    valor_pretendido: 1450000,
-    foto_imovel_url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80",
-    corretor_atribuido_id: "corretor-michele",
-    corretor_nome: "Michele Folster",
-    status: "pendente",
-    data_envio: new Date(Date.now() - 3600000 * 5).toISOString(),
-    created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-  },
-  {
-    id: "msg-demo-3",
-    tipo: "imovel",
-    nome_cliente: "Mariana Costa",
-    telefone_cliente: "(12) 98122-3344",
-    email_cliente: "mariana.costa@hotmail.com",
-    interesse: "Mais informações",
-    mensagem: "Procuro apartamento com vista livre e pelo menos 2 vagas. Esse imóvel aceita permuta com veículo?",
-    imovel_id: "prop-demo-2",
-    codigo_imovel: "AP0214",
-    titulo_imovel: "Apartamento com vista para o mar",
-    corretor_atribuido_id: "corretor-michele",
-    corretor_nome: "Michele Folster",
-    status: "pendente",
-    data_envio: new Date(Date.now() - 86400000).toISOString(),
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "msg-demo-4",
-    tipo: "captacao",
-    nome_cliente: "Fernando Bezerra",
-    telefone_cliente: "(12) 99188-7744",
-    email_cliente: "fernando.bezerra@agro.com.br",
-    interesse: "Anunciar meu imóvel",
-    mensagem: "Quero anunciar um terreno de 1.200m² plano no Portal das Colinas, quitado e com escritura registrada.",
-    tipo_imovel: "Terreno",
-    cidade_bairro: "Caçapava - Portal das Colinas",
-    valor_pretendido: 480000,
-    foto_imovel_url: null,
-    status: "concluido",
-    corretor_atribuido_id: "corretor-patricia",
-    corretor_nome: "Patrícia Lima",
-    data_envio: new Date(Date.now() - 86400000 * 3).toISOString(),
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-];
+export function isUuid(value: string | null | undefined): boolean {
+  if (!value || typeof value !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+export const INITIAL_MESSAGES: MessageLead[] = [];
 
 const LOCAL_STORAGE_MESSAGES_KEY = "app_messages_leads";
 
@@ -158,11 +92,22 @@ export async function fetchMessages(): Promise<MessageLead[]> {
     console.warn("Aviso ao buscar mensagens no Supabase:", err);
   }
 
-  return INITIAL_MESSAGES;
+  return [];
 }
 
 export function getLocalMessages(): MessageLead[] {
-  return INITIAL_MESSAGES;
+  return [];
+}
+
+function generateUuid(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 export async function saveMessageLead(payload: {
@@ -183,12 +128,16 @@ export async function saveMessageLead(payload: {
   foto_imovel_url?: string | null;
   dados_cliente?: Record<string, any>;
 }): Promise<MessageLead> {
-  const newId =
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `msg-${Date.now()}`;
+  const newId = generateUuid();
 
   const now = new Date().toISOString();
+
+  const validPropertyId: string | null = (payload.imovel_id && isUuid(payload.imovel_id)) ? payload.imovel_id : null;
+  const validBrokerId: string | null = (payload.corretor_atribuido_id && isUuid(payload.corretor_atribuido_id))
+    ? payload.corretor_atribuido_id
+    : payload.corretor_atribuido_id === "corretor-michele"
+    ? "c011e701-0001-4000-8000-000000000001"
+    : null;
 
   const newMessage: MessageLead = {
     id: newId,
@@ -198,10 +147,10 @@ export async function saveMessageLead(payload: {
     email_cliente: payload.email_cliente ?? null,
     interesse: payload.interesse,
     mensagem: payload.mensagem,
-    imovel_id: payload.imovel_id ?? null,
+    imovel_id: validPropertyId,
     codigo_imovel: payload.codigo_imovel ?? null,
     titulo_imovel: payload.titulo_imovel ?? null,
-    corretor_atribuido_id: payload.corretor_atribuido_id ?? null,
+    corretor_atribuido_id: validBrokerId,
     corretor_nome: payload.corretor_nome ?? null,
     status: "pendente",
     tipo_imovel: payload.tipo_imovel ?? null,
@@ -230,9 +179,9 @@ export async function saveMessageLead(payload: {
     phone: payload.telefone_cliente,
     email: payload.email_cliente ?? null,
     message: payload.mensagem,
-    interest: payload.interesse,
+    interest: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : payload.interesse,
     consent: true,
-    property_id: payload.imovel_id ?? null,
+    property_id: validPropertyId,
     property_code: payload.codigo_imovel ?? null,
     property_title: payload.titulo_imovel ?? null,
     source: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : "Site",
@@ -240,7 +189,7 @@ export async function saveMessageLead(payload: {
     status: "novo",
     temperature: "quente",
     transaction_type: payload.interesse === "locacao" ? "alugar" : "comprar",
-    broker_id: payload.corretor_atribuido_id ?? null,
+    broker_id: validBrokerId,
     broker_name: payload.corretor_nome ?? null,
     timeline: [
       {
@@ -254,6 +203,7 @@ export async function saveMessageLead(payload: {
     created_at: now,
     updated_at: now,
   };
+
   // Persiste diretamente na tabela leads do Supabase
   const { error } = await supabase.from("leads").insert({
     id: newId,
@@ -263,11 +213,11 @@ export async function saveMessageLead(payload: {
     message: payload.mensagem,
     interest: payload.interesse,
     consent: true,
-    property_id: payload.imovel_id ?? null,
+    property_id: validPropertyId,
     property_code: payload.codigo_imovel ?? null,
     source: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : "Site",
     status: "novo",
-    broker_id: payload.corretor_atribuido_id === "c011e701-0001-4000-8000-000000000001" ? null : payload.corretor_atribuido_id ?? null,
+    broker_id: validBrokerId,
   });
 
   if (error) {
@@ -282,6 +232,11 @@ export async function updateMessageStatus(
   id: string,
   newStatus: MessageStatus
 ): Promise<{ success: boolean; error?: string }> {
+  // Evita tentar atualizar IDs não-UUID no banco real
+  if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+    return { success: true };
+  }
+
   const statusMap: Record<MessageStatus, string> = {
     pendente: "novo",
     em_atendimento: "em_atendimento",
@@ -308,10 +263,21 @@ export async function assignMessageBroker(
   brokerId: string,
   brokerName: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Evita tentar atualizar IDs não-UUID no banco real
+  if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+    return { success: true };
+  }
+
+  const validBrokerId = isUuid(brokerId)
+    ? brokerId
+    : brokerId === "corretor-michele"
+    ? "c011e701-0001-4000-8000-000000000001"
+    : null;
+
   try {
     const { error } = await supabase
       .from("leads")
-      .update({ broker_id: brokerId, updated_at: new Date().toISOString() })
+      .update({ broker_id: validBrokerId, updated_at: new Date().toISOString() })
       .eq("id", id);
     if (error) {
       console.error("Erro ao salvar no Supabase:", error.message);
@@ -325,6 +291,11 @@ export async function assignMessageBroker(
 }
 
 export async function deleteLocalMessage(id: string): Promise<{ success: boolean; error?: string }> {
+  // Evita tentar deletar IDs não-UUID no banco real
+  if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase.from("leads").delete().eq("id", id);
     if (error) {

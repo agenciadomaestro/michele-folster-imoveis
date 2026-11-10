@@ -112,7 +112,7 @@ export async function fetchBrokers(includeHidden = false): Promise<Broker[]> {
     if (!error && profiles && profiles.length > 0) {
       const list: Broker[] = profiles.map((p) => {
         const isMichele = Boolean(
-          p.id === "corretor-michele" ||
+          p.id === MICHELE_BROKER_ID ||
           p.full_name?.toLowerCase().includes("michele")
         );
         
@@ -250,7 +250,24 @@ export async function updateBrokerPermissions(
   } catch {}
 }
 
+export function isUuid(value: string | null | undefined): boolean {
+  if (!value || typeof value !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
 export async function updateBrokerStatus(brokerId: string, active: boolean): Promise<void> {
+  // Evita tentar atualizar IDs não-UUID no banco real
+  if (!isUuid(brokerId)) {
+    if (typeof window !== "undefined") {
+      try {
+        const current = getLocalBrokers(false);
+        const updated = current.map((b) => (b.id === brokerId ? { ...b, active } : b));
+        localStorage.setItem(LOCAL_STORAGE_BROKERS_KEY, JSON.stringify(updated));
+      } catch {}
+    }
+    return;
+  }
+
   // 1. Atualiza diretamente no Supabase
   const { error } = await supabase.from("profiles").update({ active }).eq("id", brokerId);
   if (error) {
@@ -313,6 +330,12 @@ export async function reassignAndDeleteBroker(
   let reassignedLeads = 0;
   let reassignedMsgs = 0;
 
+  // Evita tentar deletar IDs não-UUID no banco real
+  if (!isUuid(brokerId)) {
+    deleteLocalBroker(brokerId);
+    return { reassignedProps: 0, reassignedLeads: 0, reassignedMsgs: 0 };
+  }
+
   // 1. Atualização direta no Supabase
   // Reatribui imóveis
   const { error: errProp } = await supabase
@@ -350,7 +373,7 @@ export async function reassignAndDeleteBroker(
       if (rawProps) {
         const props = JSON.parse(rawProps);
         const updated = props.map((p: any) =>
-          p.broker_id === brokerId ? { ...p, broker_id: "corretor-michele" } : p
+          p.broker_id === brokerId ? { ...p, broker_id: MICHELE_BROKER_ID } : p
         );
         localStorage.setItem("app_custom_properties", JSON.stringify(updated));
       }
@@ -361,7 +384,7 @@ export async function reassignAndDeleteBroker(
       if (rawLeads) {
         const leads = JSON.parse(rawLeads);
         const updated = leads.map((l: any) =>
-          l.broker_id === brokerId ? { ...l, broker_id: "corretor-michele", broker_name: "Michele Folster" } : l
+          l.broker_id === brokerId ? { ...l, broker_id: MICHELE_BROKER_ID, broker_name: "Michele Folster" } : l
         );
         localStorage.setItem("app_crm_leads", JSON.stringify(updated));
       }

@@ -38,6 +38,8 @@ import {
   fetchLeads,
   updateLeadStatusInDb,
   deleteLeadInDb,
+  deleteLocalLead,
+  isUuid,
   buildWhatsappChatUrl,
 } from "@/lib/leads";
 import { KanbanCard } from "@/components/admin/KanbanCard";
@@ -174,6 +176,17 @@ function LeadsManagementPage() {
 
     const newStatusCol = KANBAN_COLUMNS.find((c) => c.id === newStatus)?.title;
 
+    // Evita tentar atualizar registros fictícios de demo no banco real
+    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
+      deleteLocalLead(leadId);
+      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+        prev.filter((item) => item.id !== leadId)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+      toast.info("Registro de demonstração antigo removido da lista.");
+      return;
+    }
+
     // Persistência direta no Supabase DB
     const res = await updateLeadStatusInDb(leadId, newStatus);
     if (!res.success) {
@@ -217,6 +230,17 @@ function LeadsManagementPage() {
   };
 
   const handleDeleteLead = async (leadId: string) => {
+    // Evita tentar deletar registros fictícios de demo no banco real
+    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
+      deleteLocalLead(leadId);
+      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+        prev.filter((item) => item.id !== leadId)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+      toast.success("Lead removido com sucesso.");
+      return;
+    }
+
     const res = await deleteLeadInDb(leadId);
     if (!res.success) {
       toast.error(`Falha ao excluir no Supabase: ${res.error}`);

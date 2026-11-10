@@ -159,21 +159,21 @@ export const DEFAULT_BROKERS: BrokerProfile[] = [
     active: true,
   },
   {
-    id: "corretor-michele",
+    id: "c011e701-0001-4000-8000-000000000001",
     name: "Michele Folster",
     email: "michele@michelefolster.com.br",
     role: "broker",
     active: true,
   },
   {
-    id: "corretor-marcos",
+    id: "c011e701-0002-4000-8000-000000000002",
     name: "Marcos Vinicius",
     email: "marcos@michelefolster.com.br",
     role: "broker",
     active: true,
   },
   {
-    id: "corretor-patricia",
+    id: "c011e701-0003-4000-8000-000000000003",
     name: "Patrícia Lima",
     email: "patricia@michelefolster.com.br",
     role: "broker",
@@ -181,240 +181,32 @@ export const DEFAULT_BROKERS: BrokerProfile[] = [
   },
 ];
 
-const INITIAL_DEMO_LEADS: Lead[] = [
-  {
-    id: "lead-demo-1",
-    name: "Carlos Eduardo Silveira",
-    phone: "(12) 99765-4321",
-    email: "carlos.silveira@gmail.com",
-    message: "Gostei muito da casa no Jardim América. Aceita financiamento bancário pela Caixa?",
-    interest: "Casa térrea com jardim e área gourmet",
-    property_code: "CA0531",
-    property_title: "Casa térrea com jardim e área gourmet",
-    property_price: 1890000,
-    source: "Site",
-    source_page: "/imovel/CA0531",
-    status: "novo",
-    temperature: "quente",
-    transaction_type: "comprar",
-    broker_id: "abb75384-d851-45fe-b7dd-c870c48b55f3",
-    broker_name: "Master Agbipe",
-    next_action: "Ligar para agendar visita inicial",
-    next_action_date: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
-    notes: "Cliente com carta de crédito pré-aprovada de R$ 1.5M. Quer visitar aos fins de semana.",
-    timeline: [
-      {
-        id: "act-1",
-        created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-        author_name: "Sistema",
-        type: "contact",
-        content: "Lead gerado através do formulário do site na página do imóvel CA0531.",
-      },
-    ],
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: "lead-demo-2",
-    name: "Mariana Costa",
-    phone: "(12) 98122-3344",
-    email: "mariana.costa@hotmail.com",
-    message: "Procuro apartamento com vista livre e pelo menos 2 vagas de garagem.",
-    interest: "Apartamento com vista para o mar",
-    property_code: "AP0214",
-    property_title: "Apartamento com vista para o mar",
-    property_price: 2350000,
-    source: "Meta Ads",
-    status: "em_contato",
-    temperature: "quente",
-    transaction_type: "comprar",
-    broker_id: "corretor-michele",
-    broker_name: "Michele Folster",
-    next_action: "Enviar simulação de financiamento e tour virtual",
-    next_action_date: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10),
-    notes: "Conversamos no WhatsApp. Mariana mora em São Paulo e busca imóvel para moradia definitiva.",
-    timeline: [
-      {
-        id: "act-2a",
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        author_name: "Michele Folster",
-        type: "contact",
-        content: "Primeiro contato via WhatsApp realizado. Enviado catálogo dos apartamentos disponíveis.",
-      },
-      {
-        id: "act-2b",
-        created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-        author_name: "Michele Folster",
-        type: "note",
-        content: "Mariana demonstrou alto interesse no AP0214. Solicitou simulação de fluxo com entrada de 30%.",
-      },
-    ],
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-  },
-  {
-    id: "lead-demo-3",
-    name: "Roberto & Juliana Mendes",
-    phone: "(12) 99111-2233",
-    email: "roberto.mendes@uol.com.br",
-    message: "Queremos conhecer o sobrado no condomínio fechado neste sábado de manhã.",
-    interest: "Sobrado moderno em condomínio",
-    property_code: "SO0107",
-    property_title: "Sobrado moderno em condomínio",
-    property_price: 1450000,
-    source: "Portal",
-    status: "visita_agendada",
-    temperature: "quente",
-    transaction_type: "comprar",
-    broker_id: "corretor-marcos",
-    broker_name: "Marcos Vinicius",
-    next_action: "Confirmar visita sábado às 10h",
-    next_action_date: new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10),
-    notes: "Visita confirmada com o proprietário para sábado às 10:00. Chaves na portaria.",
-    timeline: [
-      {
-        id: "act-3a",
-        created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-        author_name: "Marcos Vinicius",
-        type: "appointment",
-        content: "Visita presencial agendada para sábado às 10h00 no condomínio.",
-      },
-    ],
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "lead-demo-4",
-    name: "Fernando Albuquerque",
-    phone: "(12) 98877-6655",
-    email: "fernando.alb@empresa.com.br",
-    message: "Fizemos a proposta por escrito para o terreno plano.",
-    interest: "Terreno plano em loteamento",
-    property_code: "TE0042",
-    property_title: "Terreno plano em loteamento",
-    property_price: 420000,
-    source: "Indicação",
-    status: "proposta",
-    temperature: "morno",
-    transaction_type: "comprar",
-    broker_id: "5839dc85-f229-47f9-927c-4a974705b15a",
-    broker_name: "Everson Maestro",
-    next_action: "Cobrar resposta do proprietário da contraproposta",
-    next_action_date: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
-    notes: "Proposta formal de R$ 390.000 à vista apresentada ao vendedor.",
-    timeline: [
-      {
-        id: "act-4a",
-        created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-        author_name: "Everson Maestro",
-        type: "status_change",
-        content: "Proposta de R$ 390.000 enviada ao vendedor para avaliação.",
-      },
-    ],
-    created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "lead-demo-5",
-    name: "Beatriz Vasconcelos",
-    phone: "(12) 97401-9988",
-    email: "beatriz.v@clinica.med.br",
-    message: "Locação da sala comercial para consultório médico.",
-    interest: "Sala comercial em edifício corporativo",
-    property_code: "SA0019",
-    property_title: "Sala comercial em edifício corporativo",
-    property_price: 4500,
-    source: "Site",
-    status: "em_negociacao",
-    temperature: "quente",
-    transaction_type: "alugar",
-    broker_id: "corretor-patricia",
-    broker_name: "Patrícia Lima",
-    next_action: "Emitir minuta de contrato de locação e seguro fiança",
-    next_action_date: new Date().toISOString().slice(0, 10),
-    notes: "Ficha cadastral aprovada pela Porto Seguro. Minuta em elaboração pelo jurídico.",
-    timeline: [
-      {
-        id: "act-5a",
-        created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-        author_name: "Patrícia Lima",
-        type: "status_change",
-        content: "Análise de crédito e seguro fiança aprovados com sucesso.",
-      },
-    ],
-    created_at: new Date(Date.now() - 86400000 * 6).toISOString(),
-    updated_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "lead-demo-6",
-    name: "Rodrigo Nogueira",
-    phone: "(12) 99344-5566",
-    email: "rodrigo.nog@tech.com",
-    message: "Aluguel fechado para início no próximo mês.",
-    interest: "Apartamento compacto mobiliado",
-    property_code: "AP0388",
-    property_title: "Apartamento compacto mobiliado",
-    property_price: 3200,
-    source: "WhatsApp",
-    status: "fechado",
-    temperature: "quente",
-    transaction_type: "alugar",
-    broker_id: "abb75384-d851-45fe-b7dd-c870c48b55f3",
-    broker_name: "Master Agbipe",
-    notes: "Contrato assinado digitalmente pelas partes e chaves entregues com sucesso.",
-    timeline: [
-      {
-        id: "act-6a",
-        created_at: new Date(Date.now() - 86400000 * 7).toISOString(),
-        author_name: "Master Agbipe",
-        type: "status_change",
-        content: "Contrato assinado! Negócio concretizado com sucesso.",
-      },
-    ],
-    created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
-    updated_at: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-  {
-    id: "lead-demo-7",
-    name: "Lucas Pinheiro",
-    phone: "(12) 98233-4411",
-    email: "lucas.p@gmail.com",
-    message: "Estava procurando casa em condomínio fechado.",
-    source: "Meta Ads",
-    status: "perdido",
-    temperature: "frio",
-    transaction_type: "comprar",
-    broker_id: "corretor-michele",
-    broker_name: "Michele Folster",
-    loss_reason: "Optou por comprar imóvel em outra cidade (São José dos Campos).",
-    notes: "Cliente cordial, mas comprou próximo ao trabalho em SJC. Manter na base para futuro.",
-    timeline: [
-      {
-        id: "act-7a",
-        created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-        author_name: "Michele Folster",
-        type: "status_change",
-        content: "Lead arquivado como Perdido. Motivo: Comprou em outra região.",
-      },
-    ],
-    created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
-    updated_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-  },
-];
+export function isUuid(value: string | null | undefined): boolean {
+  if (!value || typeof value !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+export const INITIAL_DEMO_LEADS: Lead[] = [];
 
 const LOCAL_STORAGE_LEADS_KEY = "app_crm_leads";
 
 export function getLocalLeads(): Lead[] {
-  if (typeof window === "undefined") return INITIAL_DEMO_LEADS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_LEADS_KEY);
-    if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_LEADS_KEY, JSON.stringify(INITIAL_DEMO_LEADS));
-      return INITIAL_DEMO_LEADS;
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    if (Array.isArray(list)) {
+      // Purga qualquer registro mock legado sem UUID válido
+      const clean = list.filter((l) => isUuid(l.id));
+      if (clean.length !== list.length) {
+        localStorage.setItem(LOCAL_STORAGE_LEADS_KEY, JSON.stringify(clean));
+      }
+      return clean;
     }
-    return JSON.parse(raw);
+    return [];
   } catch {
-    return INITIAL_DEMO_LEADS;
+    return [];
   }
 }
 
@@ -444,7 +236,7 @@ export async function fetchLeads(): Promise<Lead[]> {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (!error && supabaseLeads && supabaseLeads.length > 0) {
+    if (!error && supabaseLeads) {
       return supabaseLeads.map((sl: any) => ({
         id: sl.id,
         name: sl.name,
@@ -472,54 +264,23 @@ export async function fetchLeads(): Promise<Lead[]> {
         updated_at: sl.updated_at || new Date().toISOString(),
       }));
     }
-
-    // Se estiver vazio no Supabase, semeia os leads iniciais diretamente no banco
-    if (!error && supabaseLeads && supabaseLeads.length === 0) {
-      for (const l of INITIAL_DEMO_LEADS) {
-        const payload: {
-          id?: string;
-          name: string;
-          phone: string;
-          email: string | null;
-          message: string | null;
-          interest: string;
-          consent: boolean;
-          property_code: string | null;
-          source: string;
-          status: LeadStatus;
-          broker_id: string | null;
-          notes: string | null;
-        } = {
-          name: l.name,
-          phone: l.phone,
-          email: l.email || null,
-          message: l.message || null,
-          interest: l.interest || "Mais informações",
-          consent: true,
-          property_code: l.property_code || null,
-          source: l.source || "Site",
-          status: l.status,
-          broker_id: l.broker_id === "c011e701-0001-4000-8000-000000000001" ? null : l.broker_id || null,
-          notes: l.notes || null,
-        };
-        if (!l.id.startsWith("lead-demo")) {
-          payload.id = l.id;
-        }
-        await supabase.from("leads").insert(payload);
-      }
-      return INITIAL_DEMO_LEADS;
-    }
   } catch (err) {
     console.warn("Aviso ao buscar leads no Supabase:", err);
   }
 
-  return INITIAL_DEMO_LEADS;
+  return [];
 }
 
 export async function updateLeadStatusInDb(
   id: string,
   newStatus: LeadStatus
 ): Promise<{ success: boolean; error?: string }> {
+  // Evita tentar atualizar IDs não-UUID no banco real
+  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
+    deleteLocalLead(id);
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from("leads")
@@ -541,6 +302,13 @@ export async function updateLeadStatusInDb(
 }
 
 export async function deleteLeadInDb(id: string): Promise<{ success: boolean; error?: string }> {
+  deleteLocalLead(id);
+
+  // Evita tentar deletar registros fictícios de demo no banco real
+  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase.from("leads").delete().eq("id", id);
     if (error) {

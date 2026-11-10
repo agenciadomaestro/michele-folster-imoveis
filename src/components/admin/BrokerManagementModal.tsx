@@ -29,6 +29,7 @@ import {
   updateBrokerStatus,
   reassignAndDeleteBroker,
   formatMembershipDuration,
+  MICHELE_BROKER_ID,
 } from "@/lib/brokers";
 import { type Property } from "@/lib/realty";
 
@@ -288,6 +289,7 @@ export function BrokerManagementModal({
                 {brokers.map((broker) => {
                   const assignedCount = getAssignedCount(broker.id, broker.name);
                   const isMichelePrincipal =
+                    broker.id === MICHELE_BROKER_ID ||
                     broker.id === "corretor-michele" ||
                     broker.email.toLowerCase() === "michele@michelefolster.com.br" ||
                     broker.role === "admin";

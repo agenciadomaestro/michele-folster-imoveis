@@ -30,6 +30,7 @@ import {
   updateMessageStatus,
   assignMessageBroker,
   deleteLocalMessage,
+  isUuid,
   buildClientWhatsappReplyUrl,
 } from "@/lib/messages";
 import { fetchBrokers, getCurrentUserProfile } from "@/lib/brokers";
@@ -89,6 +90,16 @@ function AdminMessagesPage() {
   }, [queryClient]);
 
   const handleStatusChange = async (id: string, newStatus: MessageStatus) => {
+    // Evita tentar atualizar registros fictícios de demo no banco real
+    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
+        prev.filter((m) => m.id !== id)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+      toast.info("Registro de demonstração antigo removido da lista.");
+      return;
+    }
+
     const res = await updateMessageStatus(id, newStatus);
     if (!res.success) {
       toast.error(`Falha ao salvar no Supabase: ${res.error}`);
@@ -101,6 +112,17 @@ function AdminMessagesPage() {
   const handleBrokerAssign = async (id: string, brokerId: string) => {
     const broker = brokers.find((b) => b.id === brokerId);
     if (!broker) return;
+
+    // Evita tentar atualizar registros fictícios de demo no banco real
+    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
+        prev.filter((m) => m.id !== id)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+      toast.info("Registro de demonstração antigo removido da lista.");
+      return;
+    }
+
     const res = await assignMessageBroker(id, broker.id, broker.name);
     if (!res.success) {
       toast.error(`Falha ao salvar no Supabase: ${res.error}`);
@@ -112,6 +134,17 @@ function AdminMessagesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente remover esta mensagem da listagem?")) return;
+
+    // Evita tentar deletar registros fictícios de demo no banco real
+    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
+        prev.filter((item) => item.id !== id)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+      toast.success("Mensagem removida com sucesso.");
+      return;
+    }
+
     const res = await deleteLocalMessage(id);
     if (!res.success) {
       toast.error(`Falha ao excluir no Supabase: ${res.error}`);

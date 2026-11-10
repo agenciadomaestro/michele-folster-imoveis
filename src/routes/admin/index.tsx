@@ -136,8 +136,17 @@ function AdminDashboard() {
     return true;
   });
 
+  const isUuid = (val: string | null | undefined): boolean => {
+    if (!val || typeof val !== "string") return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  };
+
   // Alternar Destaque no Supabase com sincronização imediata
   const handleToggleFeatured = async (property: Property) => {
+    if (!isUuid(property.id)) {
+      toast.error("Identificador de imóvel inválido (não é um UUID).");
+      return;
+    }
     const nextFeatured = !property.featured;
     try {
       const { error } = await supabase
@@ -161,6 +170,10 @@ function AdminDashboard() {
 
   // Alternar Status no Supabase (publicado / rascunho)
   const handleToggleStatus = async (property: Property) => {
+    if (!isUuid(property.id)) {
+      toast.error("Identificador de imóvel inválido (não é um UUID).");
+      return;
+    }
     const nextStatus = property.status === "publicado" ? "rascunho" : "publicado";
     try {
       const { error } = await supabase
@@ -185,6 +198,17 @@ function AdminDashboard() {
   // Excluir Imóvel diretamente no Supabase DB e Storage
   const handleDeleteProperty = async (id: string, propTitle: string) => {
     if (!confirm(`Deseja realmente excluir o imóvel "${propTitle}"?`)) return;
+
+    // Se for ID fictício de mock antigo, remove da tela sem tentar consultar o Supabase
+    if (!isUuid(id) || id.startsWith("prop-") || id.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "properties-list"], (prev: Property[] = []) =>
+        prev.filter((p) => p.id !== id)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
+      toast.success("Imóvel removido com sucesso.");
+      return;
+    }
+
     try {
       // Deleta primeiro as fotos vinculadas para evitar conflitos de chave estrangeira
       const { error: photosError } = await supabase.from("property_photos").delete().eq("property_id", id);

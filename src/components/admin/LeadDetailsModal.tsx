@@ -29,6 +29,7 @@ import {
   KANBAN_COLUMNS,
   TEMPERATURE_CONFIG,
   buildWhatsappChatUrl,
+  isUuid,
 } from "@/lib/leads";
 import { brl } from "@/lib/realty";
 
@@ -78,6 +79,14 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
+    // Evita tentar atualizar IDs não-UUID no banco real
+    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
+      onUpdate(updated);
+      toast.info("Registro de demonstração atualizado localmente.");
+      onClose();
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("leads")
@@ -124,6 +133,14 @@ export function LeadDetailsModal({
       notes: newNote.trim(),
       updated_at: new Date().toISOString(),
     };
+
+    // Evita tentar atualizar IDs não-UUID no banco real
+    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
+      onUpdate(updated);
+      toast.info("Registro de demonstração atualizado localmente.");
+      onClose();
+      return;
+    }
 
     try {
       const { error } = await supabase
