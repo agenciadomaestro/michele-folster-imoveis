@@ -28,8 +28,9 @@ function AuthPage() {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: '/admin' });
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      try { await getCurrentUserProfile(); navigate({ to: '/admin' }); } catch { /* Only authorized staff may enter. */ }
     });
   }, [navigate]);
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -43,6 +44,7 @@ function AuthPage() {
       toast.success('Acesso autorizado');
       navigate({ to: '/admin' });
     } catch (error) {
+      await supabase.auth.signOut();
       toast.error(error instanceof Error ? error.message : String(error));
     } finally { setBusy(false); }
   };

@@ -36,6 +36,13 @@
       "when": 1794457553705,
       "tag": "0004_complete_staff_scope_and_function_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794457835648,
+      "tag": "0005_synchronize_lead_assignment_names",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,3 @@
+CREATE OR REPLACE FUNCTION public.set_lead_broker_name() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN SELECT full_name INTO new.broker_name FROM public.profiles WHERE id=new.broker_id; RETURN new; END $$;
+CREATE TRIGGER z_lead_broker_name BEFORE INSERT OR UPDATE OF broker_id ON public.leads FOR EACH ROW EXECUTE FUNCTION public.set_lead_broker_name();
+REVOKE EXECUTE ON FUNCTION public.set_lead_broker_name() FROM PUBLIC,anon,authenticated;
