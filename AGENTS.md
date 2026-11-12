@@ -26,3 +26,4 @@
 - Keep one root-owned Realtime subscription tied to Query invalidation, including a data-free catalog broadcast for visibility transitions.
 - Store WebP files under the real property UUID; serve private property images only after published-photo RLS verification because public buckets are blocked.
 - Retire brokers through one atomic database function that transfers ownership before revoking roles, preserving properties and leads.
+- Publish property status only after photo persistence succeeds, so incomplete uploads remain retryable drafts.

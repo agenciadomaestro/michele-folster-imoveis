@@ -189,6 +189,13 @@ function AdminDashboard() {
     }
 
     try {
+      const { data: photoFiles, error: fileListError } = await supabase.from('property_photos').select('storage_path').eq('property_id', id);
+      if (fileListError) throw new Error(fileListError.message);
+      const paths = (photoFiles ?? []).flatMap(photo => photo.storage_path ? [photo.storage_path] : []);
+      if (paths.length) {
+        const { error: storageError } = await supabase.storage.from('property-images').remove(paths);
+        if (storageError) throw new Error(storageError.message);
+      }
       // Deleta primeiro as fotos vinculadas para evitar conflitos de chave estrangeira
       const { error: photosError } = await supabase.from("property_photos").delete().eq("property_id", id);
       if (photosError) throw new Error(photosError.message);

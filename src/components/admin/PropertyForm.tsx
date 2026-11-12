@@ -510,7 +510,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         area_land: areaLand !== "" ? Number(areaLand) : null,
         area_built: areaUseful !== "" ? Number(areaUseful) : null,
         features: selectedFeatures || [],
-        status: chosenStatus || "publicado",
+        status: "rascunho",
         featured: Boolean(featured),
 
         updated_at: new Date().toISOString(),
@@ -579,6 +579,10 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         const { error } = await supabase.from('property_photos').delete().in('id',removed.map(photo => photo.id));
         if (error) throw new Error(error.message);
       }
+
+      const { error: publicationError } = await supabase.from('properties')
+        .update({ status: chosenStatus }).eq('id', propertyDbId).select('id').single();
+      if (publicationError) throw new Error(publicationError.message);
 
       // Força a invalidação e recarregamento imediato das queries de catálogo
       await Promise.all([
@@ -658,9 +662,6 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         <h1 className="text-3xl font-bold tracking-tight">
           {isEditing ? `Editar Imóvel (${code})` : "Cadastrar Novo Imóvel"}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Preencha os dados em etapas integradas diretamente ao banco de dados e Storage do Supabase.
-        </p>
       </div>
 
       {/* Stepper Indicator */}
