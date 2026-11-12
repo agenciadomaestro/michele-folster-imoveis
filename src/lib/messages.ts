@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeLeadStatus } from "@/lib/leads";
 
 
 export type MessageType = "imovel" | "captacao" | "geral";
@@ -51,14 +52,13 @@ export async function fetchMessages(): Promise<MessageLead[]> {
         const statusMap: Record<string, MessageStatus> = {
           novo: "pendente",
           em_contato: "em_atendimento",
-          em_atendimento: "em_atendimento",
           visita_agendada: "em_atendimento",
-          proposta: "em_atendimento",
+          proposta_feita: "em_atendimento",
           em_negociacao: "em_atendimento",
           fechado: "concluido",
           perdido: "concluido",
         };
-        const status: MessageStatus = statusMap[l.status] || "pendente";
+        const status: MessageStatus = statusMap[normalizeLeadStatus(l.status)] || "pendente";
 
         let capturePhoto = l.capture_data?.foto_imovel_url ?? null;
         if (capturePhoto && !capturePhoto.startsWith('http') && !capturePhoto.startsWith('data:')) {

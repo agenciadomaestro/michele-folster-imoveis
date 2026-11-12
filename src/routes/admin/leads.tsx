@@ -37,7 +37,6 @@ import {
   fetchLeads,
   updateLeadStatusInDb,
   deleteLeadInDb,
-  isUuid,
   buildWhatsappChatUrl,
 } from "@/lib/leads";
 import { KanbanCard } from "@/components/admin/KanbanCard";
@@ -168,13 +167,6 @@ function LeadsManagementPage() {
       prev.map((item) => (item.id === leadId ? { ...item, status: newStatus } : item))
     );
 
-    // Se for registro local ou fictício de demonstração, atualiza apenas no estado da aplicação
-    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
-      await queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
-      toast.success(`Lead movido para "${newStatusCol}"`);
-      return;
-    }
-
     // Persistência direta no Supabase DB sem .single()
     const res = await updateLeadStatusInDb(leadId, newStatus);
     if (!res.success) {
@@ -231,31 +223,24 @@ function LeadsManagementPage() {
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    // Atualização imediata no estado local / cache
-    queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-      prev.filter((item) => item.id !== leadId)
-    );
-
-    // Se o registro excluído for um dado local/fictício de demonstração,
-    // remove-o apenas do estado local sem disparar erro de banco.
-    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
-      await queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
-      toast.success("Lead removido com sucesso.");
-      return;
-    }
-
     const res = await deleteLeadInDb(leadId);
     if (!res.success) {
       toast.error(`Falha ao excluir no Supabase: ${res.error}`);
       await queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
-      return;
+      return false;
     }
+    queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+      prev.filter((item) => item.id !== leadId)
+    );
+    setIsModalOpen(false);
+    setSelectedLead(null);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
     ]);
     toast.success("Lead removido com sucesso.");
+    return true;
   };
 
   return (
@@ -639,7 +624,8 @@ function LeadsManagementPage() {
       </main>
 
       {/* Modal de Detalhes do Lead */}
-      <LeadDetailsModal
+      {isModalOpen && selectedLead && <LeadDetailsModal
+        key={selectedLead.id}
         lead={selectedLead}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -648,7 +634,7 @@ function LeadsManagementPage() {
         brokers={brokers}
         isAdmin={isAdmin}
         currentUserName={currentUserName}
-      />
+      />}
     </div>
   );
 }

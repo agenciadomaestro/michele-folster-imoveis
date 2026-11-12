@@ -29,3 +29,4 @@
 - Publish property status only after photo persistence succeeds, so incomplete uploads remain retryable drafts.
 - Anonymous capture photos use non-overwriting signed upload capabilities for server-generated paths; direct client inserts are denied to isolate submissions.
 - Direct property-image reads require active staff and property assignment or explicit global access; published photos remain available through the RLS-checked public image handler.
+- Normalize legacy lead stages through the shared CRM mapper and persist canonical Kanban IDs; history stays in the lead timeline so deletion remains atomic without a separate activities table.

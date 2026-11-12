@@ -4,7 +4,7 @@ export type LeadStatus =
   | "novo"
   | "em_contato"
   | "visita_agendada"
-  | "proposta"
+  | "proposta_feita"
   | "em_negociacao"
   | "fechado"
   | "perdido";
@@ -89,7 +89,7 @@ export const KANBAN_COLUMNS: {
     borderColor: "border-purple-500",
   },
   {
-    id: "proposta",
+    id: "proposta_feita",
     title: "Proposta Feita",
     subtitle: "Proposta em andamento",
     badgeBg: "bg-indigo-100 dark:bg-indigo-950/60",
@@ -151,9 +151,9 @@ export function normalizeLeadStatus(raw: string | null | undefined): LeadStatus 
   if (!raw) return "novo";
   const s = raw.toLowerCase().trim();
   if (s === "novo" || s.includes("não atendido") || s.includes("nao atendido")) return "novo";
-  if (s === "em_contato" || s === "contato" || s === "em contato") return "em_contato";
+  if (s === "em_contato" || s === "em_atendimento" || s === "em atendimento" || s === "contato" || s === "em contato") return "em_contato";
   if (s === "visita_agendada" || s === "visita" || s === "visita agendada") return "visita_agendada";
-  if (s === "proposta" || s === "proposta feita" || s === "proposta_feita") return "proposta";
+  if (s === "proposta" || s === "proposta feita" || s === "proposta_feita") return "proposta_feita";
   if (
     s === "em_negociacao" ||
     s === "em_negociação" ||
@@ -166,7 +166,7 @@ export function normalizeLeadStatus(raw: string | null | undefined): LeadStatus 
   }
   if (s === "fechado" || s.includes("ganho") || s === "fechado / ganho") return "fechado";
   if (s === "perdido" || s.includes("arquivado") || s.includes("desistência") || s.includes("desistencia")) return "perdido";
-  return (raw as LeadStatus) || "novo";
+  return "novo";
 }
 
 export async function fetchLeads(): Promise<Lead[]> {
@@ -213,16 +213,15 @@ export async function updateLeadStatusInDb(
   id: string,
   newStatus: LeadStatus
 ): Promise<{ success: boolean; error?: string }> {
-  // Evita tentar atualizar IDs não-UUID ou registros de demonstração no banco real
-  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
-    return { success: true };
+  if (!isUuid(id)) {
+    return { success: false, error: "Identificador inválido" };
   }
 
   try {
     const { error } = await supabase
       .from("leads")
       .update({
-        status: newStatus,
+        status: normalizeLeadStatus(newStatus),
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -239,9 +238,8 @@ export async function updateLeadStatusInDb(
 }
 
 export async function deleteLeadInDb(id: string): Promise<{ success: boolean; error?: string }> {
-  // Se for registro local ou fictício de demonstração, remove sem disparar erro de banco
-  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
-    return { success: true };
+  if (!isUuid(id)) {
+    return { success: false, error: "Identificador inválido" };
   }
 
   try {
