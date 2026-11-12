@@ -29,6 +29,13 @@
       "when": 1794457342060,
       "tag": "0003_catalog_visibility_broadcast_and_capture_upload",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794457553705,
+      "tag": "0004_complete_staff_scope_and_function_grants",
+      "breakpoints": true
     }
   ]
 }
