@@ -14,59 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
+      agency_settings: {
+        Row: {
+          administrator_id: string | null
+          id: boolean
+        }
+        Insert: {
+          administrator_id?: string | null
+          id?: boolean
+        }
+        Update: {
+          administrator_id?: string | null
+          id?: boolean
+        }
+        Relationships: []
+      }
+      broker_permissions: {
+        Row: {
+          pode_cadastrar_imovel: boolean
+          pode_ver_captacoes: boolean
+          pode_ver_ofertas_gerais: boolean
+          user_id: string
+        }
+        Insert: {
+          pode_cadastrar_imovel?: boolean
+          pode_ver_captacoes?: boolean
+          pode_ver_ofertas_gerais?: boolean
+          user_id: string
+        }
+        Update: {
+          pode_cadastrar_imovel?: boolean
+          pode_ver_captacoes?: boolean
+          pode_ver_ofertas_gerais?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           broker_id: string | null
+          broker_name: string | null
+          capture_data: Json
           consent: boolean
           created_at: string
           email: string | null
           id: string
           interest: string
+          loss_reason: string | null
           message: string | null
           name: string
+          next_action: string | null
+          next_action_date: string | null
           notes: string | null
           phone: string
           property_code: string | null
           property_id: string | null
+          property_title: string | null
           source: string
           source_page: string | null
           status: string
+          temperature: string
+          timeline: Json
+          transaction_type: string
           updated_at: string
         }
         Insert: {
           broker_id?: string | null
+          broker_name?: string | null
+          capture_data?: Json
           consent?: boolean
           created_at?: string
           email?: string | null
           id?: string
           interest?: string
+          loss_reason?: string | null
           message?: string | null
           name: string
+          next_action?: string | null
+          next_action_date?: string | null
           notes?: string | null
           phone: string
           property_code?: string | null
           property_id?: string | null
+          property_title?: string | null
           source?: string
           source_page?: string | null
           status?: string
+          temperature?: string
+          timeline?: Json
+          transaction_type?: string
           updated_at?: string
         }
         Update: {
           broker_id?: string | null
+          broker_name?: string | null
+          capture_data?: Json
           consent?: boolean
           created_at?: string
           email?: string | null
           id?: string
           interest?: string
+          loss_reason?: string | null
           message?: string | null
           name?: string
+          next_action?: string | null
+          next_action_date?: string | null
           notes?: string | null
           phone?: string
           property_code?: string | null
           property_id?: string | null
+          property_title?: string | null
           source?: string
           source_page?: string | null
           status?: string
+          temperature?: string
+          timeline?: Json
+          transaction_type?: string
           updated_at?: string
         }
         Relationships: [
@@ -84,25 +147,31 @@ export type Database = {
           active: boolean
           created_at: string
           creci: string | null
+          email: string | null
           full_name: string | null
           id: string
           phone: string | null
+          photo_url: string | null
         }
         Insert: {
           active?: boolean
           created_at?: string
           creci?: string | null
+          email?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
+          photo_url?: string | null
         }
         Update: {
           active?: boolean
           created_at?: string
           creci?: string | null
+          email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          photo_url?: string | null
         }
         Relationships: []
       }
@@ -207,24 +276,30 @@ export type Database = {
       }
       property_photos: {
         Row: {
+          caption: string
           created_at: string
           id: string
           position: number
           property_id: string
+          storage_path: string | null
           url: string
         }
         Insert: {
+          caption?: string
           created_at?: string
           id?: string
           position?: number
           property_id: string
+          storage_path?: string | null
           url: string
         }
         Update: {
+          caption?: string
           created_at?: string
           id?: string
           position?: number
           property_id?: string
+          storage_path?: string | null
           url?: string
         }
         Relationships: [
@@ -260,6 +335,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_all: { Args: { _user_id: string }; Returns: boolean }
+      can_write_property: {
+        Args: { _broker_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -267,8 +347,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_hidden_staff: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_staff_manager: { Args: { _user_id: string }; Returns: boolean }
+      retire_broker: { Args: { _broker_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "owner" | "admin" | "broker"
