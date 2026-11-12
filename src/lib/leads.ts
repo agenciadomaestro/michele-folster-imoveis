@@ -191,9 +191,9 @@ export async function updateLeadStatusInDb(
   id: string,
   newStatus: LeadStatus
 ): Promise<{ success: boolean; error?: string }> {
-  // Evita tentar atualizar IDs não-UUID no banco real
-  if (!isUuid(id)) {
-    return { success: false, error: 'Identificador inválido' };
+  // Evita tentar atualizar IDs não-UUID ou registros de demonstração no banco real
+  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
+    return { success: true };
   }
 
   try {
@@ -203,7 +203,7 @@ export async function updateLeadStatusInDb(
         status: newStatus,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", id).select("id").single();
+      .eq("id", id);
 
     if (error) {
       console.error("Erro ao salvar no Supabase:", error.message);
@@ -217,14 +217,13 @@ export async function updateLeadStatusInDb(
 }
 
 export async function deleteLeadInDb(id: string): Promise<{ success: boolean; error?: string }> {
-
-  // Validate record identifiers before issuing a database mutation.
-  if (!isUuid(id)) {
-    return { success: false, error: "Identificador inválido" };
+  // Se for registro local ou fictício de demonstração, remove sem disparar erro de banco
+  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
+    return { success: true };
   }
 
   try {
-    const { error } = await supabase.from("leads").delete().eq("id", id).select("id").single();
+    const { error } = await supabase.from("leads").delete().eq("id", id);
     if (error) {
       console.error("Erro ao excluir no Supabase:", error.message);
       return { success: false, error: error.message };

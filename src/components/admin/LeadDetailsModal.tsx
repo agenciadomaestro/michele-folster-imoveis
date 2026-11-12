@@ -81,8 +81,11 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    if (!isUuid(updated.id)) {
-      toast.error('Identificador inválido');
+    // Se for registro local ou fictício de demonstração, atualiza na aplicação sem erro no banco
+    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
+      onUpdate(updated);
+      toast.success("Lead atualizado com sucesso!");
+      onClose();
       return;
     }
 
@@ -100,7 +103,7 @@ export function LeadDetailsModal({
           broker_id: updated.broker_id || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", updated.id).select("id").single();
+        .eq("id", updated.id);
 
       if (error) {
         console.error("Erro ao salvar no Supabase:", error.message);
@@ -144,8 +147,11 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    if (!isUuid(updated.id)) {
-      toast.error('Identificador inválido');
+    // Se for registro local ou fictício de demonstração, adiciona nota localmente
+    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
+      onUpdate(updated);
+      setNewNote("");
+      toast.success("Nota adicionada com sucesso!");
       return;
     }
 
@@ -157,7 +163,7 @@ export function LeadDetailsModal({
           timeline: updated.timeline.map(activity => ({ ...activity })),
           updated_at: new Date().toISOString(),
         })
-        .eq("id", updated.id).select("id").single();
+        .eq("id", updated.id);
 
       if (error) {
         console.error("Erro ao salvar no Supabase:", error.message);

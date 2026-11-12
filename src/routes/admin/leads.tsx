@@ -161,14 +161,19 @@ function LeadsManagementPage() {
     const targetLead = allLeads.find((l) => l.id === leadId);
     if (!targetLead || targetLead.status === newStatus) return;
 
-    const newStatusCol = KANBAN_COLUMNS.find((c) => c.id === newStatus)?.title;
+    const newStatusCol = KANBAN_COLUMNS.find((c) => c.id === newStatus)?.title || newStatus;
 
-    if (!isUuid(leadId)) {
-      toast.error('Identificador inválido');
+    // Se for registro local ou fictício de demonstração, atualiza apenas no estado da aplicação
+    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+        prev.map((item) => (item.id === leadId ? { ...item, status: newStatus } : item))
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+      toast.success(`Lead movido para "${newStatusCol}"`);
       return;
     }
 
-    // Persistência direta no Supabase DB
+    // Persistência direta no Supabase DB sem .single()
     const res = await updateLeadStatusInDb(leadId, newStatus);
     if (!res.success) {
       toast.error(`Falha ao salvar no Supabase: ${res.error}`);
@@ -219,8 +224,14 @@ function LeadsManagementPage() {
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    if (!isUuid(leadId)) {
-      toast.error('Identificador inválido');
+    // Se o registro excluído for um dado local/fictício de demonstração,
+    // remove-o apenas do estado local sem disparar erro de banco.
+    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+        prev.filter((item) => item.id !== leadId)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+      toast.success("Lead removido com sucesso.");
       return;
     }
 

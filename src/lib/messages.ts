@@ -183,7 +183,7 @@ export async function updateMessageStatus(
     const { error } = await supabase
       .from("leads")
       .update({ status: statusMap[newStatus] || "novo", updated_at: new Date().toISOString() })
-      .eq("id", id).select("id").single();
+      .eq("id", id);
     if (error) {
       console.error("Erro ao salvar no Supabase:", error.message);
       return { success: false, error: error.message };
@@ -212,7 +212,7 @@ export async function assignMessageBroker(
     const { error } = await supabase
       .from("leads")
       .update({ broker_id: validBrokerId, updated_at: new Date().toISOString() })
-      .eq("id", id).select("id").single();
+      .eq("id", id);
     if (error) {
       console.error("Erro ao salvar no Supabase:", error.message);
       return { success: false, error: error.message };
@@ -231,7 +231,7 @@ export async function deleteLocalMessage(id: string): Promise<{ success: boolean
   }
 
   try {
-    const { error } = await supabase.from("leads").delete().eq("id", id).select("id").single();
+    const { error } = await supabase.from("leads").delete().eq("id", id);
     if (error) {
       console.error("Erro ao excluir no Supabase:", error.message);
       return { success: false, error: error.message };

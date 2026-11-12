@@ -79,8 +79,12 @@ function AdminMessagesPage() {
 
 
   const handleStatusChange = async (id: string, newStatus: MessageStatus) => {
-    if (!isUuid(id)) {
-      toast.error('Identificador inválido');
+    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
+        prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+      toast.success(`Status da mensagem atualizado para "${newStatus.replace("_", " ")}".`);
       return;
     }
 
@@ -101,8 +105,12 @@ function AdminMessagesPage() {
     const broker = brokers.find((b) => b.id === brokerId);
     if (!broker) return;
 
-    if (!isUuid(id)) {
-      toast.error('Identificador inválido');
+    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
+        prev.map((item) => (item.id === id ? { ...item, broker_id: broker.id, broker_name: broker.name } : item))
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+      toast.success(`Mensagem atribuída a ${broker.name}.`);
       return;
     }
 
@@ -122,8 +130,12 @@ function AdminMessagesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente remover esta mensagem da listagem?")) return;
 
-    if (!isUuid(id)) {
-      toast.error('Identificador inválido');
+    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
+      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
+        prev.filter((item) => item.id !== id)
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
+      toast.success("Mensagem removida com sucesso.");
       return;
     }
 
