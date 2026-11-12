@@ -50,6 +50,13 @@
       "when": 1794458088676,
       "tag": "0006_isolate_capture_uploads_and_staff_image_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794462775395,
+      "tag": "0007_align_lead_kanban_statuses_and_delete_access",
+      "breakpoints": true
     }
   ]
 }
