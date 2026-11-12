@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 
 export type AnalyticsEventType =
   | "page_view"
@@ -16,6 +18,22 @@ export interface AnalyticsRecord {
   duration_seconds: number;
   created_at: string;
 }
+
+// Optional legacy analytics storage is absent from some agency databases.
+// Keep its existing best-effort behavior without modifying generated types.
+type AnalyticsDatabase = Omit<Database, 'public'> & {
+  public: Omit<Database['public'], 'Tables'> & {
+    Tables: Database['public']['Tables'] & {
+      site_analytics: {
+        Row: AnalyticsRecord;
+        Insert: AnalyticsRecord;
+        Update: Partial<AnalyticsRecord>;
+        Relationships: [];
+      };
+    };
+  };
+};
+const analyticsClient = supabase as unknown as SupabaseClient<AnalyticsDatabase>;
 
 export type PeriodFilter = "today" | "7d" | "30d" | "all";
 
@@ -161,7 +179,7 @@ export async function trackAnalyticsEvent(payload: {
   const trafficSource = detectTrafficSource();
 
   try {
-    const { error } = await supabase.from("site_analytics").insert({
+    const { error } = await analyticsClient.from("site_analytics").insert({
       id: eventId,
       session_id: sessionId,
       event_type: payload.eventType,
@@ -189,7 +207,7 @@ export async function updateAnalyticsDuration(eventId: string, seconds: number):
   if (!eventId || seconds <= 0) return;
 
   try {
-    await supabase
+    await analyticsClient
       .from("site_analytics")
       .update({ duration_seconds: Math.round(seconds) })
       .eq("id", eventId);
@@ -237,7 +255,7 @@ export function getPeriodStartDate(period: PeriodFilter): Date | null {
 
 export async function fetchAnalyticsData(period: PeriodFilter): Promise<AnalyticsSummary> {
   try {
-    let query = supabase.from("site_analytics").select("*");
+    let query = analyticsClient.from("site_analytics").select("*");
 
     const startDate = getPeriodStartDate(period);
     if (startDate) {
