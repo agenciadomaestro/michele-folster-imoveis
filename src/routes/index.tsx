@@ -25,6 +25,8 @@ import { AGENCY, getWhatsappUrl, type Property } from "@/lib/realty";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Michele Folster Imóveis — Imóveis Selecionados em Santa Catarina" },
       {
         name: "description",
@@ -137,7 +139,7 @@ function Index() {
       {/* ========================================================================= */}
       {/* HERO SECTION */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden pt-10 pb-16 md:pt-16 md:pb-24">
+      <section className="relative overflow-hidden pt-10 pb-16 md:flex md:min-h-[699px] md:items-center md:py-24">
         {/* Ambient Light Gradients */}
         <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] bg-[radial-gradient(ellipse_60%_50%_at_50%_20%,oklch(0.53_0.17_292/14%),transparent_70%)]" />
 
@@ -164,80 +166,7 @@ function Index() {
             <SearchBox />
           </div>
 
-          {/* Proof / Trust Metrics */}
-          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 text-center">
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
-              <span className="text-xl sm:text-2xl font-black text-foreground block">100%</span>
-              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Imóveis Verificados</p>
-            </div>
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
-              <span className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight block truncate sm:overflow-visible">
-                Atendimento
-              </span>
-              <p className="mt-0.5 text-xs font-medium text-muted-foreground">VIP & Personalizado</p>
-            </div>
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
-              <span className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight block truncate sm:overflow-visible">
-                Assessoria
-              </span>
-              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Jurídica e Contratual</p>
-            </div>
-            <div className="rounded-2xl border border-border/50 bg-surface/60 p-3 sm:p-4 backdrop-blur-xs flex flex-col justify-center">
-              <span className="text-xl sm:text-2xl font-black text-black dark:text-white block">SP</span>
-              <p className="mt-0.5 text-xs font-medium text-muted-foreground">Vale do Paraiba</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ========================================================================= */}
-      {/* CATEGORIAS EM DESTAQUE */}
-      {/* ========================================================================= */}
-      <section className="container-page py-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-primary">
-              Categorias Populares
-            </span>
-            <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl mt-1">
-              Explore pelo Tipo de Imóvel
-            </h2>
-          </div>
-          <Link
-            to="/imoveis"
-            className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-          >
-            Ver todos os filtros <ArrowRight className="size-3.5" />
-          </Link>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((c) => {
-            const Icon = c.icon;
-            return (
-              <Link
-                key={c.type}
-                to="/imoveis"
-                search={{ type: c.type } as any}
-                className="group relative overflow-hidden rounded-[22px] border border-border/70 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-lift)]"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="grid size-12 place-items-center rounded-2xl bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                    <Icon className="size-6" />
-                  </div>
-                  <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground group-hover:text-foreground">
-                    Ver Imóveis
-                  </span>
-                </div>
-                <h3 className="mt-5 font-bold text-foreground text-base group-hover:text-primary transition-colors">
-                  {c.title}
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                  {c.subtitle}
-                </p>
-              </Link>
-            );
-          })}
         </div>
       </section>
 
@@ -311,6 +240,59 @@ function Index() {
             <span>Explorar Todos os Imóveis da Carteira</span>
             <ArrowRight className="size-4 ml-1.5" />
           </Link>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* CATEGORIAS EM DESTAQUE */}
+      {/* ========================================================================= */}
+      <section className="bg-accent/40 py-12">
+        <div className="container-page">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              Categorias Populares
+            </span>
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl mt-1">
+              Explore pelo Tipo de Imóvel
+            </h2>
+          </div>
+          <Link
+            to="/imoveis"
+            className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+          >
+            Ver todos os filtros <ArrowRight className="size-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.map((c) => {
+            const Icon = c.icon;
+            return (
+              <Link
+                key={c.type}
+                to="/imoveis"
+                search={{ type: c.type } as any}
+                className="group relative overflow-hidden rounded-[22px] border border-border/70 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-lift)]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="grid size-12 place-items-center rounded-2xl bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                    <Icon className="size-6" />
+                  </div>
+                  <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground group-hover:text-foreground">
+                    Ver Imóveis
+                  </span>
+                </div>
+                <h3 className="mt-5 font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                  {c.title}
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  {c.subtitle}
+                </p>
+              </Link>
+            );
+          })}
+        </div>
         </div>
       </section>
 

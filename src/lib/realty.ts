@@ -11,12 +11,12 @@ export const AGENCY = {
   phone: "(12)98146-7549",
   whatsapp: "5512981467549",
   whatsappMessage: "Olá! Vim pelo site e preciso de ajuda.",
-  email: "contato@michelefolster.com.br",
-  creci: "CRECI 38.412-J",
+  email: "contato@michelefolster.com",
+  creci: "CRECI 168771-F",
   city: "Caçapava",
   state: "SP",
   address: "Caçapava-SP",
-  hours: "Atendimento: Seg a Sex, 09h às 17h30h",
+  hours: "Atendimento: Seg a Sex, 09h às 17h30",
   instagram: "@michelefolsterimoveis",
 };
 
