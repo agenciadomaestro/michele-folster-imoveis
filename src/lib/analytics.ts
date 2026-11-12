@@ -21,19 +21,7 @@ export interface AnalyticsRecord {
 
 // Optional legacy analytics storage is absent from some agency databases.
 // Keep its existing best-effort behavior without modifying generated types.
-type AnalyticsDatabase = Omit<Database, 'public'> & {
-  public: Omit<Database['public'], 'Tables'> & {
-    Tables: Database['public']['Tables'] & {
-      site_analytics: {
-        Row: AnalyticsRecord;
-        Insert: AnalyticsRecord;
-        Update: Partial<AnalyticsRecord>;
-        Relationships: [];
-      };
-    };
-  };
-};
-const analyticsClient = supabase as unknown as SupabaseClient<AnalyticsDatabase>;
+const analyticsClient = supabase as any;
 
 export type PeriodFilter = "today" | "7d" | "30d" | "all";
 

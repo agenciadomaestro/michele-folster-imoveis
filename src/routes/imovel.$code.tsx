@@ -9,6 +9,9 @@ import { LeadForm } from "@/components/site/LeadForm";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENCY, brl, priceLabel, PURPOSE_LABEL, getWhatsappUrl, type Property } from "@/lib/realty";
 import { useSiteAnalytics } from "@/hooks/use-site-analytics";
+import { getCurrentUserProfile } from "@/lib/brokers";
+import { fetchPropertyOwner, emptyOwnerDetails } from "@/lib/property-owners";
+import { OwnerDetails } from "@/components/admin/OwnerDetails";
 
 export const Route = createFileRoute("/imovel/$code")({
   head: ({ params }) => ({
@@ -30,6 +33,23 @@ function PropertyPage() {
   const [idx, setIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
   const { trackPropertyView, trackPhotoSwipe, trackWhatsappClick } = useSiteAnalytics();
+
+  // Consulta segura de perfil: dados confidenciais do proprietário são restritos à equipe
+  const { data: userProfile } = useQuery({
+    queryKey: ["current-user-profile"],
+    queryFn: async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+        return await getCurrentUserProfile();
+      } catch {
+        return null;
+      }
+    },
+    retry: false,
+  });
+
+  const isStaff = !!userProfile?.active;
 
   const { data: p, isLoading } = useQuery({
     queryKey: ["property", code],
@@ -69,6 +89,16 @@ function PropertyPage() {
       } catch {}
       return supabaseItems;
     },
+  });
+
+  const { data: owner } = useQuery({
+    queryKey: ["property-owner", p?.id],
+    queryFn: async () => {
+      if (!p?.id) return null;
+      return await fetchPropertyOwner(p.id);
+    },
+    enabled: !!p?.id && isStaff,
+    retry: false,
   });
 
   if (isLoading) return <SiteLayout><div className="container-page pt-10"><div className="aspect-[16/8] animate-pulse rounded-[24px] bg-secondary" /></div></SiteLayout>;
@@ -210,6 +240,13 @@ function PropertyPage() {
             </div>
           </aside>
         </div>
+
+        {/* Informações confidenciais do proprietário: visível exclusivamente para corretores autorizados */}
+        {isStaff && (
+          <div className="mt-12">
+            <OwnerDetails value={owner ?? emptyOwnerDetails} />
+          </div>
+        )}
 
         {related && related.length > 0 && (
           <section className="mt-20">
