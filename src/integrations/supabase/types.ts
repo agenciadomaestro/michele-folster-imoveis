@@ -274,6 +274,38 @@ export type Database = {
         }
         Relationships: []
       }
+      property_owners: {
+        Row: {
+          email: string
+          name: string
+          notes: string
+          phone: string
+          property_id: string
+        }
+        Insert: {
+          email?: string
+          name?: string
+          notes?: string
+          phone?: string
+          property_id: string
+        }
+        Update: {
+          email?: string
+          name?: string
+          notes?: string
+          phone?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_owners_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_photos: {
         Row: {
           caption: string
@@ -327,39 +359,6 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
-        }
-        Relationships: []
-      }
-      site_analytics: {
-        Row: {
-          id: string
-          session_id: string
-          event_type: string
-          page_path: string
-          property_id: string | null
-          traffic_source: string
-          duration_seconds: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          session_id: string
-          event_type: string
-          page_path: string
-          property_id?: string | null
-          traffic_source: string
-          duration_seconds?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          session_id?: string
-          event_type?: string
-          page_path?: string
-          property_id?: string | null
-          traffic_source?: string
-          duration_seconds?: number
-          created_at?: string
         }
         Relationships: []
       }
