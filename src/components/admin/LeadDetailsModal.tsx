@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   type Lead,
   type LeadStatus,
@@ -31,15 +32,16 @@ import {
   TEMPERATURE_CONFIG,
   buildWhatsappChatUrl,
   isUuid,
+  normalizeLeadStatus,
 } from "@/lib/leads";
 import { brl } from "@/lib/realty";
 
 interface LeadDetailsModalProps {
-  lead: Lead | null;
+  lead: Lead;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedLead: Lead) => void;
-  onDelete?: (leadId: string) => void;
+  onDelete?: (leadId: string) => Promise<boolean>;
   brokers: BrokerProfile[];
   isAdmin: boolean;
   currentUserName: string;
@@ -56,7 +58,6 @@ export function LeadDetailsModal({
   currentUserName,
 }: LeadDetailsModalProps) {
   const queryClient = useQueryClient();
-  if (!lead) return null;
 
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [temperature, setTemperature] = useState<LeadTemperature>(lead.temperature);
@@ -65,13 +66,17 @@ export function LeadDetailsModal({
   const [nextActionDate, setNextActionDate] = useState(lead.next_action_date ? lead.next_action_date.slice(0,16) : "");
   const [lossReason, setLossReason] = useState(lead.loss_reason || "");
   const [newNote, setNewNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddingNote, setIsAddingNote] = useState(false);
 
   const handleSave = async () => {
+    if (isSaving || isDeleting || isAddingNote) return;
     const assignedBroker = brokers.find((b) => b.id === brokerId);
 
     const updated: Lead = {
       ...lead,
-      status,
+      status: normalizeLeadStatus(status),
       temperature,
       broker_id: brokerId || null,
       broker_name: assignedBroker?.name || lead.broker_name || null,
@@ -81,14 +86,12 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    // Se for registro local ou fictício de demonstração, atualiza na aplicação sem erro no banco
-    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
-      onUpdate(updated);
-      toast.success("Lead atualizado com sucesso!");
-      onClose();
+    if (!isUuid(updated.id)) {
+      toast.error("Identificador inválido");
       return;
     }
 
+    setIsSaving(true);
     try {
       const { error } = await supabase
         .from("leads")
@@ -124,6 +127,8 @@ export function LeadDetailsModal({
       console.error("Erro inesperado ao salvar lead no Supabase:", err);
       toast.error(`Falha ao salvar: ${err?.message || err}`);
       return;
+    } finally {
+      setIsSaving(false);
     }
 
     onUpdate(updated);
@@ -133,7 +138,7 @@ export function LeadDetailsModal({
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newNote.trim()) return;
+    if (!newNote.trim() || isSaving || isDeleting || isAddingNote) return;
 
     const newActivity = {
       id: crypto.randomUUID(),
@@ -151,14 +156,12 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    // Se for registro local ou fictício de demonstração, adiciona nota localmente
-    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
-      onUpdate(updated);
-      setNewNote("");
-      toast.success("Nota adicionada com sucesso!");
+    if (!isUuid(updated.id)) {
+      toast.error("Identificador inválido");
       return;
     }
 
+    setIsAddingNote(true);
     try {
       const { error } = await supabase
         .from("leads")
@@ -188,6 +191,8 @@ export function LeadDetailsModal({
       console.error("Erro inesperado ao salvar nota no Supabase:", err);
       toast.error(`Falha ao salvar: ${err?.message || err}`);
       return;
+    } finally {
+      setIsAddingNote(false);
     }
 
     onUpdate(updated);
@@ -225,26 +230,36 @@ export function LeadDetailsModal({
 
           <div className="flex items-center gap-2">
             {onDelete && isAdmin && (
-              <button
+              <Button
                 type="button"
-                onClick={() => {
+                variant="ghost"
+                size="icon"
+                disabled={isDeleting || isSaving || isAddingNote}
+                onClick={async () => {
                   if (confirm(`Deseja excluir o lead de ${lead.name}?`)) {
-                    onDelete(lead.id);
-                    onClose();
+                    setIsDeleting(true);
+                    try {
+                      if (await onDelete(lead.id)) onClose();
+                    } finally {
+                      setIsDeleting(false);
+                    }
                   }
                 }}
                 className="btn btn-ghost text-xs text-destructive hover:bg-destructive/10 size-8 p-0"
                 title="Excluir lead"
               >
                 <Trash2 className="size-4" />
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Fechar detalhes"
               onClick={onClose}
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
               <X className="size-5" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -444,14 +459,14 @@ export function LeadDetailsModal({
                 className="field text-xs resize-none"
               />
               <div className="flex justify-end">
-                <button
+                <Button
                   type="submit"
-                  disabled={!newNote.trim()}
+                   disabled={!newNote.trim() || isAddingNote || isSaving || isDeleting}
                   className="btn btn-primary text-xs h-8"
                 >
                   <Send className="mr-1.5 size-3" />
                   Registrar no Histórico
-                </button>
+                 </Button>
               </div>
             </form>
 
@@ -492,20 +507,22 @@ export function LeadDetailsModal({
 
         {/* Bottom Actions Bar */}
         <div className="flex items-center justify-end gap-3 border-t border-border px-5 py-3.5 bg-muted/40 shrink-0">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onClose}
             className="btn btn-outline text-xs h-9"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleSave}
+            disabled={isSaving || isDeleting || isAddingNote}
             className="btn btn-primary text-xs h-9 shadow-sm"
           >
             Salvar Alterações
-          </button>
+          </Button>
         </div>
       </div>
     </div>
