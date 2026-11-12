@@ -43,6 +43,13 @@
       "when": 1794457835648,
       "tag": "0005_synchronize_lead_assignment_names",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794458088676,
+      "tag": "0006_isolate_capture_uploads_and_staff_image_reads",
+      "breakpoints": true
     }
   ]
 }
