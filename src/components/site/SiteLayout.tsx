@@ -15,6 +15,8 @@ import {
   Clock,
 } from "lucide-react";
 import { AGENCY, getWhatsappUrl } from "@/lib/realty";
+import portrait from "@/assets/michele-folster.jpg.asset.json";
+import { useAgencyClock } from "@/hooks/use-agency-clock";
 
 const NAV = [
   { to: "/venda", label: "Comprar" },
@@ -25,14 +27,15 @@ const NAV = [
 ] as const;
 
 export function Logo({ light = false }: { light?: boolean }) {
+  const { isOpen } = useAgencyClock();
   return (
     <Link to="/" className="group flex items-center gap-3 transition-opacity hover:opacity-90">
-      <div className="relative flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary-hover to-purple-800 text-white shadow-md shadow-primary/20 transition-transform group-hover:scale-105">
-        <span className="font-serif text-lg font-black tracking-tight">MF</span>
-        <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 ring-2 ring-background" />
+      <div className="relative size-10 shrink-0 rounded-full bg-secondary shadow-soft transition-transform group-hover:scale-105">
+        <img src={portrait.url} alt="Michele Folster" width={40} height={40} className="size-full rounded-full object-cover" />
+        {isOpen && <span role="status" aria-label="Em horário de atendimento" title="Em horário de atendimento" className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-success ring-2 ring-background" />}
       </div>
       <div className="flex flex-col leading-none">
-        <span className={`text-[17px] font-extrabold tracking-tight ${light ? "text-white" : "text-foreground"}`}>
+        <span className={`text-[17px] font-extrabold tracking-tight ${light ? "text-primary-foreground" : "text-foreground"}`}>
           {AGENCY.name}
         </span>
         <span className="mt-1 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -45,6 +48,7 @@ export function Logo({ light = false }: { light?: boolean }) {
 
 export function SiteLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const { year } = useAgencyClock();
 
   const whatsappUrl = getWhatsappUrl();
 
@@ -60,8 +64,8 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             </span>
             <span className="inline-flex items-center gap-1 sm:gap-1.5 font-medium text-foreground whitespace-nowrap">
               <Clock className="size-3 text-primary shrink-0" />
-              <span className="sm:hidden">Atend.: Seg a Sex, 09h às 17h30h</span>
-              <span className="hidden sm:inline">Atendimento: Seg a Sex, 09h às 17h30h</span>
+              <span className="sm:hidden">{AGENCY.hours.replace("Atendimento:", "Atend.:")}</span>
+              <span className="hidden sm:inline">{AGENCY.hours}</span>
             </span>
           </div>
 
@@ -313,7 +317,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
         <div className="border-t border-border/60 py-6 text-xs text-muted-foreground">
           <div className="container-page flex flex-col items-center justify-between gap-3 sm:flex-row">
             <div>
-              © {new Date().getFullYear()} {AGENCY.name} Imóveis • Todos os direitos reservados.
+              © {year} {AGENCY.name} Imóveis • Todos os direitos reservados.
             </div>
             <div className="flex items-center gap-6">
               <span>Transparência e segurança conforme a LGPD</span>

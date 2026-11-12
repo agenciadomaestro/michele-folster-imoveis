@@ -9,6 +9,8 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
+- Use the shared agency clock for availability and footer year, with America/Sao_Paulo time and live refresh, so visitor timezones and open tabs do not change business-hour behavior.
+
 # Regras de Automação para Agentes (Antigravity)
 
 ## Git Automático
