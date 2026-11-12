@@ -81,11 +81,8 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    // Evita tentar atualizar IDs não-UUID no banco real
-    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
-      onUpdate(updated);
-      toast.info("Registro de demonstração atualizado localmente.");
-      onClose();
+    if (!isUuid(updated.id)) {
+      toast.error('Identificador inválido');
       return;
     }
 
@@ -95,10 +92,15 @@ export function LeadDetailsModal({
         .update({
           status: updated.status,
           notes: updated.notes || null,
+          temperature: updated.temperature,
+          next_action: updated.next_action,
+          next_action_date: updated.next_action_date,
+          loss_reason: updated.loss_reason,
+          broker_name: updated.broker_name,
           broker_id: updated.broker_id || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", updated.id);
+        .eq("id", updated.id).select("id").single();
 
       if (error) {
         console.error("Erro ao salvar no Supabase:", error.message);
@@ -127,7 +129,7 @@ export function LeadDetailsModal({
     if (!newNote.trim()) return;
 
     const newActivity = {
-      id: `act-${Date.now()}`,
+      id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
       author_name: currentUserName || "Corretor",
       type: "note" as const,
@@ -142,11 +144,8 @@ export function LeadDetailsModal({
       updated_at: new Date().toISOString(),
     };
 
-    // Evita tentar atualizar IDs não-UUID no banco real
-    if (!isUuid(updated.id) || updated.id.startsWith("lead-demo") || updated.id.startsWith("demo-")) {
-      onUpdate(updated);
-      toast.info("Registro de demonstração atualizado localmente.");
-      onClose();
+    if (!isUuid(updated.id)) {
+      toast.error('Identificador inválido');
       return;
     }
 
@@ -155,9 +154,10 @@ export function LeadDetailsModal({
         .from("leads")
         .update({
           notes: updated.notes ?? null,
+          timeline: updated.timeline,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", updated.id);
+        .eq("id", updated.id).select("id").single();
 
       if (error) {
         console.error("Erro ao salvar no Supabase:", error.message);

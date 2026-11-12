@@ -71,40 +71,11 @@ function AdminMessagesPage() {
     queryFn: () => fetchBrokers(false),
   });
 
-  // Sincronização em tempo real para novas mensagens e leads
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-mensagens-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "leads" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
-          queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
-        }
-      )
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   const handleStatusChange = async (id: string, newStatus: MessageStatus) => {
-    // Evita tentar atualizar registros fictícios de demo no banco real
-    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
-      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
-        prev.filter((m) => m.id !== id)
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
-      toast.info("Registro de demonstração antigo removido da lista.");
+    if (!isUuid(id)) {
+      toast.error('Identificador inválido');
       return;
     }
 
@@ -125,13 +96,8 @@ function AdminMessagesPage() {
     const broker = brokers.find((b) => b.id === brokerId);
     if (!broker) return;
 
-    // Evita tentar atualizar registros fictícios de demo no banco real
-    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
-      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
-        prev.filter((m) => m.id !== id)
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
-      toast.info("Registro de demonstração antigo removido da lista.");
+    if (!isUuid(id)) {
+      toast.error('Identificador inválido');
       return;
     }
 
@@ -151,13 +117,8 @@ function AdminMessagesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja realmente remover esta mensagem da listagem?")) return;
 
-    // Evita tentar deletar registros fictícios de demo no banco real
-    if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
-      queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
-        prev.filter((item) => item.id !== id)
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
-      toast.success("Mensagem removida com sucesso.");
+    if (!isUuid(id)) {
+      toast.error('Identificador inválido');
       return;
     }
 
