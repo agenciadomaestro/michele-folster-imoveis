@@ -330,39 +330,6 @@ export type Database = {
         }
         Relationships: []
       }
-      site_analytics: {
-        Row: {
-          id: string
-          session_id: string
-          event_type: string
-          page_path: string
-          property_id: string | null
-          traffic_source: string
-          duration_seconds: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          session_id: string
-          event_type: string
-          page_path: string
-          property_id?: string | null
-          traffic_source: string
-          duration_seconds?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          session_id?: string
-          event_type?: string
-          page_path?: string
-          property_id?: string | null
-          traffic_source?: string
-          duration_seconds?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
