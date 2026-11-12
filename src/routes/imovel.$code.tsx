@@ -8,6 +8,7 @@ import { PropertyCard } from "@/components/site/PropertyCard";
 import { LeadForm } from "@/components/site/LeadForm";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENCY, brl, priceLabel, PURPOSE_LABEL, getWhatsappUrl, type Property } from "@/lib/realty";
+import { useSiteAnalytics } from "@/hooks/use-site-analytics";
 
 export const Route = createFileRoute("/imovel/$code")({
   head: ({ params }) => ({
@@ -28,7 +29,7 @@ function PropertyPage() {
   const queryClient = useQueryClient();
   const [idx, setIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
-
+  const { trackPropertyView, trackPhotoSwipe, trackWhatsappClick } = useSiteAnalytics();
 
   const { data: p, isLoading } = useQuery({
     queryKey: ["property", code],
@@ -46,6 +47,12 @@ function PropertyPage() {
       return null;
     },
   });
+
+  useEffect(() => {
+    if (p?.id) {
+      trackPropertyView(p.id);
+    }
+  }, [p?.id]);
   const { data: related } = useQuery({
     enabled: !!p,
     queryKey: ["related", p?.id],
@@ -93,7 +100,10 @@ function PropertyPage() {
     if (navigator.share) await navigator.share({ title: p.title, url }).catch(() => {});
     else { await navigator.clipboard.writeText(url); toast.success("Link copiado"); }
   };
-  const move = (d: number) => setIdx((i) => (i + d + photos.length) % photos.length);
+  const move = (d: number) => {
+    if (p?.id) trackPhotoSwipe(p.id);
+    setIdx((i) => (i + d + photos.length) % photos.length);
+  };
 
   return (
     <SiteLayout>
@@ -109,7 +119,14 @@ function PropertyPage() {
           {photos.length > 1 && (
             <div className="flex gap-3 overflow-auto md:flex-col">
               {photos.map((ph, i) => (
-                <button key={ph.url} onClick={() => setIdx(i)} className={`aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-[14px] border-2 md:w-full ${i === idx ? "border-primary" : "border-transparent"}`}>
+                <button
+                  key={ph.url}
+                  onClick={() => {
+                    if (p?.id) trackPhotoSwipe(p.id);
+                    setIdx(i);
+                  }}
+                  className={`aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-[14px] border-2 md:w-full ${i === idx ? "border-primary" : "border-transparent"}`}
+                >
                   <img src={ph.url} alt="" loading="lazy" className="size-full object-cover" />
                 </button>
               ))}
@@ -180,6 +197,9 @@ function PropertyPage() {
                 href={`https://wa.me/5512981467549?text=${encodeURIComponent(
                   `Olá, vim pelo site e preciso de ajuda referente ao imóvel Código ${p.code} - ${p.title}.`
                 )}`}
+                onClick={() => {
+                  trackWhatsappClick(p.id);
+                }}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn bg-emerald-600 hover:bg-emerald-500 text-white w-full text-xs font-bold gap-2 shadow-xs"

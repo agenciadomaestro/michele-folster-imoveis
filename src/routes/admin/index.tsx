@@ -21,6 +21,7 @@ import {
   Shield,
   UserCheck,
   Star,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
@@ -283,6 +284,16 @@ function AdminDashboard() {
               <MessageSquare className="mr-1.5 size-4" />
               Central de Mensagens
             </Link>
+
+            {(userProfile?.role === "super_admin" || userProfile?.role === "admin" || userProfile?.isSuperAdmin === true) && (
+              <Link
+                to="/admin/analytics"
+                className="btn btn-ghost text-xs h-9 text-muted-foreground hover:text-foreground font-semibold"
+              >
+                <TrendingUp className="mr-1.5 size-4 text-primary" />
+                Audiência / Acessos
+              </Link>
+            )}
 
             {userProfile?.isAdmin && (
               <button

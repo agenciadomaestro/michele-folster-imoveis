@@ -19,6 +19,7 @@ import { Route as LocacaoRouteImport } from './routes/locacao'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as VendaRouteImport } from './routes/venda'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminCorretoresRouteImport } from './routes/admin/corretores'
 import { Route as AdminLeadsRouteImport } from './routes/admin/leads'
 import { Route as AdminMensagensRouteImport } from './routes/admin/mensagens'
@@ -78,6 +79,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminCorretoresRoute = AdminCorretoresRouteImport.update({
   id: '/corretores',
   path: '/corretores',
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/locacao': typeof LocacaoRoute
   '/sobre': typeof SobreRoute
   '/venda': typeof VendaRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/corretores': typeof AdminCorretoresRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mensagens': typeof AdminMensagensRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/locacao': typeof LocacaoRoute
   '/sobre': typeof SobreRoute
   '/venda': typeof VendaRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/corretores': typeof AdminCorretoresRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mensagens': typeof AdminMensagensRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/locacao': typeof LocacaoRoute
   '/sobre': typeof SobreRoute
   '/venda': typeof VendaRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/corretores': typeof AdminCorretoresRoute
   '/admin/leads': typeof AdminLeadsRoute
   '/admin/mensagens': typeof AdminMensagensRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/locacao'
     | '/sobre'
     | '/venda'
+    | '/admin/analytics'
     | '/admin/corretores'
     | '/admin/leads'
     | '/admin/mensagens'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/locacao'
     | '/sobre'
     | '/venda'
+    | '/admin/analytics'
     | '/admin/corretores'
     | '/admin/leads'
     | '/admin/mensagens'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/locacao'
     | '/sobre'
     | '/venda'
+    | '/admin/analytics'
     | '/admin/corretores'
     | '/admin/leads'
     | '/admin/mensagens'
@@ -327,6 +339,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/corretores': {
       id: '/admin/corretores'
       path: '/corretores'
@@ -387,6 +406,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCorretoresRoute: typeof AdminCorretoresRoute
   AdminLeadsRoute: typeof AdminLeadsRoute
   AdminMensagensRoute: typeof AdminMensagensRoute
@@ -397,6 +417,7 @@ interface AdminRouteRouteChildren {
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCorretoresRoute: AdminCorretoresRoute,
   AdminLeadsRoute: AdminLeadsRoute,
   AdminMensagensRoute: AdminMensagensRoute,

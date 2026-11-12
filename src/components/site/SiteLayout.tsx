@@ -17,6 +17,7 @@ import {
 import { AGENCY, getWhatsappUrl } from "@/lib/realty";
 import portrait from "@/assets/michele-folster.jpg.asset.json";
 import { useAgencyClock } from "@/hooks/use-agency-clock";
+import { useSiteAnalytics } from "@/hooks/use-site-analytics";
 
 const NAV = [
   { to: "/venda", label: "Comprar" },
@@ -49,6 +50,7 @@ export function Logo({ light = false }: { light?: boolean }) {
 export function SiteLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { year } = useAgencyClock();
+  const { trackWhatsappClick } = useSiteAnalytics();
 
   const whatsappUrl = getWhatsappUrl();
 
@@ -113,6 +115,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsappClick()}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-500 hover:shadow-emerald-600/20 active:scale-95"
             >
               <MessageCircle className="size-4" />
@@ -160,7 +163,10 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  trackWhatsappClick();
+                  setOpen(false);
+                }}
                 className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-sm"
               >
                 <MessageCircle className="size-4" />
@@ -297,6 +303,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackWhatsappClick()}
                 className="flex items-center gap-2 rounded-xl bg-emerald-600/10 px-3 py-2 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-600/20"
               >
                 <MessageCircle className="size-4 shrink-0" />
