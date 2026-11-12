@@ -163,12 +163,14 @@ function LeadsManagementPage() {
 
     const newStatusCol = KANBAN_COLUMNS.find((c) => c.id === newStatus)?.title || newStatus;
 
+    // Atualização imediata no estado local / cache do React Query
+    queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+      prev.map((item) => (item.id === leadId ? { ...item, status: newStatus } : item))
+    );
+
     // Se for registro local ou fictício de demonstração, atualiza apenas no estado da aplicação
     if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
-      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-        prev.map((item) => (item.id === leadId ? { ...item, status: newStatus } : item))
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
       toast.success(`Lead movido para "${newStatusCol}"`);
       return;
     }
@@ -177,9 +179,11 @@ function LeadsManagementPage() {
     const res = await updateLeadStatusInDb(leadId, newStatus);
     if (!res.success) {
       toast.error(`Falha ao salvar no Supabase: ${res.error}`);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
       return;
     }
 
+    // Força atualização imediata do React Query
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
@@ -215,6 +219,9 @@ function LeadsManagementPage() {
   };
 
   const handleLeadUpdated = async (updated: Lead) => {
+    queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+      prev.map((item) => (item.id === updated.id ? updated : item))
+    );
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
@@ -224,13 +231,15 @@ function LeadsManagementPage() {
   };
 
   const handleDeleteLead = async (leadId: string) => {
+    // Atualização imediata no estado local / cache
+    queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+      prev.filter((item) => item.id !== leadId)
+    );
+
     // Se o registro excluído for um dado local/fictício de demonstração,
     // remove-o apenas do estado local sem disparar erro de banco.
     if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
-      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-        prev.filter((item) => item.id !== leadId)
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
       toast.success("Lead removido com sucesso.");
       return;
     }
@@ -238,6 +247,7 @@ function LeadsManagementPage() {
     const res = await deleteLeadInDb(leadId);
     if (!res.success) {
       toast.error(`Falha ao excluir no Supabase: ${res.error}`);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
       return;
     }
     await Promise.all([

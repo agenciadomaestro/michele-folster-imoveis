@@ -147,6 +147,28 @@ export function isUuid(value: string | null | undefined): boolean {
   return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
+export function normalizeLeadStatus(raw: string | null | undefined): LeadStatus {
+  if (!raw) return "novo";
+  const s = raw.toLowerCase().trim();
+  if (s === "novo" || s.includes("não atendido") || s.includes("nao atendido")) return "novo";
+  if (s === "em_contato" || s === "contato" || s === "em contato") return "em_contato";
+  if (s === "visita_agendada" || s === "visita" || s === "visita agendada") return "visita_agendada";
+  if (s === "proposta" || s === "proposta feita" || s === "proposta_feita") return "proposta";
+  if (
+    s === "em_negociacao" ||
+    s === "em_negociação" ||
+    s === "negociacao" ||
+    s === "negociação" ||
+    s === "em negociacao" ||
+    s === "em negociação"
+  ) {
+    return "em_negociacao";
+  }
+  if (s === "fechado" || s.includes("ganho") || s === "fechado / ganho") return "fechado";
+  if (s === "perdido" || s.includes("arquivado") || s.includes("desistência") || s.includes("desistencia")) return "perdido";
+  return (raw as LeadStatus) || "novo";
+}
+
 export async function fetchLeads(): Promise<Lead[]> {
   try {
     const { data: supabaseLeads, error } = await supabase
@@ -168,7 +190,7 @@ export async function fetchLeads(): Promise<Lead[]> {
         property_title: sl.property_title || null,
         source: sl.source || "Site",
         source_page: sl.source_page || null,
-        status: (sl.status as LeadStatus) || "novo",
+        status: normalizeLeadStatus(sl.status),
         temperature: (sl.temperature as LeadTemperature) || "quente",
         transaction_type: (sl.transaction_type as any) || "comprar",
         broker_id: sl.broker_id || null,

@@ -111,6 +111,10 @@ export function LeadDetailsModal({
         return;
       }
 
+      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
@@ -170,6 +174,10 @@ export function LeadDetailsModal({
         toast.error(`Falha ao salvar: ${error.message}`);
         return;
       }
+
+      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
