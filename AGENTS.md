@@ -27,3 +27,5 @@
 - Store WebP files under the real property UUID; serve private property images only after published-photo RLS verification because public buckets are blocked.
 - Retire brokers through one atomic database function that transfers ownership before revoking roles, preserving properties and leads.
 - Publish property status only after photo persistence succeeds, so incomplete uploads remain retryable drafts.
+- Anonymous capture photos use non-overwriting signed upload capabilities for server-generated paths; direct client inserts are denied to isolate submissions.
+- Direct property-image reads require active staff and property assignment or explicit global access; published photos remain available through the RLS-checked public image handler.
