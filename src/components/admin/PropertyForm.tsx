@@ -33,6 +33,8 @@ import { uploadPropertyPhoto } from "@/lib/image-upload";
 import { getCurrentUserProfile } from "@/lib/brokers";
 import { Button } from "@/components/ui/button";
 import { PROPERTY_TYPES, brl, type Property } from "@/lib/realty";
+import { emptyOwnerDetails, fetchPropertyOwner, savePropertyOwner } from '@/lib/property-owners';
+import { OwnerDetails } from '@/components/admin/OwnerDetails';
 
 const DIFFERENTIALS = [
   "Piscina",
@@ -145,6 +147,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
   const [code, setCode] = useState(() => generateCode("Casa"));
   const [description, setDescription] = useState("");
   const [featured, setFeatured] = useState(false);
+  const [owner, setOwner] = useState({ ...emptyOwnerDetails });
 
   // Etapa 2 - Localização & Endereço
   const [cep, setCep] = useState("");
@@ -213,6 +216,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         setIptu(prop.iptu ?? "");
         setDescription(prop.description || "");
         setFeatured(Boolean(prop.featured));
+        const ownerDetails = await fetchPropertyOwner(currentId);
+        setOwner(ownerDetails ?? { ...emptyOwnerDetails });
 
         // Location
         setCity(prop.city || "Caçapava");
@@ -554,6 +559,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
       }
 
       // Keep the returned property ID for retries after an image failure.
+      setProgressMessage('Salvando dados do proprietário...');
+      await savePropertyOwner(propertyDbId, owner);
       setProgressMessage('Salvando fotos...');
       const photoRecords: { id: string; property_id: string; url: string; storage_path: string | null; caption: string; position: number }[] = [];
       for (let i = 0; i < photos.length; i++) {
@@ -591,6 +598,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         queryClient.invalidateQueries({ queryKey: ["featured"] }),
         queryClient.invalidateQueries({ queryKey: ["search"] }),
         queryClient.invalidateQueries({ queryKey: ["locations"] }),
+        queryClient.invalidateQueries({ queryKey: ["internal-property"] }),
         ...(isEditing && propertyId
           ? [
               queryClient.invalidateQueries({ queryKey: ["property"] }),
@@ -918,6 +926,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+            <OwnerDetails value={owner} onChange={setOwner} />
           </div>
         )}
 
@@ -1551,6 +1560,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
             </div>
 
             {/* Action Buttons for Saving */}
+            <OwnerDetails value={owner} />
             <div className="rounded-2xl bg-accent/30 border border-primary/20 p-5 space-y-3">
               <h3 className="text-sm font-bold text-foreground">Como deseja salvar este imóvel?</h3>
               <p className="text-xs text-muted-foreground">

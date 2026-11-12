@@ -660,6 +660,15 @@ function AdminDashboard() {
                         </Link>
                       )}
                       <Link
+                        to="/admin/imovel/$id"
+                        params={{ id: item.id }}
+                        className="btn btn-ghost text-xs h-8"
+                        title="Consultar imóvel na área interna"
+                      >
+                        <Eye className="mr-1 size-3.5" />
+                        Ver informações
+                      </Link>
+                      <Link
                         to={`/imovel/${item.code}` as any}
                         target="_blank"
                         className="btn btn-ghost text-xs h-8"
