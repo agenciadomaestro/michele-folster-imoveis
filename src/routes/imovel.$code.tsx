@@ -199,7 +199,6 @@ function PropertyPage() {
               </div>
             )}
 
-            {p.description && (<><h2 className="mt-10 text-lg font-semibold">Sobre o imóvel</h2><p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">{p.description}</p></>)}
             {p.features.length > 0 && (
               <>
                 <h2 className="mt-10 text-lg font-semibold">Características</h2>
@@ -208,6 +207,7 @@ function PropertyPage() {
                 </ul>
               </>
             )}
+            {p.description && (<><h2 className="mt-10 text-lg font-semibold">Sobre o imóvel</h2><p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">{p.description}</p></>)}
           </div>
 
           <aside className="panel h-fit p-6 lg:sticky lg:top-24">

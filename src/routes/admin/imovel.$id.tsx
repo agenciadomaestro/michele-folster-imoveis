@@ -50,8 +50,18 @@ function InternalPropertyPage() {
         <span className="flex items-center gap-2"><Car className="size-4" />{p.parking ?? '—'} vagas</span>
         <span>{p.area_useful ?? p.area_built ?? p.area_land ?? '—'} m²</span>
       </div>
-      {p.description && <p className="mt-6 whitespace-pre-wrap break-words leading-relaxed">{p.description}</p>}
-      {p.features.length > 0 && <ul className="mt-6 grid gap-2 sm:grid-cols-2">{p.features.map(feature => <li key={feature} className="text-sm">{feature}</li>)}</ul>}
+      {p.features.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold">Características</h2>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">{p.features.map(feature => <li key={feature} className="text-sm">{feature}</li>)}</ul>
+        </div>
+      )}
+      {p.description && (
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold">Sobre o imóvel</h2>
+          <p className="mt-3 whitespace-pre-wrap break-words leading-relaxed text-muted-foreground">{p.description}</p>
+        </div>
+      )}
       <OwnerDetails value={data.owner ?? emptyOwnerDetails} />
     </main>
   );
