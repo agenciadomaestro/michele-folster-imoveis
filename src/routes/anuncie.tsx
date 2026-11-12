@@ -19,6 +19,8 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { saveMessageLead } from "@/lib/messages";
 import { convertPhoto } from "@/lib/image-upload";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from '@tanstack/react-start';
+import { prepareCaptureUpload } from '@/lib/capture-upload.functions';
 
 export const Route = createFileRoute("/anuncie")({
   head: () => ({
@@ -44,6 +46,7 @@ export const Route = createFileRoute("/anuncie")({
 
 function AnunciePage() {
   const queryClient = useQueryClient();
+  const prepareUpload = useServerFn(prepareCaptureUpload);
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -83,8 +86,8 @@ function AnunciePage() {
     if (photoFile) {
       try {
         const blob = await convertPhoto(photoFile);
-        const path = `${crypto.randomUUID()}.webp`;
-        const { error } = await supabase.storage.from('captacoes').upload(path,blob,{ contentType: 'image/webp', upsert: false });
+        const { path, token } = await prepareUpload();
+        const { error } = await supabase.storage.from('captacoes').uploadToSignedUrl(path,token,blob,{ contentType: 'image/webp' });
         if (error) throw new Error(error.message);
         photoUrl = path;
       } catch (error) {
