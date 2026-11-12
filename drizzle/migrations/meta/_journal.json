@@ -15,6 +15,13 @@
       "when": 1793285372966,
       "tag": "0001_seed_master_user",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794456961014,
+      "tag": "0002_persistent_team_permissions_photos_realtime",
+      "breakpoints": true
     }
   ]
 }

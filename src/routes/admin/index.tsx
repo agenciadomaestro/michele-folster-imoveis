@@ -92,42 +92,7 @@ function AdminDashboard() {
     },
   });
 
-  // Sincronização em Tempo Real (Supabase Realtime Subscriptions)
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-dashboard-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "properties" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["properties"] });
-          queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] });
-          queryClient.invalidateQueries({ queryKey: ["featured"] });
-          queryClient.invalidateQueries({ queryKey: ["search"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
-          queryClient.invalidateQueries({ queryKey: ["admin", "current-user-profile"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "leads" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] });
-          queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
-        }
-      )
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   // Filtragem de Imóveis conforme regras de acesso do Corretor
   const visibleProperties = rawProperties.filter((item) => {
@@ -136,7 +101,7 @@ function AdminDashboard() {
       // Vê apenas se atribuído ao corretor ou sem corretor específico
       return item.broker_id === userProfile.id;
     }
-    return true;
+    return userProfile?.permissions.pode_ver_ofertas_gerais === true;
   });
 
   const isUuid = (val: string | null | undefined): boolean => {
@@ -155,7 +120,7 @@ function AdminDashboard() {
       const { error } = await supabase
         .from("properties")
         .update({ featured: nextFeatured, updated_at: new Date().toISOString() })
-        .eq("id", property.id);
+        .eq("id", property.id).select("id").single();
 
       if (error) {
         console.error("Erro ao atualizar destaque no Supabase:", error.message);
@@ -187,7 +152,7 @@ function AdminDashboard() {
       const { error } = await supabase
         .from("properties")
         .update({ status: nextStatus, updated_at: new Date().toISOString() })
-        .eq("id", property.id);
+        .eq("id", property.id).select("id").single();
 
       if (error) {
         console.error("Erro ao atualizar status no Supabase:", error.message);
@@ -213,30 +178,17 @@ function AdminDashboard() {
   const handleDeleteProperty = async (id: string, propTitle: string) => {
     if (!confirm(`Deseja realmente excluir o imóvel "${propTitle}"?`)) return;
 
-    // Se for ID fictício de mock antigo, remove da tela sem tentar consultar o Supabase
-    if (!isUuid(id) || id.startsWith("prop-") || id.startsWith("demo-")) {
-      queryClient.setQueryData(["admin", "properties-list"], (prev: Property[] = []) =>
-        prev.filter((p) => p.id !== id)
-      );
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["properties"] }),
-        queryClient.invalidateQueries({ queryKey: ["admin", "properties-list"] }),
-        queryClient.invalidateQueries({ queryKey: ["featured"] }),
-        queryClient.invalidateQueries({ queryKey: ["search"] }),
-        queryClient.invalidateQueries({ queryKey: ["locations"] }),
-      ]);
-      toast.success("Imóvel removido com sucesso.");
+    if (!isUuid(id)) {
+      toast.error('Identificador inválido');
       return;
     }
 
     try {
       // Deleta primeiro as fotos vinculadas para evitar conflitos de chave estrangeira
       const { error: photosError } = await supabase.from("property_photos").delete().eq("property_id", id);
-      if (photosError) {
-        console.warn("Aviso ao excluir fotos vinculadas no Supabase:", photosError.message);
-      }
+      if (photosError) throw new Error(photosError.message);
 
-      const { error } = await supabase.from("properties").delete().eq("id", id);
+      const { error } = await supabase.from("properties").delete().eq("id", id).select("id").single();
       if (error) {
         console.error("Erro ao excluir imóvel no Supabase:", error.message);
         toast.error(`Falha ao excluir imóvel: ${error.message}`);
@@ -264,10 +216,8 @@ function AdminDashboard() {
   });
 
   const handleLogout = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("master_auth_user");
-    }
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) { toast.error(error.message); return; }
     toast.success("Sessão encerrada com sucesso.");
     router.navigate({ to: "/auth" });
   };

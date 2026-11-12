@@ -26,6 +26,7 @@ import { Route as AdminNovoRouteImport } from './routes/admin/novo'
 import { Route as ImovelCodeRouteImport } from './routes/imovel.$code'
 import { Route as AdminImoveisIdRouteImport } from './routes/admin/imoveis/$id'
 import { Route as AdminImoveisNovoRouteImport } from './routes/admin/imoveis/novo'
+import { Route as ApiPublicPropertyImageRouteImport } from './routes/api/public/property-image'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +113,11 @@ const AdminImoveisNovoRoute = AdminImoveisNovoRouteImport.update({
   path: '/imoveis/novo',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const ApiPublicPropertyImageRoute = ApiPublicPropertyImageRouteImport.update({
+  id: '/api/public/property-image',
+  path: '/api/public/property-image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/admin/imoveis/$id': typeof AdminImoveisIdRoute
   '/admin/imoveis/novo': typeof AdminImoveisNovoRoute
+  '/api/public/property-image': typeof ApiPublicPropertyImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/imoveis/$id': typeof AdminImoveisIdRoute
   '/admin/imoveis/novo': typeof AdminImoveisNovoRoute
+  '/api/public/property-image': typeof ApiPublicPropertyImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/admin/imoveis/$id': typeof AdminImoveisIdRoute
   '/admin/imoveis/novo': typeof AdminImoveisNovoRoute
+  '/api/public/property-image': typeof ApiPublicPropertyImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/imoveis/$id'
     | '/admin/imoveis/novo'
+    | '/api/public/property-image'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/imoveis/$id'
     | '/admin/imoveis/novo'
+    | '/api/public/property-image'
   id:
     | '__root__'
     | '/'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/imoveis/$id'
     | '/admin/imoveis/novo'
+    | '/api/public/property-image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -240,6 +252,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   VendaRoute: typeof VendaRoute
   ImovelCodeRoute: typeof ImovelCodeRoute
+  ApiPublicPropertyImageRoute: typeof ApiPublicPropertyImageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminImoveisNovoRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/api/public/property-image': {
+      id: '/api/public/property-image'
+      path: '/api/public/property-image'
+      fullPath: '/api/public/property-image'
+      preLoaderRoute: typeof ApiPublicPropertyImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -401,6 +421,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   VendaRoute: VendaRoute,
   ImovelCodeRoute: ImovelCodeRoute,
+  ApiPublicPropertyImageRoute: ApiPublicPropertyImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

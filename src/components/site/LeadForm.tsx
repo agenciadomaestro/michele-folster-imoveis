@@ -3,8 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2, MessageSquare } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { type Lead } from "@/lib/leads";
+import { Button } from "@/components/ui/button";
+
 import { saveMessageLead } from "@/lib/messages";
 
 const schema = z.object({
@@ -65,49 +65,15 @@ export function LeadForm({
     setSending(true);
     const v = parsed.data;
 
-    const localLeadId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `lead-${Date.now()}`;
-
-    // 1. Salva em messages_leads (Central de Mensagens e Leads)
     try {
       await saveMessageLead({
-        tipo: v.interest === "Anunciar meu imóvel" ? "captacao" : propertyCode ? "imovel" : "geral",
-        nome_cliente: v.name,
-        telefone_cliente: v.phone,
-        email_cliente: v.email || null,
-        interesse: v.interest,
-        mensagem: v.message,
-        imovel_id: propertyId ?? null,
-        codigo_imovel: propertyCode ?? null,
-        titulo_imovel: propertyTitle ?? null,
-        corretor_atribuido_id: brokerId ?? null,
+        tipo: v.interest === 'Anunciar meu imóvel' ? 'captacao' : propertyId ? 'imovel' : 'geral',
+        nome_cliente: v.name, telefone_cliente: v.phone, email_cliente: v.email || null,
+        interesse: v.interest, mensagem: v.message,
+        imovel_id: propertyId ?? null, codigo_imovel: propertyCode ?? null, titulo_imovel: propertyTitle ?? null,
       });
-    } catch (err) {
-      console.warn("Aviso ao registrar mensagem do lead:", err);
-    }
-
-    // 2. Salva diretamente na tabela leads do Supabase DB
-    const { error: leadError } = await supabase.from("leads").insert({
-      id: localLeadId,
-      name: v.name,
-      phone: v.phone,
-      email: v.email || null,
-      message: v.message || null,
-      interest: v.interest,
-      consent: true,
-      property_id: propertyId ?? null,
-      property_code: propertyCode ?? null,
-      source: source || "Site",
-      source_page: typeof window !== "undefined" ? window.location.pathname : null,
-      status: "novo",
-      broker_id: brokerId ?? null,
-    });
-
-    if (leadError) {
-      console.error("Erro ao salvar no Supabase:", leadError.message);
-      toast.error(`Falha ao salvar: ${leadError.message}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
       setSending(false);
       return;
     }
@@ -216,10 +182,10 @@ export function LeadForm({
       </label>
       {err("consent")}
 
-      <button className="btn btn-primary w-full h-11 text-xs font-bold gap-2 shadow-sm" disabled={sending}>
+      <Button className="w-full h-11 text-xs font-bold gap-2 shadow-sm" disabled={sending}>
         <MessageSquare className="size-4" />
         <span>{sending ? "Enviando Mensagem..." : "Enviar Mensagem"}</span>
-      </button>
+      </Button>
     </form>
   );
 }

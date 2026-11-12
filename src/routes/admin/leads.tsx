@@ -33,12 +33,10 @@ import {
   type LeadTemperature,
   type BrokerProfile,
   KANBAN_COLUMNS,
-  DEFAULT_BROKERS,
   TEMPERATURE_CONFIG,
   fetchLeads,
   updateLeadStatusInDb,
   deleteLeadInDb,
-  deleteLocalLead,
   isUuid,
   buildWhatsappChatUrl,
 } from "@/lib/leads";
@@ -79,7 +77,7 @@ function LeadsManagementPage() {
     queryFn: getCurrentUserProfile,
   });
 
-  const isAdmin = currentUser?.isAdmin ?? true;
+  const isAdmin = currentUser?.isAdmin ?? false;
   const currentUserId = currentUser?.id;
   const currentUserName = currentUser?.name || "Michele Folster";
   const currentUserRoleLabel = currentUser?.roleLabel || "Gestora/Administradora";
@@ -105,31 +103,7 @@ function LeadsManagementPage() {
     queryFn: fetchLeads,
   });
 
-  // Listener em tempo real para sincronização instantânea de leads entre navegadores
-  useEffect(() => {
-    const channel = supabase
-      .channel("crm-leads-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "leads" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
-          queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] });
-        }
-      )
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   // 4. Access Control Filter (RBAC)
   // Admins see all leads (or filter by broker); Standard brokers see ONLY their assigned leads
@@ -184,14 +158,8 @@ function LeadsManagementPage() {
 
     const newStatusCol = KANBAN_COLUMNS.find((c) => c.id === newStatus)?.title;
 
-    // Evita tentar atualizar registros fictícios de demo no banco real
-    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
-      deleteLocalLead(leadId);
-      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-        prev.filter((item) => item.id !== leadId)
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
-      toast.info("Registro de demonstração antigo removido da lista.");
+    if (!isUuid(leadId)) {
+      toast.error('Identificador inválido');
       return;
     }
 
@@ -246,14 +214,8 @@ function LeadsManagementPage() {
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    // Evita tentar deletar registros fictícios de demo no banco real
-    if (!isUuid(leadId) || leadId.startsWith("lead-demo") || leadId.startsWith("demo-")) {
-      deleteLocalLead(leadId);
-      queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-        prev.filter((item) => item.id !== leadId)
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] });
-      toast.success("Lead removido com sucesso.");
+    if (!isUuid(leadId)) {
+      toast.error('Identificador inválido');
       return;
     }
 

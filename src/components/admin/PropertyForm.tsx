@@ -29,6 +29,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadPropertyPhoto } from "@/lib/image-upload";
+import { getCurrentUserProfile } from "@/lib/brokers";
+import { Button } from "@/components/ui/button";
 import { PROPERTY_TYPES, brl, type Property } from "@/lib/realty";
 
 const DIFFERENTIALS = [
@@ -110,6 +113,8 @@ export type PhotoItem = {
   file?: File;
   previewUrl?: string;
   uploading?: boolean;
+  caption?: string;
+  storage_path?: string | null;
 };
 
 interface PropertyFormProps {
@@ -123,6 +128,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
   const queryClient = useQueryClient();
   const fileInputId = useId();
   const isEditing = Boolean(propertyId);
+  const [persistedId, setPersistedId] = useState(propertyId);
 
   // Stepper state (1 to 5)
   const [step, setStep] = useState(1);
@@ -184,7 +190,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         try {
           const { data, error } = await supabase
             .from("properties")
-            .select("*, property_photos(id, url, position)")
+            .select("*, property_photos(id, url, position, caption, storage_path)")
             .eq("id", currentId)
             .maybeSingle();
           if (!error && data) prop = data as Property;
@@ -248,7 +254,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           const sorted = [...prop.property_photos].sort((a, b) => a.position - b.position);
           setPhotos(
             sorted.map((p) => ({
-              id: (p as any).id || Math.random().toString(36).substring(7),
+              id: (p as any).id,
+              caption: (p as any).caption ?? "",
+              storage_path: (p as any).storage_path,
               url: p.url,
               previewUrl: p.url,
             }))
@@ -330,7 +338,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
   const handleFilesSelected = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const newItems: PhotoItem[] = Array.from(files).map((f) => ({
-      id: Math.random().toString(36).substring(7),
+      id: crypto.randomUUID(),
       url: "",
       file: f,
       previewUrl: URL.createObjectURL(f),
@@ -357,7 +365,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
     setPhotos((prev) => [
       ...prev,
       {
-        id: Math.random().toString(36).substring(7),
+        id: crypto.randomUUID(),
         url: trimmed,
         previewUrl: trimmed,
       },
@@ -462,84 +470,11 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
     setIsSubmitting(true);
     setSubmittingStatus(chosenStatus);
-    setProgressMessage("Conectando ao Supabase...");
+    setProgressMessage("Salvando imóvel...");
 
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      let currentUser: any = authData?.user;
-      if (!currentUser && typeof window !== "undefined") {
-        const stored = localStorage.getItem("master_auth_user");
-        if (stored) {
-          try {
-            currentUser = JSON.parse(stored);
-          } catch {}
-        }
-      }
-
-      // 1. Process Photos and Upload to Supabase Storage
-      const bucketName = "property-photos";
-      const finalPhotoUrls: string[] = [];
-
-      for (let i = 0; i < photos.length; i++) {
-        const item = photos[i];
-        if (!item) continue;
-
-        // If it already has an existing URL and no local File
-        if (item.url && !item.file) {
-          finalPhotoUrls.push(item.url);
-          continue;
-        }
-
-        if (item.file) {
-          setProgressMessage(`Enviando foto ${i + 1} de ${photos.length} para o Supabase Storage...`);
-          const fileExt = item.file.name.split(".").pop() || "jpg";
-          const safeCode = code.trim().toUpperCase();
-          const filePath = `${safeCode}/${Date.now()}-${i}.${fileExt}`;
-
-          let uploadedUrl = "";
-          // Try main bucket: property-photos
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(bucketName)
-            .upload(filePath, item.file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-
-          if (!uploadError && uploadData) {
-            const { data: publicData } = supabase.storage
-              .from(bucketName)
-              .getPublicUrl(filePath);
-            uploadedUrl = publicData.publicUrl;
-          } else {
-            // Fallback bucket: properties
-            const { data: fbData, error: fbError } = await supabase.storage
-              .from("properties")
-              .upload(filePath, item.file, {
-                cacheControl: "3600",
-                upsert: true,
-              });
-
-            if (!fbError && fbData) {
-              const { data: fbUrl } = supabase.storage
-                .from("properties")
-                .getPublicUrl(filePath);
-              uploadedUrl = fbUrl.publicUrl;
-            } else {
-              // Base64 fallback if storage bucket not yet created in Supabase Dashboard
-              uploadedUrl = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(item.file!);
-              });
-            }
-          }
-
-          if (uploadedUrl) {
-            finalPhotoUrls.push(uploadedUrl);
-          }
-        }
-      }
-
+      const currentUser = await getCurrentUserProfile();
+      if (!currentUser.isAdmin && !currentUser.permissions.pode_cadastrar_imovel) throw new Error('Cadastro e edição de imóveis não autorizados');
       // Format full address
       let formattedAddress = street.trim();
       if (number.trim()) formattedAddress += `, ${number.trim()}`;
@@ -548,30 +483,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
       const finalSlug = generateSlug(title, code);
 
-      const isUuid = (val: string | null | undefined): boolean => {
-        if (!val || typeof val !== "string") return false;
-        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
-      };
-
-      const generateUuid = (): string => {
-        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-          return crypto.randomUUID();
-        }
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-          const r = (Math.random() * 16) | 0;
-          const v = c === "x" ? r : (r & 0x3) | 0x8;
-          return v.toString(16);
-        });
-      };
-
-      const validUserId = currentUser?.id && isUuid(currentUser.id) ? currentUser.id : null;
-
-      // ID do imóvel (mantém o existente válido ou gera novo UUID RFC-compatível)
-      let savedPropertyId =
-        propertyId && isUuid(propertyId)
-          ? propertyId
-          : generateUuid();
-
+      const validUserId = currentUser.id;
       // Monta os campos obrigatórios e opcionais do imóvel
       const basePropertyPayload: Record<string, any> = {
         title: title.trim() || "Imóvel Sem Título",
@@ -599,43 +511,17 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         features: selectedFeatures || [],
         status: chosenStatus || "publicado",
         featured: Boolean(featured),
-        created_by: validUserId,
-        broker_id: validUserId,
+
         updated_at: new Date().toISOString(),
       };
 
       // 1. Cadastra ou atualiza o imóvel na tabela properties e aguarda resposta positiva
-      setProgressMessage("Gravando dados do imóvel no Supabase...");
+      setProgressMessage("Salvando dados do imóvel...");
       let propertyDbId: string = "";
 
-      if (isEditing && propertyId) {
-        let updatePayload: Record<string, any> = {
-          ...basePropertyPayload,
-          purpose: purpose || "venda",
-        };
-
-        let { data: updatedProp, error: updateError } = await supabase
-          .from("properties")
-          .update(updatePayload as any)
-          .eq("id", propertyId)
-          .select("id")
-          .single();
-
-        // Se o banco tiver a coluna transaction_type obrigatória/adicionada
-        if (updateError && updateError.message?.toLowerCase().includes("transaction_type")) {
-          updatePayload = {
-            ...updatePayload,
-            transaction_type: purpose || "venda",
-          };
-          const retryUpdate = await supabase
-            .from("properties")
-            .update(updatePayload as any)
-            .eq("id", propertyId)
-            .select("id")
-            .single();
-          updatedProp = retryUpdate.data;
-          updateError = retryUpdate.error;
-        }
+      if (persistedId) {
+        const { data: updatedProp, error: updateError } = await supabase
+          .from('properties').update(basePropertyPayload).eq('id', persistedId).select('id').single();
 
         if (updateError) {
           console.error("Erro ao salvar no Supabase:", updateError.message);
@@ -643,44 +529,12 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           return;
         }
 
-        propertyDbId = updatedProp?.id || propertyId;
+        propertyDbId = updatedProp?.id || persistedId;
 
-        const { error: delPhotosError } = await supabase
-          .from("property_photos")
-          .delete()
-          .eq("property_id", propertyDbId);
-
-        if (delPhotosError) {
-          console.warn("Aviso ao remover fotos antigas no Supabase:", delPhotosError.message);
-        }
       } else {
-        let insertPayload: Record<string, any> = {
-          ...basePropertyPayload,
-          purpose: purpose || "venda",
-          ...(isUuid(savedPropertyId) ? { id: savedPropertyId } : {}),
-          created_at: new Date().toISOString(),
-        };
-
-        let { data: newProp, error: insertError } = await supabase
-          .from("properties")
-          .insert(insertPayload as any)
-          .select("id")
-          .single();
-
-        // Se o banco tiver a coluna transaction_type obrigatória/adicionada
-        if (insertError && insertError.message?.toLowerCase().includes("transaction_type")) {
-          insertPayload = {
-            ...insertPayload,
-            transaction_type: purpose || "venda",
-          };
-          const retryInsert = await supabase
-            .from("properties")
-            .insert(insertPayload as any)
-            .select("id")
-            .single();
-          newProp = retryInsert.data;
-          insertError = retryInsert.error;
-        }
+        const { data: newProp, error: insertError } = await supabase.from('properties')
+          .insert({ ...basePropertyPayload, code: basePropertyPayload.code, slug: basePropertyPayload.slug, title: basePropertyPayload.title, type: basePropertyPayload.type, city: basePropertyPayload.city, created_by: validUserId, broker_id: validUserId })
+          .select('id').single();
 
         if (insertError) {
           console.error("Erro ao cadastrar imóvel no Supabase:", insertError.message);
@@ -695,28 +549,34 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         }
 
         propertyDbId = newProp.id;
+        setPersistedId(newProp.id);
       }
 
-      // Inserção na tabela property_photos utilizando a chave primária UUID retornada por properties
-      const validPhotos = finalPhotoUrls.filter((url) => Boolean(url && typeof url === "string" && url.trim()));
-
-      if (propertyDbId && validPhotos.length > 0) {
-        setProgressMessage("Gravando fotos no banco de dados Supabase...");
-        const photoRecords = validPhotos.map((url, index) => ({
-          property_id: propertyDbId,
-          url: url.trim(),
-          position: index,
-        }));
-
-        const { error: photoInsertError } = await supabase
-          .from("property_photos")
-          .insert(photoRecords);
-
-        if (photoInsertError) {
-          console.error("Erro ao vincular fotos no Supabase:", photoInsertError.message);
-          toast.error(`Falha ao vincular fotos: ${photoInsertError.message}`);
-          return;
+      // Keep the returned property ID for retries after an image failure.
+      setProgressMessage('Salvando fotos...');
+      const photoRecords = [];
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        if (!photo) continue;
+        const uploaded = photo.file ? await uploadPropertyPhoto(propertyDbId, photo.file) : { url: photo.url, storage_path: photo.storage_path ?? null };
+        photoRecords.push({ id: photo.id, property_id: propertyDbId, ...uploaded, caption: photo.caption ?? '', position: i });
+        if (photo.file) setPhotos(previous => previous.map(item => item.id === photo.id ? { ...item, ...uploaded, file: undefined } : item));
+      }
+      if (photoRecords.length) {
+        const { error } = await supabase.from('property_photos').upsert(photoRecords);
+        if (error) throw new Error(error.message);
+      }
+      const { data: existingPhotos, error: listError } = await supabase.from('property_photos').select('id,storage_path').eq('property_id',propertyDbId);
+      if (listError) throw new Error(listError.message);
+      const removed = (existingPhotos ?? []).filter(photo => !photoRecords.some(item => item.id === photo.id));
+      if (removed.length) {
+        const paths = removed.flatMap(photo => photo.storage_path ? [photo.storage_path] : []);
+        if (paths.length) {
+          const { error } = await supabase.storage.from('property-images').remove(paths);
+          if (error) throw new Error(error.message);
         }
+        const { error } = await supabase.from('property_photos').delete().in('id',removed.map(photo => photo.id));
+        if (error) throw new Error(error.message);
       }
 
       // Força a invalidação e recarregamento imediato das queries de catálogo
@@ -1350,7 +1210,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
             <div>
               <h2 className="text-xl font-bold">Etapa 4: Galeria de Fotos & Mídia</h2>
               <p className="text-sm text-muted-foreground">
-                Envie fotos diretamente para o bucket <code>property-photos</code> do Supabase Storage. Ordene e marque a foto principal.
+                
               </p>
             </div>
 
@@ -1387,10 +1247,10 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
               </p>
               <label
                 htmlFor={fileInputId}
-                className="btn btn-primary mt-4 cursor-pointer"
+                className="btn btn-primary mt-4 cursor-pointer whitespace-normal text-center"
               >
                 <Upload className="mr-1.5 size-4" />
-                Selecionar Imagens do Computador
+                Selecionar Fotos da Galeria / Arquivos
               </label>
             </div>
 
@@ -1450,6 +1310,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                           />
                         </div>
 
+                        <input aria-label={`Legenda da foto ${index + 1}`} className="field rounded-none text-xs" placeholder="Legenda" value={photo.caption ?? ''} onChange={e => setPhotos(previous => previous.map(item => item.id === photo.id ? { ...item, caption: e.target.value } : item))} />
+
                         {/* Top Badges */}
                         <div className="absolute top-2 left-2 flex gap-1">
                           {isCover ? (
@@ -1464,7 +1326,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                         </div>
 
                         {/* Controls Toolbar */}
-                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/85 via-black/50 to-transparent p-2 text-white">
+                        <div className="absolute inset-x-0 bottom-10 flex items-center justify-between bg-gradient-to-t from-black/85 via-black/50 to-transparent p-2 text-white">
                           <div className="flex items-center gap-1">
                             {index > 0 && (
                               <button
@@ -1528,7 +1390,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
             <div>
               <h2 className="text-xl font-bold">Etapa 5: Revisão & Publicação</h2>
               <p className="text-sm text-muted-foreground">
-                Confira todos os dados cadastrados antes de salvar no Supabase.
+                
               </p>
             </div>
 

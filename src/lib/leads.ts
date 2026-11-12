@@ -143,90 +143,8 @@ export const TEMPERATURE_CONFIG: Record<
   },
 };
 
-export const DEFAULT_BROKERS: BrokerProfile[] = [
-  {
-    id: "abb75384-d851-45fe-b7dd-c870c48b55f3",
-    name: "Master Agbipe",
-    email: "agbipe@agenciabipe.com",
-    role: "owner",
-    active: true,
-  },
-  {
-    id: "5839dc85-f229-47f9-927c-4a974705b15a",
-    name: "Everson Maestro",
-    email: "contato@agenciabipe.com",
-    role: "admin",
-    active: true,
-  },
-  {
-    id: "c011e701-0001-4000-8000-000000000001",
-    name: "Michele Folster",
-    email: "michele@michelefolster.com.br",
-    role: "broker",
-    active: true,
-  },
-  {
-    id: "c011e701-0002-4000-8000-000000000002",
-    name: "Marcos Vinicius",
-    email: "marcos@michelefolster.com.br",
-    role: "broker",
-    active: true,
-  },
-  {
-    id: "c011e701-0003-4000-8000-000000000003",
-    name: "Patrícia Lima",
-    email: "patricia@michelefolster.com.br",
-    role: "broker",
-    active: true,
-  },
-];
-
 export function isUuid(value: string | null | undefined): boolean {
-  if (!value || typeof value !== "string") return false;
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-}
-
-export const INITIAL_DEMO_LEADS: Lead[] = [];
-
-const LOCAL_STORAGE_LEADS_KEY = "app_crm_leads";
-
-export function getLocalLeads(): Lead[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_LEADS_KEY);
-    if (!raw) return [];
-    const list = JSON.parse(raw);
-    if (Array.isArray(list)) {
-      // Purga qualquer registro mock legado sem UUID válido
-      const clean = list.filter((l) => isUuid(l.id));
-      if (clean.length !== list.length) {
-        localStorage.setItem(LOCAL_STORAGE_LEADS_KEY, JSON.stringify(clean));
-      }
-      return clean;
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveLocalLead(lead: Lead): Lead {
-  if (typeof window === "undefined") return lead;
-  try {
-    const current = getLocalLeads();
-    const index = current.findIndex((l) => l.id === lead.id);
-    let updated: Lead[];
-    if (index >= 0) {
-      updated = [...current];
-      updated[index] = { ...current[index], ...lead, updated_at: new Date().toISOString() };
-    } else {
-      updated = [lead, ...current];
-    }
-    localStorage.setItem(LOCAL_STORAGE_LEADS_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.warn("Aviso ao salvar lead localmente:", e);
-  }
-  return lead;
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 export async function fetchLeads(): Promise<Lead[]> {
@@ -264,10 +182,8 @@ export async function fetchLeads(): Promise<Lead[]> {
         updated_at: sl.updated_at || new Date().toISOString(),
       }));
     }
-  } catch (err) {
-    console.warn("Aviso ao buscar leads no Supabase:", err);
-  }
-
+    if (error) throw new Error(error.message);
+  } catch (err) { throw err; }
   return [];
 }
 
@@ -276,9 +192,8 @@ export async function updateLeadStatusInDb(
   newStatus: LeadStatus
 ): Promise<{ success: boolean; error?: string }> {
   // Evita tentar atualizar IDs não-UUID no banco real
-  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
-    deleteLocalLead(id);
-    return { success: true };
+  if (!isUuid(id)) {
+    return { success: false, error: 'Identificador inválido' };
   }
 
   try {
@@ -288,7 +203,7 @@ export async function updateLeadStatusInDb(
         status: newStatus,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", id).select("id").single();
 
     if (error) {
       console.error("Erro ao salvar no Supabase:", error.message);
@@ -302,15 +217,14 @@ export async function updateLeadStatusInDb(
 }
 
 export async function deleteLeadInDb(id: string): Promise<{ success: boolean; error?: string }> {
-  deleteLocalLead(id);
 
   // Evita tentar deletar registros fictícios de demo no banco real
-  if (!isUuid(id) || id.startsWith("lead-demo") || id.startsWith("demo-")) {
-    return { success: true };
+  if (!isUuid(id)) {
+    return { success: false, error: "Identificador inválido" };
   }
 
   try {
-    const { error } = await supabase.from("leads").delete().eq("id", id);
+    const { error } = await supabase.from("leads").delete().eq("id", id).select("id").single();
     if (error) {
       console.error("Erro ao excluir no Supabase:", error.message);
       return { success: false, error: error.message };
@@ -320,89 +234,6 @@ export async function deleteLeadInDb(id: string): Promise<{ success: boolean; er
     console.error("Erro ao excluir lead no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
-}
-
-export function deleteLocalLead(id: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    const current = getLocalLeads();
-    const filtered = current.filter((l) => l.id !== id);
-    localStorage.setItem(LOCAL_STORAGE_LEADS_KEY, JSON.stringify(filtered));
-  } catch {}
-}
-
-export function mergeWithLocalLeads(supabaseLeads: any[] = []): Lead[] {
-  const localList = getLocalLeads();
-  if (!supabaseLeads || supabaseLeads.length === 0) return localList;
-
-  const localMap = new Map<string, Lead>();
-  for (const l of localList) {
-    localMap.set(l.id, l);
-    if (l.phone) localMap.set(l.phone, l);
-  }
-
-  const result: Lead[] = [];
-  const usedIds = new Set<string>();
-
-  for (const sl of supabaseLeads) {
-    const local = localMap.get(sl.id) || (sl.phone ? localMap.get(sl.phone) : undefined);
-    if (local) {
-      // Mescla priorizando atualizações do CRM local
-      const mergedLead: Lead = {
-        ...sl,
-        ...local,
-        status: (local.status || sl.status || "novo") as LeadStatus,
-        temperature: (local.temperature || "quente") as LeadTemperature,
-        transaction_type: (local.transaction_type || (sl.interest === "locacao" ? "alugar" : "comprar")) as TransactionType,
-        timeline: local.timeline || [],
-      };
-      result.push(mergedLead);
-      usedIds.add(local.id);
-      usedIds.add(sl.id);
-    } else {
-      const newLead: Lead = {
-        id: sl.id,
-        name: sl.name,
-        phone: sl.phone,
-        email: sl.email,
-        message: sl.message,
-        interest: sl.interest,
-        consent: sl.consent,
-        property_id: sl.property_id,
-        property_code: sl.property_code,
-        source: sl.source || "Site",
-        source_page: sl.source_page,
-        status: (sl.status === "em_atendimento" ? "em_contato" : sl.status || "novo") as LeadStatus,
-        temperature: "quente",
-        transaction_type: sl.interest === "locacao" ? "alugar" : "comprar",
-        broker_id: sl.broker_id,
-        notes: sl.notes,
-        timeline: [
-          {
-            id: `init-${sl.id}`,
-            created_at: sl.created_at || new Date().toISOString(),
-            author_name: "Sistema",
-            type: "contact",
-            content: `Lead recebido através de ${sl.source || "Site"}.`,
-          },
-        ],
-        created_at: sl.created_at || new Date().toISOString(),
-        updated_at: sl.updated_at || new Date().toISOString(),
-      };
-      result.push(newLead);
-      usedIds.add(sl.id);
-    }
-  }
-
-  // Adiciona os demais leads locais que não estão no Supabase
-  for (const l of localList) {
-    if (!usedIds.has(l.id)) {
-      result.push(l);
-      usedIds.add(l.id);
-    }
-  }
-
-  return result;
 }
 
 export function buildWhatsappChatUrl(phone: string, clientName: string, propCode?: string | null): string {

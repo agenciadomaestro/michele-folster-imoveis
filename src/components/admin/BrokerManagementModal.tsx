@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Users,
   Shield,
@@ -29,8 +29,11 @@ import {
   updateBrokerStatus,
   reassignAndDeleteBroker,
   formatMembershipDuration,
-  MICHELE_BROKER_ID,
+
 } from "@/lib/brokers";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation } from "@tanstack/react-query";
+import { createBroker } from "@/lib/team.functions";
 import { type Property } from "@/lib/realty";
 
 interface BrokerManagementModalProps {
@@ -52,33 +55,11 @@ export function BrokerManagementModal({
   const [isEditingPermissions, setIsEditingPermissions] = useState(false);
   const [isNewBrokerModalOpen, setIsNewBrokerModalOpen] = useState(false);
 
-  // Sincronização inicial e listener em tempo real no Supabase profiles
-  useEffect(() => {
-    if (!isOpen) return;
-
-    fetchBrokers(false).then((list) => {
-      setBrokers(list);
-    });
-
-    const channel = supabase
-      .channel("broker-modal-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles" },
-        async () => {
-          const updatedList = await fetchBrokers(false);
-          setBrokers(updatedList);
-          queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] });
-          queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] });
-          if (onBrokersUpdated) onBrokersUpdated();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isOpen, queryClient]);
+  const createBrokerFn = useServerFn(createBroker);
+  const createMutation = useMutation({ mutationFn: createBrokerFn });
+  const { data: brokerList = [], error: brokerError } = useQuery({ queryKey: ['admin','brokers-list'], queryFn: () => fetchBrokers(false), enabled: isOpen });
+  useEffect(() => { setBrokers(brokerList); }, [brokerList]);
+  useEffect(() => { if (brokerError) toast.error(brokerError.message); }, [brokerError]);
 
   // Estado para exclusão e reatribuição de corretor
   const [brokerToDelete, setBrokerToDelete] = useState<Broker | null>(null);
@@ -120,7 +101,7 @@ export function BrokerManagementModal({
     try {
       await updateBrokerStatus(broker.id, nextState);
       toast.success(`Corretor ${broker.name} marcado como ${nextState ? "Ativo" : "Inativo"}.`);
-      refreshList();
+      await refreshList();
     } catch (err: any) {
       toast.error(err?.message || "Falha ao alterar status do corretor.");
     }
@@ -147,7 +128,7 @@ export function BrokerManagementModal({
         },
       };
       setSelectedBroker(updated);
-      refreshList();
+      await refreshList();
       toast.success("Permissão atualizada com sucesso.");
     } catch (err: any) {
       toast.error(err?.message || "Falha ao atualizar permissão.");
@@ -161,33 +142,11 @@ export function BrokerManagementModal({
       return;
     }
 
-    const newBrokerId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `c011e701-9999-4000-8000-${Date.now().toString().slice(-12).padStart(12, "0")}`;
-
-    const newBroker: Broker = {
-      id: newBrokerId,
-      name: formName.trim(),
-      email: formEmail.trim().toLowerCase(),
-      phone: formPhone.trim() || "(12) 98146-7549",
-      creci: formCreci.trim() || "Em processo",
-      role: formRole,
-      active: true,
-      is_hidden: false,
-      permissions: {
-        pode_cadastrar_imovel: true,
-        pode_ver_ofertas_gerais: formRole === "admin",
-        pode_ver_captacoes: formRole === "admin",
-      },
-      created_at: new Date().toISOString(),
-    };
-
     try {
-      await saveBrokerDirect(newBroker);
+      await createMutation.mutateAsync({ data: { name: formName.trim(), email: formEmail.trim().toLowerCase(), phone: formPhone.trim(), creci: formCreci.trim(), password: formPassword, role: formRole } });
       toast.success(`Corretor ${formName} cadastrado com sucesso!`);
       if (formPassword.trim()) {
-        toast.info(`Credenciais criadas para ${formEmail}. Senha temporária configurada.`);
+        toast.info("Enviamos um e-mail para confirmar a conta.");
       }
 
       // Reset formulário
@@ -198,7 +157,7 @@ export function BrokerManagementModal({
       setFormPassword("");
       setFormRole("corretor");
       setIsNewBrokerModalOpen(false);
-      refreshList();
+      await refreshList();
     } catch (err: any) {
       toast.error(err?.message || "Falha ao cadastrar corretor no Supabase.");
     }
@@ -300,11 +259,7 @@ export function BrokerManagementModal({
               <tbody className="divide-y divide-border">
                 {brokers.map((broker) => {
                   const assignedCount = getAssignedCount(broker.id, broker.name);
-                  const isMichelePrincipal =
-                    broker.id === MICHELE_BROKER_ID ||
-                    broker.id === "corretor-michele" ||
-                    broker.email.toLowerCase() === "michele@michelefolster.com.br" ||
-                    broker.role === "admin";
+                  const isMichelePrincipal = broker.role === 'admin';
 
                   return (
                     <tr key={broker.id} className="hover:bg-secondary/20 transition-colors">
