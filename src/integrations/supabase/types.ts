@@ -335,6 +335,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_read_lead: {
+        Args: { _broker_id: string; _interest: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_all: { Args: { _user_id: string }; Returns: boolean }
       can_write_property: {
         Args: { _broker_id: string; _user_id: string }
