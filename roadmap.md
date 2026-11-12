@@ -7,6 +7,7 @@
 - [x] Validar horários e visualizações de computador, tablet e celular.
 
 # Persistência e segurança
+- [ ] Corrigir exclusão e etapas do CRM, verificar permissões e histórico e testar com sessão real.
 - [x] Remover dados fictícios, armazenamento local e acessos simulados.
 - [x] Aplicar permissões reais e reatribuição segura de corretores.
 - [x] Sincronizar imóveis, fotos, equipe e leads entre dispositivos.
