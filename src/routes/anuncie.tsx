@@ -17,11 +17,14 @@ import {
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { saveMessageLead } from "@/lib/messages";
+import { convertPhoto } from "@/lib/image-upload";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/anuncie")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Anuncie seu Imóvel — Michele Folster Imóveis" },
       {
         name: "description",
@@ -77,29 +80,18 @@ function AnunciePage() {
 
     let photoUrl: string | null = null;
 
-    // 1. Upload da Foto para o Bucket 'captacoes' no Supabase se houver arquivo
     if (photoFile) {
       try {
-        const fileExt = photoFile.name.split(".").pop();
-        const fileName = `captacao-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from("captacoes")
-          .upload(fileName, photoFile);
-
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from("captacoes")
-            .getPublicUrl(fileName);
-          photoUrl = publicUrlData.publicUrl;
-        }
-      } catch (err) {
-        console.warn("Aviso ao fazer upload da imagem no bucket captacoes:", err);
+        const blob = await convertPhoto(photoFile);
+        const path = `${crypto.randomUUID()}.webp`;
+        const { error } = await supabase.storage.from('captacoes').upload(path,blob,{ contentType: 'image/webp', upsert: false });
+        if (error) throw new Error(error.message);
+        photoUrl = path;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error));
+        setSubmitting(false);
+        return;
       }
-    }
-
-    // Se o upload remoto não foi concluído mas há preview local, utiliza no payload
-    if (!photoUrl && photoPreview) {
-      photoUrl = photoPreview;
     }
 
     // 2. Salva o registro em messages_leads e CRM
@@ -115,7 +107,6 @@ function AnunciePage() {
         cidade_bairro: cidadeBairro.trim() || "Caçapava-SP",
         valor_pretendido: valorPretendido ? Number(valorPretendido.replace(/\D/g, "")) : null,
         foto_imovel_url: photoUrl,
-        corretor_atribuido_id: "c011e701-0001-4000-8000-000000000001", // Atribuição inicial para Michele Folster
         corretor_nome: "Michele Folster",
       });
 

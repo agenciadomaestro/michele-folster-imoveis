@@ -110,7 +110,7 @@ function formatCep(val: string): string {
 export type PhotoItem = {
   id: string;
   url: string;
-  file?: File;
+  file?: File | undefined;
   previewUrl?: string;
   uploading?: boolean;
   caption?: string;
@@ -464,6 +464,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
   // Submission to Supabase
   const handleFinalSubmit = async (chosenStatus: "rascunho" | "publicado") => {
+    if (isSubmitting) return;
     if (!validateStep(1) || !validateStep(2)) {
       return;
     }
@@ -485,7 +486,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
       const validUserId = currentUser.id;
       // Monta os campos obrigatórios e opcionais do imóvel
-      const basePropertyPayload: Record<string, any> = {
+      const basePropertyPayload = {
         title: title.trim() || "Imóvel Sem Título",
         purpose: purpose || "venda",
         type: type.trim() || "Casa",
@@ -554,7 +555,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
       // Keep the returned property ID for retries after an image failure.
       setProgressMessage('Salvando fotos...');
-      const photoRecords = [];
+      const photoRecords: { id: string; property_id: string; url: string; storage_path: string | null; caption: string; position: number }[] = [];
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
         if (!photo) continue;

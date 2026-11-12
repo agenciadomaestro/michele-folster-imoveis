@@ -56,13 +56,13 @@ export function LeadDetailsModal({
   currentUserName,
 }: LeadDetailsModalProps) {
   const queryClient = useQueryClient();
-  if (!isOpen || !lead) return null;
+  if (!lead) return null;
 
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [temperature, setTemperature] = useState<LeadTemperature>(lead.temperature);
   const [brokerId, setBrokerId] = useState(lead.broker_id || "");
   const [nextAction, setNextAction] = useState(lead.next_action || "");
-  const [nextActionDate, setNextActionDate] = useState(lead.next_action_date || "");
+  const [nextActionDate, setNextActionDate] = useState(lead.next_action_date ? lead.next_action_date.slice(0,16) : "");
   const [lossReason, setLossReason] = useState(lead.loss_reason || "");
   const [newNote, setNewNote] = useState("");
 
@@ -93,10 +93,10 @@ export function LeadDetailsModal({
           status: updated.status,
           notes: updated.notes || null,
           temperature: updated.temperature,
-          next_action: updated.next_action,
-          next_action_date: updated.next_action_date,
-          loss_reason: updated.loss_reason,
-          broker_name: updated.broker_name,
+          next_action: updated.next_action ?? null,
+          next_action_date: updated.next_action_date ?? null,
+          loss_reason: updated.loss_reason ?? null,
+          broker_name: updated.broker_name ?? null,
           broker_id: updated.broker_id || null,
           updated_at: new Date().toISOString(),
         })
@@ -154,7 +154,7 @@ export function LeadDetailsModal({
         .from("leads")
         .update({
           notes: updated.notes ?? null,
-          timeline: updated.timeline,
+          timeline: updated.timeline.map(activity => ({ ...activity })),
           updated_at: new Date().toISOString(),
         })
         .eq("id", updated.id).select("id").single();

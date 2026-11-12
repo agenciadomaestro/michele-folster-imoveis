@@ -34,6 +34,11 @@ import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal"
 export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
+      { name: "description", content: "Painel Administrativo — Michele Folster Imóveis — Área da equipe autorizada." },
+      { property: "og:title", content: "Painel Administrativo — Michele Folster Imóveis" },
+      { property: "og:description", content: "Painel Administrativo — Michele Folster Imóveis — Área da equipe autorizada." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Painel Administrativo — Michele Folster Imóveis" },
       { name: "robots", content: "noindex, nofollow" },
     ],

@@ -49,6 +49,11 @@ import { getCurrentUserProfile, fetchBrokers } from "@/lib/brokers";
 export const Route = createFileRoute("/admin/leads")({
   head: () => ({
     meta: [
+      { name: "description", content: "Gestão de Leads — CRM Imobiliário — Área da equipe autorizada." },
+      { property: "og:title", content: "Gestão de Leads — CRM Imobiliário" },
+      { property: "og:description", content: "Gestão de Leads — CRM Imobiliário — Área da equipe autorizada." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Gestão de Leads — CRM Imobiliário" },
       { name: "robots", content: "noindex, nofollow" },
     ],

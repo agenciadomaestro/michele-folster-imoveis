@@ -39,6 +39,11 @@ import { brl } from "@/lib/realty";
 export const Route = createFileRoute("/admin/mensagens")({
   head: () => ({
     meta: [
+      { name: "description", content: "Central de Mensagens e Contatos — Michele Folster Imóveis — Área da equipe autorizada." },
+      { property: "og:title", content: "Central de Mensagens e Contatos — Michele Folster Imóveis" },
+      { property: "og:description", content: "Central de Mensagens e Contatos — Michele Folster Imóveis — Área da equipe autorizada." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Central de Mensagens e Contatos — Michele Folster Imóveis" },
       { name: "robots", content: "noindex, nofollow" },
     ],

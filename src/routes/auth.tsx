@@ -10,6 +10,8 @@ import { Loader2, LogIn } from "lucide-react";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Entrar — Michele Folster Imóveis" },
       { name: "description", content: "Acesso da equipe da Michele Folster Imóveis." },
       { property: "og:title", content: "Área da equipe — Michele Folster" },

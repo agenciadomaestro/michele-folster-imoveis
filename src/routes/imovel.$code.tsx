@@ -12,6 +12,8 @@ import { AGENCY, brl, priceLabel, PURPOSE_LABEL, getWhatsappUrl, type Property }
 export const Route = createFileRoute("/imovel/$code")({
   head: ({ params }) => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: `Imóvel ${params.code} — Michele Folster Imóveis` },
       { name: "description", content: `Detalhes, fotos e valores do imóvel ${params.code}.` },
       { property: "og:title", content: `Imóvel ${params.code} — Michele Folster` },
@@ -27,24 +29,6 @@ function PropertyPage() {
   const [idx, setIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
 
-  // Sincronização Realtime do imóvel
-  useEffect(() => {
-    const channel = supabase
-      .channel(`property-detail-${code.toLowerCase()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "properties" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["property", code] });
-          queryClient.invalidateQueries({ queryKey: ["related"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [code, queryClient]);
 
   const { data: p, isLoading } = useQuery({
     queryKey: ["property", code],
