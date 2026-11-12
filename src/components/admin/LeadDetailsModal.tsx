@@ -251,12 +251,15 @@ export function LeadDetailsModal({
                 <Trash2 className="size-4" />
               </Button>
             )}
-                 <Button
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Fechar detalhes"
               onClick={onClose}
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
               <X className="size-5" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -456,7 +459,7 @@ export function LeadDetailsModal({
                 className="field text-xs resize-none"
               />
               <div className="flex justify-end">
-                <button
+                <Button
                   type="submit"
                    disabled={!newNote.trim() || isAddingNote || isSaving || isDeleting}
                   className="btn btn-primary text-xs h-8"
@@ -506,12 +509,13 @@ export function LeadDetailsModal({
         <div className="flex items-center justify-end gap-3 border-t border-border px-5 py-3.5 bg-muted/40 shrink-0">
           <Button
             type="button"
+            variant="outline"
             onClick={onClose}
             className="btn btn-outline text-xs h-9"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleSave}
             disabled={isSaving || isDeleting || isAddingNote}
