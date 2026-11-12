@@ -274,6 +274,38 @@ export type Database = {
         }
         Relationships: []
       }
+      property_owners: {
+        Row: {
+          email: string
+          name: string
+          notes: string
+          phone: string
+          property_id: string
+        }
+        Insert: {
+          email?: string
+          name?: string
+          notes?: string
+          phone?: string
+          property_id: string
+        }
+        Update: {
+          email?: string
+          name?: string
+          notes?: string
+          phone?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_owners_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_photos: {
         Row: {
           caption: string
