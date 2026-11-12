@@ -22,6 +22,27 @@
       "when": 1794456961014,
       "tag": "0002_persistent_team_permissions_photos_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794457342060,
+      "tag": "0003_catalog_visibility_broadcast_and_capture_upload",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794457553705,
+      "tag": "0004_complete_staff_scope_and_function_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794457835648,
+      "tag": "0005_synchronize_lead_assignment_names",
+      "breakpoints": true
     }
   ]
 }

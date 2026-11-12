@@ -11,8 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "seed:master": "node scripts/seed-master-user.mjs"
+    "test:watch": "vitest"
   },
   "overrides": {
     "rolldown": "1.2.1"

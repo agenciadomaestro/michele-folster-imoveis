@@ -7,6 +7,11 @@ import { ShieldAlert, ArrowLeft } from "lucide-react";
 export const Route = createFileRoute("/admin/imoveis/novo")({
   head: () => ({
     meta: [
+      { name: "description", content: "Cadastrar Imóvel — Painel Michele Folster — Área da equipe autorizada." },
+      { property: "og:title", content: "Cadastrar Imóvel — Painel Michele Folster" },
+      { property: "og:description", content: "Cadastrar Imóvel — Painel Michele Folster — Área da equipe autorizada." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Cadastrar Imóvel — Painel Michele Folster" },
       { name: "robots", content: "noindex, nofollow" },
     ],

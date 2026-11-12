@@ -26,6 +26,8 @@ export const Route = createFileRoute("/imoveis")({
   validateSearch: (s) => searchSchema.parse(s) as SearchFilters,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Imóveis à venda e para alugar — Michele Folster Imóveis" },
       { name: "description", content: "Pesquise imóveis por tipo, cidade, bairro, quartos e preço." },
       { property: "og:title", content: "Buscar imóveis — Michele Folster" },
@@ -43,24 +45,6 @@ export function ResultsPage({ fixedPurpose, title }: { fixedPurpose?: "venda" | 
   const set = (patch: Partial<SearchFilters>) =>
     navigate({ to: fixedPurpose ? (fixedPurpose === "venda" ? "/venda" : "/locacao") : "/imoveis", search: { ...raw, ...patch, page: patch.page ?? undefined } as never });
 
-  // Sincronização em tempo real de imóveis na busca pública
-  useEffect(() => {
-    const channel = supabase
-      .channel("public-imoveis-search-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "properties" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["search"] });
-          queryClient.invalidateQueries({ queryKey: ["locations"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   const { data: loc } = useQuery({ queryKey: ["locations"], queryFn: fetchLocations });
   const { data, isFetching, isLoading } = useQuery({

@@ -10,6 +10,8 @@ import { Loader2, LogIn } from "lucide-react";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Entrar — Michele Folster Imóveis" },
       { name: "description", content: "Acesso da equipe da Michele Folster Imóveis." },
       { property: "og:title", content: "Área da equipe — Michele Folster" },
@@ -26,8 +28,9 @@ function AuthPage() {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: '/admin' });
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      try { await getCurrentUserProfile(); navigate({ to: '/admin' }); } catch { /* Only authorized staff may enter. */ }
     });
   }, [navigate]);
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -41,6 +44,7 @@ function AuthPage() {
       toast.success('Acesso autorizado');
       navigate({ to: '/admin' });
     } catch (error) {
+      await supabase.auth.signOut();
       toast.error(error instanceof Error ? error.message : String(error));
     } finally { setBusy(false); }
   };

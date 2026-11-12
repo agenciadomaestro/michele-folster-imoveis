@@ -4,6 +4,8 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 export const Route = createFileRoute("/sobre")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Sobre — Michele Folster Imóveis" },
       { name: "description", content: "Conheça a Michele Folster Imóveis e nossa forma de atender." },
       { property: "og:title", content: "Sobre a Michele Folster Imóveis" },

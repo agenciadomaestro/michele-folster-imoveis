@@ -41,7 +41,7 @@ export async function fetchMessages(): Promise<MessageLead[]> {
       .order("created_at", { ascending: false });
 
     if (!error && dbLeads && dbLeads.length > 0) {
-      return dbLeads.map((l: any) => {
+      return Promise.all(dbLeads.map(async (l: any) => {
         const isCaptacao =
           l.source === "Anuncie Seu Imóvel" ||
           l.interest?.toLowerCase().includes("anunciar");
@@ -51,7 +51,7 @@ export async function fetchMessages(): Promise<MessageLead[]> {
         const statusMap: Record<string, MessageStatus> = {
           novo: "pendente",
           em_contato: "em_atendimento",
-          em_atendimento: "em_contato",
+          em_atendimento: "em_atendimento",
           visita_agendada: "em_atendimento",
           proposta: "em_atendimento",
           em_negociacao: "em_atendimento",
@@ -60,6 +60,12 @@ export async function fetchMessages(): Promise<MessageLead[]> {
         };
         const status: MessageStatus = statusMap[l.status] || "pendente";
 
+        let capturePhoto = l.capture_data?.foto_imovel_url ?? null;
+        if (capturePhoto && !capturePhoto.startsWith('http') && !capturePhoto.startsWith('data:')) {
+          const { data, error } = await supabase.storage.from('captacoes').createSignedUrl(capturePhoto,3600);
+          if (error) throw new Error(error.message);
+          capturePhoto = data.signedUrl;
+        }
         return {
           id: l.id,
           tipo,
@@ -77,12 +83,12 @@ export async function fetchMessages(): Promise<MessageLead[]> {
           tipo_imovel: l.capture_data?.tipo_imovel ?? null,
           cidade_bairro: l.capture_data?.cidade_bairro ?? null,
           valor_pretendido: l.capture_data?.valor_pretendido ?? null,
-          foto_imovel_url: l.capture_data?.foto_imovel_url ?? null,
+          foto_imovel_url: capturePhoto,
           dados_cliente: {},
           data_envio: l.created_at || new Date().toISOString(),
           created_at: l.created_at || new Date().toISOString(),
         };
-      });
+      }));
     }
     if (error) throw new Error(error.message);
   } catch (err) { throw err; }
@@ -182,7 +188,7 @@ export async function updateMessageStatus(
       console.error("Erro ao salvar no Supabase:", error.message);
       return { success: false, error: error.message };
     }
-    return { success: false, error: "Identificador inválido" };
+    return { success: true };
   } catch (err: any) {
     console.error("Erro ao atualizar status da mensagem no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
@@ -211,7 +217,7 @@ export async function assignMessageBroker(
       console.error("Erro ao salvar no Supabase:", error.message);
       return { success: false, error: error.message };
     }
-    return { success: false, error: "Identificador inválido" };
+    return { success: true };
   } catch (err: any) {
     console.error("Erro ao atribuir corretor no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
@@ -230,7 +236,7 @@ export async function deleteLocalMessage(id: string): Promise<{ success: boolean
       console.error("Erro ao excluir no Supabase:", error.message);
       return { success: false, error: error.message };
     }
-    return { success: false, error: "Identificador inválido" };
+    return { success: true };
   } catch (err: any) {
     console.error("Erro ao excluir mensagem no Supabase:", err);
     return { success: false, error: err?.message || String(err) };

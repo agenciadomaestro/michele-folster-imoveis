@@ -1,0 +1,11 @@
+CREATE OR REPLACE FUNCTION public.can_write_property(_user_id uuid, _broker_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT public.is_staff_manager(_user_id) OR (public.is_staff(_user_id) AND (_broker_id=_user_id OR public.can_view_all(_user_id)) AND EXISTS(SELECT 1 FROM public.broker_permissions WHERE user_id=_user_id AND pode_cadastrar_imovel)) $$;
+DROP POLICY "lead staff update" ON public.leads;
+CREATE POLICY "lead staff update" ON public.leads FOR UPDATE TO authenticated USING(public.can_read_lead(auth.uid(),broker_id,interest)) WITH CHECK(public.can_read_lead(auth.uid(),broker_id,interest));
+DROP POLICY "capture managers read" ON storage.objects;
+CREATE POLICY "capture staff read" ON storage.objects FOR SELECT TO authenticated USING(bucket_id='captacoes' AND EXISTS(SELECT 1 FROM public.leads l WHERE l.capture_data->>'foto_imovel_url'=name AND public.can_read_lead(auth.uid(),l.broker_id,l.interest)));
+DROP POLICY "permission manage" ON public.broker_permissions;
+CREATE POLICY "permission manage" ON public.broker_permissions FOR ALL TO authenticated USING(public.is_staff_manager(auth.uid()) AND (NOT public.is_hidden_staff(user_id) OR public.has_role(auth.uid(),'owner'))) WITH CHECK(public.is_staff_manager(auth.uid()) AND (NOT public.is_hidden_staff(user_id) OR public.has_role(auth.uid(),'owner')));
+ALTER FUNCTION public.touch_updated_at() SET search_path=public;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user(),public.lead_before_insert() FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid,public.app_role),public.is_staff(uuid),public.is_staff_manager(uuid),public.is_hidden_staff(uuid),public.can_view_all(uuid),public.can_write_property(uuid,uuid),public.can_read_lead(uuid,uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid,public.app_role),public.is_staff(uuid),public.is_staff_manager(uuid),public.is_hidden_staff(uuid),public.can_view_all(uuid),public.can_write_property(uuid,uuid),public.can_read_lead(uuid,uuid,text) TO authenticated,service_role;

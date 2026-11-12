@@ -7,8 +7,9 @@
 - [x] Validar horários e visualizações de computador, tablet e celular.
 
 # Persistência e segurança
-- [ ] Remover dados fictícios, armazenamento local e acessos simulados.
-- [ ] Aplicar permissões reais e reatribuição segura de corretores.
-- [ ] Sincronizar imóveis, fotos, equipe e leads entre dispositivos.
-- [ ] Implementar fotos WebP, capa, legendas e armazenamento persistente.
-- [ ] Testar permissões, formulários e sincronização com sessão real.
+- [x] Remover dados fictícios, armazenamento local e acessos simulados.
+- [x] Aplicar permissões reais e reatribuição segura de corretores.
+- [x] Sincronizar imóveis, fotos, equipe e leads entre dispositivos.
+- [x] Implementar fotos WebP, capa, legendas e armazenamento persistente.
+- [x] Testar regras de acesso e cadastro, foto, contato, publicação, rascunho e exclusão com sessão real de Michele e duas janelas.
+- [ ] Verificar confirmação por e-mail e exclusão de um corretor real: aguarda endereço de teste autorizado e corretor descartável; não excluir contas reais para testar.

@@ -20,3 +20,10 @@
   3. `git push origin main`
 - Nunca aguarde o usuário solicitar o push: envie as alterações imediatamente após testar e validar o código.
 - Jamais reescreva o histórico já publicado (não utilize force push, amend em commits públicos ou rebase).
+
+- Persist application records only in Cloud tables; browser storage is reserved for the managed auth session, so devices cannot diverge.
+- Authorize staff using protected user_roles and broker_permissions, never names, emails, embedded passwords, or browser flags.
+- Keep one root-owned Realtime subscription tied to Query invalidation, including a data-free catalog broadcast for visibility transitions.
+- Store WebP files under the real property UUID; serve private property images only after published-photo RLS verification because public buckets are blocked.
+- Retire brokers through one atomic database function that transfers ownership before revoking roles, preserving properties and leads.
+- Publish property status only after photo persistence succeeds, so incomplete uploads remain retryable drafts.

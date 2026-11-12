@@ -47,23 +47,6 @@ function Index() {
   const queryClient = useQueryClient();
   const [filterPurpose, setFilterPurpose] = useState<"todos" | "venda" | "locacao">("todos");
 
-  // Atualização em tempo real na Home quando imóveis são alterados no painel
-  useEffect(() => {
-    const channel = supabase
-      .channel("public-home-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "properties" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["featured"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["featured"],

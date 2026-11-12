@@ -218,7 +218,7 @@ export async function updateLeadStatusInDb(
 
 export async function deleteLeadInDb(id: string): Promise<{ success: boolean; error?: string }> {
 
-  // Evita tentar deletar registros fictícios de demo no banco real
+  // Validate record identifiers before issuing a database mutation.
   if (!isUuid(id)) {
     return { success: false, error: "Identificador inválido" };
   }

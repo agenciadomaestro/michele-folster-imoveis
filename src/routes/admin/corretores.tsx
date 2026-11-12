@@ -16,6 +16,11 @@ import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal"
 export const Route = createFileRoute("/admin/corretores")({
   head: () => ({
     meta: [
+      { name: "description", content: "Gestão de Corretores — Michele Folster Imóveis — Área da equipe autorizada." },
+      { property: "og:title", content: "Gestão de Corretores — Michele Folster Imóveis" },
+      { property: "og:description", content: "Gestão de Corretores — Michele Folster Imóveis — Área da equipe autorizada." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Gestão de Corretores — Michele Folster Imóveis" },
       { name: "robots", content: "noindex, nofollow" },
     ],

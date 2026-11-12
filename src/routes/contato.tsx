@@ -7,6 +7,8 @@ import { AGENCY, getWhatsappUrl } from "@/lib/realty";
 export const Route = createFileRoute("/contato")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Contato — Michele Folster Imóveis" },
       { name: "description", content: "Envie sua mensagem para a Michele Folster Imóveis." },
       { property: "og:title", content: "Contato — Michele Folster Imóveis" },

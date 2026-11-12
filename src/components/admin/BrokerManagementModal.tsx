@@ -88,12 +88,8 @@ export function BrokerManagementModal({
     }
   };
 
-  const getAssignedCount = (brokerId: string, brokerName: string) => {
-    return properties.filter(
-      (p) =>
-        p.broker_id === brokerId ||
-        (p.broker_id === null && brokerName.toLowerCase().includes("michele"))
-    ).length;
+  const getAssignedCount = (brokerId: string, _brokerName: string) => {
+    return properties.filter(p => p.broker_id === brokerId).length;
   };
 
   const handleToggleActive = async (broker: Broker) => {
@@ -159,7 +155,7 @@ export function BrokerManagementModal({
       setIsNewBrokerModalOpen(false);
       await refreshList();
     } catch (err: any) {
-      toast.error(err?.message || "Falha ao cadastrar corretor no Supabase.");
+      toast.error(err?.message || "Falha ao cadastrar corretor.");
     }
   };
 
@@ -659,6 +655,8 @@ export function BrokerManagementModal({
                   <label className="label">Senha Provisória</label>
                   <input
                     type="password"
+                    required
+                    minLength={8}
                     value={formPassword}
                     onChange={(e) => setFormPassword(e.target.value)}
                     placeholder="••••••••"
@@ -677,8 +675,8 @@ export function BrokerManagementModal({
                   >
                     Cancelar
                   </button>
-                  <button type="submit" className="btn btn-primary text-xs">
-                    Salvar Corretor
+                  <button type="submit" className="btn btn-primary text-xs" disabled={createMutation.isPending}>
+                    {createMutation.isPending ? "Salvando..." : "Salvar Corretor"}
                   </button>
                 </div>
               </form>

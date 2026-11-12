@@ -1,0 +1,13 @@
+CREATE POLICY "capture upload" ON storage.objects FOR INSERT TO anon,authenticated WITH CHECK(bucket_id='captacoes' AND lower(storage.extension(name))='webp' AND (metadata->>'size')::bigint<=256000);
+CREATE POLICY "published catalog events" ON realtime.messages FOR SELECT TO anon,authenticated USING(realtime.topic()='agency-catalog' AND extension='broadcast');
+CREATE OR REPLACE FUNCTION public.notify_catalog_change() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN PERFORM realtime.send('{}'::jsonb,'catalog_changed','agency-catalog',true); RETURN NULL; END $$;
+REVOKE ALL ON FUNCTION public.notify_catalog_change() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER catalog_property_event AFTER INSERT OR UPDATE OR DELETE ON public.properties FOR EACH ROW EXECUTE FUNCTION public.notify_catalog_change();
+CREATE TRIGGER catalog_photo_event AFTER INSERT OR UPDATE OR DELETE ON public.property_photos FOR EACH ROW EXECUTE FUNCTION public.notify_catalog_change();
+CREATE OR REPLACE FUNCTION public.can_read_lead(_user_id uuid, _broker_id uuid, _interest text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT public.is_staff_manager(_user_id) OR (public.is_staff(_user_id) AND (public.can_view_all(_user_id) OR _broker_id=_user_id) AND (lower(_interest) NOT LIKE '%anunciar%' OR EXISTS(SELECT 1 FROM public.broker_permissions WHERE user_id=_user_id AND pode_ver_captacoes))) $$;
+DROP POLICY "lead staff read" ON public.leads;
+CREATE POLICY "lead staff read" ON public.leads FOR SELECT TO authenticated USING(public.can_read_lead(auth.uid(),broker_id,interest));
+ALTER TABLE public.properties REPLICA IDENTITY FULL;
+ALTER TABLE public.property_photos REPLICA IDENTITY FULL;
+ALTER TABLE public.profiles REPLICA IDENTITY FULL;
+ALTER TABLE public.leads REPLICA IDENTITY FULL;

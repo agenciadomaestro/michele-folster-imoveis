@@ -110,7 +110,7 @@ function formatCep(val: string): string {
 export type PhotoItem = {
   id: string;
   url: string;
-  file?: File;
+  file?: File | undefined;
   previewUrl?: string;
   uploading?: boolean;
   caption?: string;
@@ -464,6 +464,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
   // Submission to Supabase
   const handleFinalSubmit = async (chosenStatus: "rascunho" | "publicado") => {
+    if (isSubmitting) return;
     if (!validateStep(1) || !validateStep(2)) {
       return;
     }
@@ -485,7 +486,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
       const validUserId = currentUser.id;
       // Monta os campos obrigatórios e opcionais do imóvel
-      const basePropertyPayload: Record<string, any> = {
+      const basePropertyPayload = {
         title: title.trim() || "Imóvel Sem Título",
         purpose: purpose || "venda",
         type: type.trim() || "Casa",
@@ -509,7 +510,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         area_land: areaLand !== "" ? Number(areaLand) : null,
         area_built: areaUseful !== "" ? Number(areaUseful) : null,
         features: selectedFeatures || [],
-        status: chosenStatus || "publicado",
+        status: "rascunho",
         featured: Boolean(featured),
 
         updated_at: new Date().toISOString(),
@@ -554,7 +555,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
       // Keep the returned property ID for retries after an image failure.
       setProgressMessage('Salvando fotos...');
-      const photoRecords = [];
+      const photoRecords: { id: string; property_id: string; url: string; storage_path: string | null; caption: string; position: number }[] = [];
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
         if (!photo) continue;
@@ -578,6 +579,10 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         const { error } = await supabase.from('property_photos').delete().in('id',removed.map(photo => photo.id));
         if (error) throw new Error(error.message);
       }
+
+      const { error: publicationError } = await supabase.from('properties')
+        .update({ status: chosenStatus }).eq('id', propertyDbId).select('id').single();
+      if (publicationError) throw new Error(publicationError.message);
 
       // Força a invalidação e recarregamento imediato das queries de catálogo
       await Promise.all([
@@ -657,9 +662,6 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         <h1 className="text-3xl font-bold tracking-tight">
           {isEditing ? `Editar Imóvel (${code})` : "Cadastrar Novo Imóvel"}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Preencha os dados em etapas integradas diretamente ao banco de dados e Storage do Supabase.
-        </p>
       </div>
 
       {/* Stepper Indicator */}
