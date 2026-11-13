@@ -2,6 +2,8 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* O site é somente modo claro: o seletor .dark nunca é aplicado, então as classes dark: ficam inativas
+   e o navegador não herda o tema escuro do aparelho. */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -58,6 +60,9 @@
 
 :root {
   --radius: 16px;
+  /* Somente modo claro: o navegador nunca escurece formulários, barras de rolagem nem a página */
+  color-scheme: light;
+  color-scheme: light only;
   /* #FFFFFF */
   --background: oklch(1 0 0);
   /* #FCFBFE */

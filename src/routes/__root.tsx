@@ -56,6 +56,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "color-scheme", content: "light only" },
+      { name: "theme-color", content: "#ffffff" },
       { title: "Michele Folster Imóveis" },
       { name: "description", content: "Imóveis para comprar e alugar com a Michele Folster Imóveis." },
       { property: "og:type", content: "website" },
@@ -107,7 +109,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <Toaster position="top-center" />
+      <Toaster position="top-center" theme="light" />
     </QueryClientProvider>
   );
 }

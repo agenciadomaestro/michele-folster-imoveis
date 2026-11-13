@@ -1,4 +1,5 @@
 # Ajustes do site
+- [x] Manter somente modo claro, sem herdar o modo escuro do aparelho; validar páginas públicas, login e painel.
 - [x] Ajustar foto principal quase quadrada e navegação da lateral com seis fotos; validar computador e celular.
 - [x] Atualizar horário, CRECI e e-mail.
 - [x] Aplicar foto circular no cabeçalho e rodapé e indicador automático de atendimento.
@@ -8,7 +9,7 @@
 - [x] Validar horários e visualizações de computador, tablet e celular.
 
 # Persistência e segurança
-- [ ] Adicionar contatos privados do proprietário no cadastro e consulta interna; validar gravação e bloqueio público.
+- [x] Adicionar contatos privados do proprietário no cadastro e consulta interna; validar gravação e bloqueio público.
 - [x] Corrigir exclusão e etapas do CRM, verificar permissões e histórico e testar com sessão real.
 - [x] Remover dados fictícios, armazenamento local e acessos simulados.
 - [x] Aplicar permissões reais e reatribuição segura de corretores.
