@@ -31,3 +31,4 @@
 - Direct property-image reads require active staff and property assignment or explicit global access; published photos remain available through the RLS-checked public image handler.
 - Normalize legacy lead stages through the shared CRM mapper and persist canonical Kanban IDs; history stays in the lead timeline so deletion remains atomic without a separate activities table.
 - Keep property owner contacts in a separate staff-only table, never in public property rows or catalog responses, to enforce privacy at the data boundary.
+- Keep public photo-gallery layout in a dedicated component with a bounded thumbnail window, so photo counts cannot stretch the property page.

@@ -1,4 +1,5 @@
 # Ajustes do site
+- [ ] Ajustar foto principal quase quadrada e navegação da lateral com seis fotos; validar computador e celular.
 - [x] Atualizar horário, CRECI e e-mail.
 - [x] Aplicar foto circular no cabeçalho e rodapé e indicador automático de atendimento.
 - [x] Garantir atualização automática do ano no rodapé.

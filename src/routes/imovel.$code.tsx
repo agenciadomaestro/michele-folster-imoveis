@@ -12,6 +12,7 @@ import { useSiteAnalytics } from "@/hooks/use-site-analytics";
 import { getCurrentUserProfile } from "@/lib/brokers";
 import { fetchPropertyOwner, emptyOwnerDetails } from "@/lib/property-owners";
 import { OwnerDetails } from "@/components/admin/OwnerDetails";
+import { PropertyGallery } from "@/components/site/PropertyGallery";
 
 export const Route = createFileRoute("/imovel/$code")({
   head: ({ params }) => ({
@@ -142,27 +143,7 @@ function PropertyPage() {
           <Link to="/" className="hover:text-primary">Início</Link> / <Link to="/imoveis" className="hover:text-primary">Imóveis</Link> / <span className="font-mono">{p.code}</span>
         </nav>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_160px]">
-          <button onClick={() => photos.length && setZoom(true)} className="relative aspect-[16/10] overflow-hidden rounded-[24px] bg-secondary">
-            {photos[idx] ? <img src={photos[idx].url} alt={p.title} className="size-full object-cover" width={1280} height={896} /> : <div className="grid size-full place-items-center text-muted-foreground"><ImageOff /></div>}
-          </button>
-          {photos.length > 1 && (
-            <div className="flex gap-3 overflow-auto md:flex-col">
-              {photos.map((ph, i) => (
-                <button
-                  key={ph.url}
-                  onClick={() => {
-                    if (p?.id) trackPhotoSwipe(p.id);
-                    setIdx(i);
-                  }}
-                  className={`aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-[14px] border-2 md:w-full ${i === idx ? "border-primary" : "border-transparent"}`}
-                >
-                  <img src={ph.url} alt="" loading="lazy" className="size-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <PropertyGallery photos={photos} title={p.title} selected={idx} onOpen={() => setZoom(true)} onSelect={(index) => { trackPhotoSwipe(p.id); setIdx(index); }} />
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_380px]">
           <div>
