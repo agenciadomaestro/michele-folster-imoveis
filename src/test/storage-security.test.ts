@@ -5,8 +5,10 @@ const migration = readFileSync(
   "drizzle/migrations/0006_isolate_capture_uploads_and_staff_image_reads.sql",
   "utf8",
 );
-const upload = readFileSync("src/lib/capture-upload.functions.ts", "utf8");
-const form = readFileSync("src/routes/anuncie.tsx", "utf8");
+const upload = norm(readFileSync("src/lib/capture-upload.functions.ts", "utf8"));
+// Normalize whitespace and quotes so formatting changes never break these checks.
+const norm = (text: string) => text.replace(/\s+/g, "").replace(/"/g, "'");
+const form = norm(readFileSync("src/routes/anuncie.tsx", "utf8"));
 
 describe("Selected storage policy regressions", () => {
   it("removes unrestricted client capture inserts rather than requiring visitor login", () => {
@@ -18,9 +20,9 @@ describe("Selected storage policy regressions", () => {
 
   it("issues a non-overwriting capability for a server-generated path only", () => {
     expect(upload).toContain("crypto.randomUUID()");
-    expect(upload).toContain(".createSignedUploadUrl(path, { upsert: false })");
+    expect(upload).toContain(".createSignedUploadUrl(path,{upsert:false})");
     expect(upload).not.toContain("inputValidator");
-    expect(upload).toContain("await import('@/integrations/supabase/client.server')");
+    expect(upload).toContain("awaitimport('@/integrations/supabase/client.server')");
   });
 
   it("requires active staff and assigned-property or explicit global permission for direct reads", () => {
@@ -31,10 +33,10 @@ describe("Selected storage policy regressions", () => {
   });
 
   it("leaves published photo serving behind anonymous photo visibility checks", () => {
-    const handler = readFileSync("src/routes/api/public/property-image.ts", "utf8");
+    const handler = norm(readFileSync("src/routes/api/public/property-image.ts", "utf8"));
     expect(handler.indexOf("from('property_photos')")).toBeLessThan(
-      handler.indexOf("await import('@/integrations/supabase/client.server')"),
+      handler.indexOf("awaitimport('@/integrations/supabase/client.server')"),
     );
-    expect(handler).toContain("if (error || !photo) return new Response('Not found'");
+    expect(handler).toContain("if(error||!photo)returnnewResponse('Notfound'");
   });
 });
