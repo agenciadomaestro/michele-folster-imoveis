@@ -219,7 +219,7 @@ export async function fetchLeads(): Promise<Lead[]> {
         next_action: sl.next_action || null,
         next_action_date: sl.next_action_date || null,
         notes: sl.notes || null,
-        timeline: sl.timeline || [],
+        timeline: (sl.timeline as unknown as LeadActivity[] | null) || [],
         created_at: sl.created_at || new Date().toISOString(),
         updated_at: sl.updated_at || new Date().toISOString(),
       }));
