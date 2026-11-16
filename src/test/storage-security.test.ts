@@ -1,13 +1,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+
+// Normalize whitespace and quotes so formatting changes never break these checks.
+const norm = (text: string) => text.replace(/\s+/g, "").replace(/"/g, "'");
 const migration = readFileSync(
   "drizzle/migrations/0006_isolate_capture_uploads_and_staff_image_reads.sql",
   "utf8",
 );
 const upload = norm(readFileSync("src/lib/capture-upload.functions.ts", "utf8"));
-// Normalize whitespace and quotes so formatting changes never break these checks.
-const norm = (text: string) => text.replace(/\s+/g, "").replace(/"/g, "'");
 const form = norm(readFileSync("src/routes/anuncie.tsx", "utf8"));
 
 describe("Selected storage policy regressions", () => {
