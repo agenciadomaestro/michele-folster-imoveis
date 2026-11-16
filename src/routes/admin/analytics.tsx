@@ -18,18 +18,17 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/site/SiteLayout";
 import { getCurrentUserProfile } from "@/lib/brokers";
-import {
-  fetchAnalyticsData,
-  formatDuration,
-  type PeriodFilter,
-} from "@/lib/analytics";
+import { fetchAnalyticsData, formatDuration, type PeriodFilter } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { priceLabel, type Property } from "@/lib/realty";
 
 export const Route = createFileRoute("/admin/analytics")({
   head: () => ({
     meta: [
-      { name: "description", content: "Dashboard de Audiência e Acessos — Michele Folster Imóveis." },
+      {
+        name: "description",
+        content: "Dashboard de Audiência e Acessos — Michele Folster Imóveis.",
+      },
       { property: "og:title", content: "Audiência e Acessos — Michele Folster Imóveis" },
       { title: "Audiência e Acessos — Painel Administrativo" },
       { name: "robots", content: "noindex, nofollow" },
@@ -46,13 +45,41 @@ const PERIOD_OPTIONS: { id: PeriodFilter; label: string }[] = [
 ];
 
 const SOURCE_COLORS: Record<string, { bg: string; bar: string; text: string }> = {
-  "Google Meu Negócio": { bg: "bg-blue-500/10", bar: "bg-blue-600", text: "text-blue-700 dark:text-blue-400" },
-  "Google (Busca)": { bg: "bg-sky-500/10", bar: "bg-sky-500", text: "text-sky-700 dark:text-sky-400" },
-  "Instagram": { bg: "bg-pink-500/10", bar: "bg-gradient-to-r from-purple-500 to-pink-500", text: "text-pink-700 dark:text-pink-400" },
-  "Facebook": { bg: "bg-indigo-500/10", bar: "bg-indigo-600", text: "text-indigo-700 dark:text-indigo-400" },
-  "WhatsApp": { bg: "bg-emerald-500/10", bar: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400" },
-  "Meta Ads": { bg: "bg-amber-500/10", bar: "bg-amber-500", text: "text-amber-700 dark:text-amber-400" },
-  "Acesso Direto": { bg: "bg-slate-500/10", bar: "bg-slate-500", text: "text-slate-700 dark:text-slate-400" },
+  "Google Meu Negócio": {
+    bg: "bg-blue-500/10",
+    bar: "bg-blue-600",
+    text: "text-blue-700 dark:text-blue-400",
+  },
+  "Google (Busca)": {
+    bg: "bg-sky-500/10",
+    bar: "bg-sky-500",
+    text: "text-sky-700 dark:text-sky-400",
+  },
+  Instagram: {
+    bg: "bg-pink-500/10",
+    bar: "bg-gradient-to-r from-purple-500 to-pink-500",
+    text: "text-pink-700 dark:text-pink-400",
+  },
+  Facebook: {
+    bg: "bg-indigo-500/10",
+    bar: "bg-indigo-600",
+    text: "text-indigo-700 dark:text-indigo-400",
+  },
+  WhatsApp: {
+    bg: "bg-emerald-500/10",
+    bar: "bg-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-400",
+  },
+  "Meta Ads": {
+    bg: "bg-amber-500/10",
+    bar: "bg-amber-500",
+    text: "text-amber-700 dark:text-amber-400",
+  },
+  "Acesso Direto": {
+    bg: "bg-slate-500/10",
+    bar: "bg-slate-500",
+    text: "text-slate-700 dark:text-slate-400",
+  },
 };
 
 function AnalyticsDashboardPage() {
@@ -89,7 +116,9 @@ function AnalyticsDashboardPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("properties")
-        .select("id, code, title, neighborhood, city, sale_price, rent_price, purpose, status, property_photos(url, position)")
+        .select(
+          "id, code, title, neighborhood, city, sale_price, rent_price, purpose, status, property_photos(url, position)",
+        )
         .order("created_at", { ascending: false });
       return (data || []) as Property[];
     },
@@ -131,7 +160,8 @@ function AnalyticsDashboardPage() {
           </div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Acesso Restrito</h1>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            O Dashboard de Audiência e Métricas de Tráfego é exclusivo para a gestão da imobiliária (Master Agência e Administradora).
+            O Dashboard de Audiência e Métricas de Tráfego é exclusivo para a gestão da imobiliária
+            (Master Agência e Administradora).
           </p>
           <div className="pt-2">
             <Link to="/admin" className="btn btn-primary text-xs w-full justify-center">
@@ -198,7 +228,8 @@ function AnalyticsDashboardPage() {
               Audiência & Tráfego
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Rastreamento em tempo real de visitantes, tempo de permanência, engajamento com fotos e cliques no WhatsApp.
+              Rastreamento em tempo real de visitantes, tempo de permanência, engajamento com fotos
+              e cliques no WhatsApp.
             </p>
           </div>
 
@@ -258,13 +289,9 @@ function AnalyticsDashboardPage() {
                 </div>
               </div>
               <div className="mt-3 text-3xl font-extrabold text-foreground">
-                {loadingAnalytics
-                  ? "..."
-                  : formatDuration(analytics?.averageDurationSeconds ?? 0)}
+                {loadingAnalytics ? "..." : formatDuration(analytics?.averageDurationSeconds ?? 0)}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Permanência média por visitante
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Permanência média por visitante</p>
             </div>
             <div className="mt-4 pt-3 border-t border-border/50 text-[11px] text-muted-foreground font-medium">
               Engajamento com o conteúdo
@@ -339,11 +366,12 @@ function AnalyticsDashboardPage() {
 
               <div className="mt-6 space-y-4">
                 {analytics?.trafficSources.map((item) => {
-                  const colors = SOURCE_COLORS[item.source] ?? SOURCE_COLORS["Acesso Direto"] ?? {
-                    bg: "bg-slate-500/10",
-                    bar: "bg-slate-500",
-                    text: "text-slate-700",
-                  };
+                  const colors = SOURCE_COLORS[item.source] ??
+                    SOURCE_COLORS["Acesso Direto"] ?? {
+                      bg: "bg-slate-500/10",
+                      bar: "bg-slate-500",
+                      text: "text-slate-700",
+                    };
                   return (
                     <div key={item.source} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
@@ -438,7 +466,9 @@ function AnalyticsDashboardPage() {
                             </h3>
                           </div>
                           <p className="text-[11px] text-muted-foreground truncate">{location}</p>
-                          <p className="text-[11px] font-semibold text-foreground mt-0.5">{price}</p>
+                          <p className="text-[11px] font-semibold text-foreground mt-0.5">
+                            {price}
+                          </p>
                         </div>
                       </div>
 

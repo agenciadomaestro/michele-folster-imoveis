@@ -63,7 +63,9 @@ export function LeadDetailsModal({
   const [temperature, setTemperature] = useState<LeadTemperature>(lead.temperature);
   const [brokerId, setBrokerId] = useState(lead.broker_id || "");
   const [nextAction, setNextAction] = useState(lead.next_action || "");
-  const [nextActionDate, setNextActionDate] = useState(lead.next_action_date ? lead.next_action_date.slice(0,16) : "");
+  const [nextActionDate, setNextActionDate] = useState(
+    lead.next_action_date ? lead.next_action_date.slice(0, 16) : "",
+  );
   const [lossReason, setLossReason] = useState(lead.loss_reason || "");
   const [newNote, setNewNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -115,7 +117,7 @@ export function LeadDetailsModal({
       }
 
       queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-        prev.map((item) => (item.id === updated.id ? updated : item))
+        prev.map((item) => (item.id === updated.id ? updated : item)),
       );
 
       await Promise.all([
@@ -167,7 +169,7 @@ export function LeadDetailsModal({
         .from("leads")
         .update({
           notes: updated.notes ?? null,
-          timeline: updated.timeline.map(activity => ({ ...activity })),
+          timeline: updated.timeline.map((activity) => ({ ...activity })),
           updated_at: new Date().toISOString(),
         })
         .eq("id", updated.id);
@@ -179,7 +181,7 @@ export function LeadDetailsModal({
       }
 
       queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-        prev.map((item) => (item.id === updated.id ? updated : item))
+        prev.map((item) => (item.id === updated.id ? updated : item)),
       );
 
       await Promise.all([
@@ -223,7 +225,9 @@ export function LeadDetailsModal({
               <p className="text-xs text-muted-foreground flex items-center gap-2">
                 <span>Criado em {new Date(lead.created_at).toLocaleDateString("pt-BR")}</span>
                 <span>•</span>
-                <span>Origem: <strong>{lead.source}</strong></span>
+                <span>
+                  Origem: <strong>{lead.source}</strong>
+                </span>
               </p>
             </div>
           </div>
@@ -365,7 +369,9 @@ export function LeadDetailsModal({
                     {lead.property_title || lead.interest || "Imóvel de Interesse"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    {lead.property_code && <span className="font-mono font-bold mr-2">{lead.property_code}</span>}
+                    {lead.property_code && (
+                      <span className="font-mono font-bold mr-2">{lead.property_code}</span>
+                    )}
                     {lead.property_price && <span>Valor: {brl(lead.property_price)}</span>}
                   </p>
                 </div>
@@ -432,7 +438,9 @@ export function LeadDetailsModal({
           {/* Mensagem Inicial do Cliente */}
           {lead.message && (
             <div className="p-3.5 rounded-xl border border-border/70 bg-background text-xs space-y-1">
-              <span className="font-bold text-muted-foreground">Mensagem enviada pelo cliente:</span>
+              <span className="font-bold text-muted-foreground">
+                Mensagem enviada pelo cliente:
+              </span>
               <p className="text-foreground italic">"{lead.message}"</p>
             </div>
           )}
@@ -461,12 +469,12 @@ export function LeadDetailsModal({
               <div className="flex justify-end">
                 <Button
                   type="submit"
-                   disabled={!newNote.trim() || isAddingNote || isSaving || isDeleting}
+                  disabled={!newNote.trim() || isAddingNote || isSaving || isDeleting}
                   className="btn btn-primary text-xs h-8"
                 >
                   <Send className="mr-1.5 size-3" />
                   Registrar no Histórico
-                 </Button>
+                </Button>
               </div>
             </form>
 
@@ -498,7 +506,8 @@ export function LeadDetailsModal({
                 ))
               ) : (
                 <p className="text-xs text-muted-foreground text-center py-4">
-                  Nenhuma anotação registrada ainda. Use o campo acima para adicionar registros da conversa.
+                  Nenhuma anotação registrada ainda. Use o campo acima para adicionar registros da
+                  conversa.
                 </p>
               )}
             </div>
@@ -528,4 +537,3 @@ export function LeadDetailsModal({
     </div>
   );
 }
-

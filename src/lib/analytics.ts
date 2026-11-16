@@ -1,10 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AnalyticsEventType =
-  | "page_view"
-  | "property_view"
-  | "photo_swipe"
-  | "whatsapp_click";
+export type AnalyticsEventType = "page_view" | "property_view" | "photo_swipe" | "whatsapp_click";
 
 export interface AnalyticsRecord {
   id: string;
@@ -31,7 +27,7 @@ export const TRAFFIC_SOURCES = [
   "Acesso Direto",
 ] as const;
 
-export type TrafficSource = typeof TRAFFIC_SOURCES[number];
+export type TrafficSource = (typeof TRAFFIC_SOURCES)[number];
 
 let inMemorySessionId: string | null = null;
 
@@ -73,7 +69,10 @@ export function detectTrafficSource(): TrafficSource {
       utmSource.includes("fb_ads") ||
       utmSource.includes("ig_ads") ||
       utmSource.includes("instagram_ads") ||
-      ((utmSource === "facebook" || utmSource === "instagram" || utmSource === "fb" || utmSource === "ig") &&
+      ((utmSource === "facebook" ||
+        utmSource === "instagram" ||
+        utmSource === "fb" ||
+        utmSource === "ig") &&
         (utmMedium.includes("cpc") || utmMedium.includes("paid") || utmMedium.includes("ads")))
     ) {
       return "Meta Ads";
@@ -123,7 +122,11 @@ export function detectTrafficSource(): TrafficSource {
       if (referrer.includes("instagram.com") || referrer.includes("l.instagram.com")) {
         return "Instagram";
       }
-      if (referrer.includes("facebook.com") || referrer.includes("l.facebook.com") || referrer.includes("fb.com")) {
+      if (
+        referrer.includes("facebook.com") ||
+        referrer.includes("l.facebook.com") ||
+        referrer.includes("fb.com")
+      ) {
         return "Facebook";
       }
       if (
@@ -302,7 +305,10 @@ export async function fetchAnalyticsData(period: PeriodFilter): Promise<Analytic
         entry = { viewsCount: 0, photoSwipesCount: 0, whatsappClicksCount: 0 };
         propertyMap[pid] = entry;
       }
-      if (r.event_type === "property_view" || (r.event_type === "page_view" && r.page_path.includes("/imovel/"))) {
+      if (
+        r.event_type === "property_view" ||
+        (r.event_type === "page_view" && r.page_path.includes("/imovel/"))
+      ) {
         entry.viewsCount += 1;
       } else if (r.event_type === "photo_swipe") {
         entry.photoSwipesCount += 1;

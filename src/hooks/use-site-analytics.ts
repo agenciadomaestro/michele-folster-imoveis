@@ -84,4 +84,3 @@ export function useSiteAnalytics() {
     trackWhatsappClick: (propId?: string | null) => trackEvent("whatsapp_click", propId),
   };
 }
-

@@ -46,4 +46,3 @@ describe("Analytics Module Unit Tests", () => {
     expect(detectTrafficSource()).toBe("Acesso Direto");
   });
 });
-

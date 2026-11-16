@@ -1,16 +1,22 @@
-import { useId } from 'react';
-import { LockKeyhole, Phone, Mail, FileText } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import type { OwnerDetails as Owner } from '@/lib/property-owners';
+import { useId } from "react";
+import { LockKeyhole, Phone, Mail, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import type { OwnerDetails as Owner } from "@/lib/property-owners";
 
-export function OwnerDetails({ value, onChange }: { value: Owner; onChange?: (value: Owner) => void }) {
+export function OwnerDetails({
+  value,
+  onChange,
+}: {
+  value: Owner;
+  onChange?: (value: Owner) => void;
+}) {
   const id = useId();
   const fields = [
-    { key: 'name', label: 'Nome', type: 'text' },
-    { key: 'phone', label: 'Telefone', type: 'tel' },
-    { key: 'email', label: 'E-mail', type: 'email' },
-    { key: 'notes', label: 'Observações', type: 'text' },
+    { key: "name", label: "Nome", type: "text" },
+    { key: "phone", label: "Telefone", type: "tel" },
+    { key: "email", label: "E-mail", type: "email" },
+    { key: "notes", label: "Observações", type: "text" },
   ] as const;
 
   return (
@@ -32,12 +38,12 @@ export function OwnerDetails({ value, onChange }: { value: Owner; onChange?: (va
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         {fields.map((field) => (
-          <div key={field.key} className={field.key === 'notes' ? 'sm:col-span-2' : ''}>
+          <div key={field.key} className={field.key === "notes" ? "sm:col-span-2" : ""}>
             <label htmlFor={`${id}-${field.key}`} className="label font-semibold text-xs">
               {field.label}
             </label>
             {onChange ? (
-              field.key === 'notes' ? (
+              field.key === "notes" ? (
                 <Textarea
                   id={`${id}-${field.key}`}
                   value={value.notes}
@@ -50,11 +56,11 @@ export function OwnerDetails({ value, onChange }: { value: Owner; onChange?: (va
                   id={`${id}-${field.key}`}
                   type={field.type}
                   placeholder={
-                    field.key === 'phone'
-                      ? '(12) 99999-9999'
-                      : field.key === 'email'
-                        ? 'proprietario@email.com'
-                        : 'Nome do proprietário'
+                    field.key === "phone"
+                      ? "(12) 99999-9999"
+                      : field.key === "email"
+                        ? "proprietario@email.com"
+                        : "Nome do proprietário"
                   }
                   value={value[field.key]}
                   onChange={(event) => onChange({ ...value, [field.key]: event.target.value })}
@@ -62,18 +68,18 @@ export function OwnerDetails({ value, onChange }: { value: Owner; onChange?: (va
               )
             ) : (
               <div className="mt-1 rounded-lg bg-surface border border-border/60 p-2.5 text-xs">
-                {field.key === 'phone' && value.phone ? (
+                {field.key === "phone" && value.phone ? (
                   <div className="flex items-center gap-2">
                     <Phone className="size-3.5 text-primary" />
                     <a
-                      href={`tel:${value.phone.replace(/\D/g, '')}`}
+                      href={`tel:${value.phone.replace(/\D/g, "")}`}
                       className="font-medium text-foreground hover:text-primary transition-colors hover:underline"
                     >
                       {value.phone}
                     </a>
-                    {value.phone.replace(/\D/g, '').length >= 10 && (
+                    {value.phone.replace(/\D/g, "").length >= 10 && (
                       <a
-                        href={`https://wa.me/55${value.phone.replace(/\D/g, '').replace(/^55/, '')}`}
+                        href={`https://wa.me/55${value.phone.replace(/\D/g, "").replace(/^55/, "")}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700"
@@ -82,7 +88,7 @@ export function OwnerDetails({ value, onChange }: { value: Owner; onChange?: (va
                       </a>
                     )}
                   </div>
-                ) : field.key === 'email' && value.email ? (
+                ) : field.key === "email" && value.email ? (
                   <div className="flex items-center gap-2">
                     <Mail className="size-3.5 text-primary" />
                     <a
@@ -92,16 +98,16 @@ export function OwnerDetails({ value, onChange }: { value: Owner; onChange?: (va
                       {value.email}
                     </a>
                   </div>
-                ) : field.key === 'notes' ? (
+                ) : field.key === "notes" ? (
                   <div className="flex items-start gap-2">
                     <FileText className="size-3.5 text-primary shrink-0 mt-0.5" />
                     <p className="whitespace-pre-wrap break-words text-foreground leading-relaxed">
-                      {value.notes || 'Nenhuma observação informada.'}
+                      {value.notes || "Nenhuma observação informada."}
                     </p>
                   </div>
                 ) : (
                   <p className="font-medium text-foreground">
-                    {value[field.key] || 'Não informado'}
+                    {value[field.key] || "Não informado"}
                   </p>
                 )}
               </div>

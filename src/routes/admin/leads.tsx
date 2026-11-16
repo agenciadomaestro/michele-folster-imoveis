@@ -48,9 +48,15 @@ import { getCurrentUserProfile, fetchBrokers } from "@/lib/brokers";
 export const Route = createFileRoute("/admin/leads")({
   head: () => ({
     meta: [
-      { name: "description", content: "Gestão de Leads — CRM Imobiliário — Área da equipe autorizada." },
+      {
+        name: "description",
+        content: "Gestão de Leads — CRM Imobiliário — Área da equipe autorizada.",
+      },
       { property: "og:title", content: "Gestão de Leads — CRM Imobiliário" },
-      { property: "og:description", content: "Gestão de Leads — CRM Imobiliário — Área da equipe autorizada." },
+      {
+        property: "og:description",
+        content: "Gestão de Leads — CRM Imobiliário — Área da equipe autorizada.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { title: "Gestão de Leads — CRM Imobiliário" },
@@ -107,8 +113,6 @@ function LeadsManagementPage() {
     queryFn: fetchLeads,
   });
 
-
-
   // 4. Access Control Filter (RBAC)
   // Admins see all leads (or filter by broker); Standard brokers see ONLY their assigned leads
   const roleFilteredLeads = useMemo(() => {
@@ -130,7 +134,9 @@ function LeadsManagementPage() {
         const matchesName = lead.name.toLowerCase().includes(term);
         const matchesPhone = lead.phone.toLowerCase().includes(term);
         const matchesEmail = lead.email ? lead.email.toLowerCase().includes(term) : false;
-        const matchesCode = lead.property_code ? lead.property_code.toLowerCase().includes(term) : false;
+        const matchesCode = lead.property_code
+          ? lead.property_code.toLowerCase().includes(term)
+          : false;
         if (!matchesName && !matchesPhone && !matchesEmail && !matchesCode) {
           return false;
         }
@@ -164,7 +170,7 @@ function LeadsManagementPage() {
 
     // Atualização imediata no estado local / cache do React Query
     queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-      prev.map((item) => (item.id === leadId ? { ...item, status: newStatus } : item))
+      prev.map((item) => (item.id === leadId ? { ...item, status: newStatus } : item)),
     );
 
     // Persistência direta no Supabase DB sem .single()
@@ -212,7 +218,7 @@ function LeadsManagementPage() {
 
   const handleLeadUpdated = async (updated: Lead) => {
     queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-      prev.map((item) => (item.id === updated.id ? updated : item))
+      prev.map((item) => (item.id === updated.id ? updated : item)),
     );
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
@@ -230,7 +236,7 @@ function LeadsManagementPage() {
       return false;
     }
     queryClient.setQueryData(["admin", "leads-crm-list"], (prev: Lead[] = []) =>
-      prev.filter((item) => item.id !== leadId)
+      prev.filter((item) => item.id !== leadId),
     );
     setIsModalOpen(false);
     setSelectedLead(null);
@@ -459,14 +465,14 @@ function LeadsManagementPage() {
                     <div className="flex items-start justify-between pb-3 mb-2 border-b border-border/50">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className={`size-2 rounded-full ${col.borderColor.replace("border-", "bg-")}`} />
+                          <span
+                            className={`size-2 rounded-full ${col.borderColor.replace("border-", "bg-")}`}
+                          />
                           <h3 className="text-xs font-bold text-foreground tracking-tight">
                             {col.title}
                           </h3>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {col.subtitle}
-                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{col.subtitle}</p>
                       </div>
 
                       <span
@@ -588,14 +594,23 @@ function LeadsManagementPage() {
                                 <span className="truncate max-w-[160px]">{lead.next_action}</span>
                               </span>
                             ) : (
-                              <span className="text-muted-foreground text-[10px]">Sem lembrete</span>
+                              <span className="text-muted-foreground text-[10px]">
+                                Sem lembrete
+                              </span>
                             )}
                           </td>
 
-                          <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <td
+                            className="py-3.5 px-4 text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <div className="flex items-center justify-end gap-1.5">
                               <a
-                                href={buildWhatsappChatUrl(lead.phone, lead.name, lead.property_code)}
+                                href={buildWhatsappChatUrl(
+                                  lead.phone,
+                                  lead.name,
+                                  lead.property_code,
+                                )}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
@@ -624,18 +639,19 @@ function LeadsManagementPage() {
       </main>
 
       {/* Modal de Detalhes do Lead */}
-      {isModalOpen && selectedLead && <LeadDetailsModal
-        key={selectedLead.id}
-        lead={selectedLead}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onUpdate={handleLeadUpdated}
-        onDelete={handleDeleteLead}
-        brokers={brokers}
-        isAdmin={isAdmin}
-        currentUserName={currentUserName}
-      />}
+      {isModalOpen && selectedLead && (
+        <LeadDetailsModal
+          key={selectedLead.id}
+          lead={selectedLead}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onUpdate={handleLeadUpdated}
+          onDelete={handleDeleteLead}
+          brokers={brokers}
+          isAdmin={isAdmin}
+          currentUserName={currentUserName}
+        />
+      )}
     </div>
   );
 }
-

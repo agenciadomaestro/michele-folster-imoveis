@@ -3,8 +3,11 @@ import { getAgencyClock } from "@/lib/agency-clock";
 
 describe("Agency schedule in São Paulo", () => {
   it.each([
-    ["2026-11-09", "Monday"], ["2026-11-10", "Tuesday"],
-    ["2026-11-11", "Wednesday"], ["2026-11-12", "Thursday"], ["2026-11-13", "Friday"],
+    ["2026-11-09", "Monday"],
+    ["2026-11-10", "Tuesday"],
+    ["2026-11-11", "Wednesday"],
+    ["2026-11-12", "Thursday"],
+    ["2026-11-13", "Friday"],
   ])("opens at 09h and closes at 17h30 on %s (%s)", (day) => {
     expect(getAgencyClock(new Date(`${day}T11:59:59Z`)).isOpen).toBe(false);
     expect(getAgencyClock(new Date(`${day}T12:00:00Z`)).isOpen).toBe(true);

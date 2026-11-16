@@ -9,10 +9,14 @@ const agencyTime = new Intl.DateTimeFormat("en-US", {
 
 export function getAgencyClock(date = new Date()) {
   const parts = agencyTime.formatToParts(date);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
   const minutes = Number(part("hour")) * 60 + Number(part("minute"));
   return {
     year: Number(part("year")),
-    isOpen: ["Mon", "Tue", "Wed", "Thu", "Fri"].includes(part("weekday")) && minutes >= 9 * 60 && minutes < 17 * 60 + 30,
+    isOpen:
+      ["Mon", "Tue", "Wed", "Thu", "Fri"].includes(part("weekday")) &&
+      minutes >= 9 * 60 &&
+      minutes < 17 * 60 + 30,
   };
 }

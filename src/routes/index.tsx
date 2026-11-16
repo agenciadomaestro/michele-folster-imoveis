@@ -47,7 +47,6 @@ function Index() {
   const queryClient = useQueryClient();
   const [filterPurpose, setFilterPurpose] = useState<"todos" | "venda" | "locacao">("todos");
 
-
   const { data, isLoading } = useQuery({
     queryKey: ["featured"],
     queryFn: async () => {
@@ -138,9 +137,10 @@ function Index() {
 
             {/* Subtitle */}
             <p className="mt-5 text-base text-muted-foreground sm:text-lg max-w-2xl mx-auto leading-relaxed [text-wrap:balance]">
-              Curadoria de casas, apartamentos, terrenos,<br className="sm:hidden" />{" "}
-              galpões e pontos comerciais nas localizações<br className="sm:hidden" />{" "}
-              mais desejadas de <span className="whitespace-nowrap">Caçapava-SP.</span>
+              Curadoria de casas, apartamentos, terrenos,
+              <br className="sm:hidden" /> galpões e pontos comerciais nas localizações
+              <br className="sm:hidden" /> mais desejadas de{" "}
+              <span className="whitespace-nowrap">Caçapava-SP.</span>
             </p>
           </div>
 
@@ -148,8 +148,6 @@ function Index() {
           <div className="mx-auto mt-10 max-w-5xl">
             <SearchBox />
           </div>
-
-
         </div>
       </section>
 
@@ -167,7 +165,8 @@ function Index() {
               Imóveis em Destaque
             </h2>
             <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-              Nossa curadoria mais recente de oportunidades selecionadas a dedo para morar ou investir.
+              Nossa curadoria mais recente de oportunidades selecionadas a dedo para morar ou
+              investir.
             </p>
           </div>
 
@@ -196,22 +195,22 @@ function Index() {
 
         {/* Property Cards Grid */}
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {isLoading
-            ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-            : filteredProperties.length === 0
-            ? (
-              <div className="col-span-full rounded-2xl border border-dashed border-border p-12 text-center">
-                <Home className="mx-auto size-10 text-muted-foreground/40 mb-3" />
-                <p className="text-base font-semibold">Nenhum imóvel disponível para este filtro</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Confira todas as opções disponíveis em nosso catálogo completo.
-                </p>
-                <Link to="/imoveis" className="btn btn-primary mt-4">
-                  Ver Todos os Imóveis
-                </Link>
-              </div>
-            )
-            : filteredProperties.map((p) => <PropertyCard key={p.id} p={p} />)}
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+          ) : filteredProperties.length === 0 ? (
+            <div className="col-span-full rounded-2xl border border-dashed border-border p-12 text-center">
+              <Home className="mx-auto size-10 text-muted-foreground/40 mb-3" />
+              <p className="text-base font-semibold">Nenhum imóvel disponível para este filtro</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Confira todas as opções disponíveis em nosso catálogo completo.
+              </p>
+              <Link to="/imoveis" className="btn btn-primary mt-4">
+                Ver Todos os Imóveis
+              </Link>
+            </div>
+          ) : (
+            filteredProperties.map((p) => <PropertyCard key={p.id} p={p} />)
+          )}
         </div>
 
         {/* Bottom CTA to see full portfolio */}
@@ -231,51 +230,49 @@ function Index() {
       {/* ========================================================================= */}
       <section className="bg-accent/40 py-12">
         <div className="container-page">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-primary">
-              Categorias Populares
-            </span>
-            <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl mt-1">
-              Explore pelo Tipo de Imóvel
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                Categorias Populares
+              </span>
+              <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl mt-1">
+                Explore pelo Tipo de Imóvel
+              </h2>
+            </div>
+            <Link
+              to="/imoveis"
+              className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+            >
+              Ver todos os filtros <ArrowRight className="size-3.5" />
+            </Link>
           </div>
-          <Link
-            to="/imoveis"
-            className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-          >
-            Ver todos os filtros <ArrowRight className="size-3.5" />
-          </Link>
-        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((c) => {
-            const Icon = c.icon;
-            return (
-              <Link
-                key={c.type}
-                to="/imoveis"
-                search={{ type: c.type } as any}
-                className="group relative overflow-hidden rounded-[22px] border border-border/70 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-lift)]"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="grid size-12 place-items-center rounded-2xl bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                    <Icon className="size-6" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((c) => {
+              const Icon = c.icon;
+              return (
+                <Link
+                  key={c.type}
+                  to="/imoveis"
+                  search={{ type: c.type } as any}
+                  className="group relative overflow-hidden rounded-[22px] border border-border/70 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-lift)]"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="grid size-12 place-items-center rounded-2xl bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                      <Icon className="size-6" />
+                    </div>
+                    <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground group-hover:text-foreground">
+                      Ver Imóveis
+                    </span>
                   </div>
-                  <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground group-hover:text-foreground">
-                    Ver Imóveis
-                  </span>
-                </div>
-                <h3 className="mt-5 font-bold text-foreground text-base group-hover:text-primary transition-colors">
-                  {c.title}
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                  {c.subtitle}
-                </p>
-              </Link>
-            );
-          })}
-        </div>
+                  <h3 className="mt-5 font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                    {c.title}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{c.subtitle}</p>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -292,7 +289,8 @@ function Index() {
               Por que escolher a Michele Folster Imóveis?
             </h2>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              Diferente das imobiliárias tradicionais de massa, atuamos com foco exclusivo no seu tempo, segurança patrimonial e conforto.
+              Diferente das imobiliárias tradicionais de massa, atuamos com foco exclusivo no seu
+              tempo, segurança patrimonial e conforto.
             </p>
           </div>
 
@@ -346,7 +344,8 @@ function Index() {
               Pensando em vender ou alugar o seu imóvel?
             </h2>
             <p className="mt-4 text-sm sm:text-base text-white/85 leading-relaxed">
-              Conte com produção fotográfica profissional, ampla divulgação nas melhores mídias e atendimento exclusivo aos potenciais compradores.
+              Conte com produção fotográfica profissional, ampla divulgação nas melhores mídias e
+              atendimento exclusivo aos potenciais compradores.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">

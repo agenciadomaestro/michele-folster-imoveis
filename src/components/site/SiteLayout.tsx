@@ -32,11 +32,26 @@ export function Logo({ light = false }: { light?: boolean }) {
   return (
     <Link to="/" className="group flex items-center gap-3 transition-opacity hover:opacity-90">
       <div className="relative size-10 shrink-0 rounded-full bg-secondary shadow-soft transition-transform group-hover:scale-105">
-        <img src={portrait.url} alt="Michele Folster" width={40} height={40} className="size-full rounded-full object-cover" />
-        {isOpen && <span role="status" aria-label="Em horário de atendimento" title="Em horário de atendimento" className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-success ring-2 ring-background" />}
+        <img
+          src={portrait.url}
+          alt="Michele Folster"
+          width={40}
+          height={40}
+          className="size-full rounded-full object-cover"
+        />
+        {isOpen && (
+          <span
+            role="status"
+            aria-label="Em horário de atendimento"
+            title="Em horário de atendimento"
+            className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-success ring-2 ring-background"
+          />
+        )}
       </div>
       <div className="flex flex-col leading-none">
-        <span className={`text-[17px] font-extrabold tracking-tight ${light ? "text-primary-foreground" : "text-foreground"}`}>
+        <span
+          className={`text-[17px] font-extrabold tracking-tight ${light ? "text-primary-foreground" : "text-foreground"}`}
+        >
           {AGENCY.name}
         </span>
         <span className="mt-1 text-[11px] font-medium tracking-wide text-muted-foreground">
@@ -122,10 +137,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               <span>Fale pelo WhatsApp</span>
             </a>
 
-            <Link
-              to="/anuncie"
-              className="btn btn-outline h-10 px-4 text-xs font-semibold"
-            >
+            <Link to="/anuncie" className="btn btn-outline h-10 px-4 text-xs font-semibold">
               Anuncie seu Imóvel
             </Link>
           </div>
@@ -204,7 +216,8 @@ export function SiteLayout({ children }: { children: ReactNode }) {
           <div className="space-y-4 lg:col-span-2">
             <Logo />
             <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-              {AGENCY.tagline}. Selecionamos casas, apartamentos de alto padrão, terrenos e coberturas nas regiões mais valorizadas de Santa Catarina.
+              {AGENCY.tagline}. Selecionamos casas, apartamentos de alto padrão, terrenos e
+              coberturas nas regiões mais valorizadas de Santa Catarina.
             </p>
             <div className="pt-2 text-xs text-muted-foreground space-y-1.5">
               <p className="flex items-center gap-2">
@@ -213,7 +226,9 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               </p>
               <p className="flex items-center gap-2">
                 <Shield className="size-3.5 text-primary shrink-0" />
-                <span>Registro Oficial: <strong>{AGENCY.creci}</strong></span>
+                <span>
+                  Registro Oficial: <strong>{AGENCY.creci}</strong>
+                </span>
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="size-3.5 text-primary shrink-0" />
@@ -263,27 +278,47 @@ export function SiteLayout({ children }: { children: ReactNode }) {
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
               <li>
-                <Link to="/imoveis" search={{ type: "Apartamento" } as any} className="transition-colors hover:text-primary">
+                <Link
+                  to="/imoveis"
+                  search={{ type: "Apartamento" } as any}
+                  className="transition-colors hover:text-primary"
+                >
                   Apartamentos
                 </Link>
               </li>
               <li>
-                <Link to="/imoveis" search={{ type: "Casa" } as any} className="transition-colors hover:text-primary">
+                <Link
+                  to="/imoveis"
+                  search={{ type: "Casa" } as any}
+                  className="transition-colors hover:text-primary"
+                >
                   Casas & Vilas
                 </Link>
               </li>
               <li>
-                <Link to="/imoveis" search={{ type: "Sobrado" } as any} className="transition-colors hover:text-primary">
+                <Link
+                  to="/imoveis"
+                  search={{ type: "Sobrado" } as any}
+                  className="transition-colors hover:text-primary"
+                >
                   Sobrados em Condomínio
                 </Link>
               </li>
               <li>
-                <Link to="/imoveis" search={{ type: "Terreno" } as any} className="transition-colors hover:text-primary">
+                <Link
+                  to="/imoveis"
+                  search={{ type: "Terreno" } as any}
+                  className="transition-colors hover:text-primary"
+                >
                   Terrenos & Lotes
                 </Link>
               </li>
               <li>
-                <Link to="/imoveis" search={{ type: "Sala comercial" } as any} className="transition-colors hover:text-primary">
+                <Link
+                  to="/imoveis"
+                  search={{ type: "Sala comercial" } as any}
+                  className="transition-colors hover:text-primary"
+                >
                   Comerciais & Escritórios
                 </Link>
               </li>

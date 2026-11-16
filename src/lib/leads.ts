@@ -128,31 +128,45 @@ export const TEMPERATURE_CONFIG: Record<
 > = {
   quente: {
     label: "Quente",
-    badgeClass: "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+    badgeClass:
+      "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800",
     icon: "🔥",
   },
   morno: {
     label: "Morno",
-    badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+    badgeClass:
+      "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800",
     icon: "☀️",
   },
   frio: {
     label: "Frio",
-    badgeClass: "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800",
+    badgeClass:
+      "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800",
     icon: "❄️",
   },
 };
 
 export function isUuid(value: string | null | undefined): boolean {
-  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  );
 }
 
 export function normalizeLeadStatus(raw: string | null | undefined): LeadStatus {
   if (!raw) return "novo";
   const s = raw.toLowerCase().trim();
   if (s === "novo" || s.includes("não atendido") || s.includes("nao atendido")) return "novo";
-  if (s === "em_contato" || s === "em_atendimento" || s === "em atendimento" || s === "contato" || s === "em contato") return "em_contato";
-  if (s === "visita_agendada" || s === "visita" || s === "visita agendada") return "visita_agendada";
+  if (
+    s === "em_contato" ||
+    s === "em_atendimento" ||
+    s === "em atendimento" ||
+    s === "contato" ||
+    s === "em contato"
+  )
+    return "em_contato";
+  if (s === "visita_agendada" || s === "visita" || s === "visita agendada")
+    return "visita_agendada";
   if (s === "proposta" || s === "proposta feita" || s === "proposta_feita") return "proposta_feita";
   if (
     s === "em_negociacao" ||
@@ -165,7 +179,13 @@ export function normalizeLeadStatus(raw: string | null | undefined): LeadStatus 
     return "em_negociacao";
   }
   if (s === "fechado" || s.includes("ganho") || s === "fechado / ganho") return "fechado";
-  if (s === "perdido" || s.includes("arquivado") || s.includes("desistência") || s.includes("desistencia")) return "perdido";
+  if (
+    s === "perdido" ||
+    s.includes("arquivado") ||
+    s.includes("desistência") ||
+    s.includes("desistencia")
+  )
+    return "perdido";
   return "novo";
 }
 
@@ -205,13 +225,15 @@ export async function fetchLeads(): Promise<Lead[]> {
       }));
     }
     if (error) throw new Error(error.message);
-  } catch (err) { throw err; }
+  } catch (err) {
+    throw err;
+  }
   return [];
 }
 
 export async function updateLeadStatusInDb(
   id: string,
-  newStatus: LeadStatus
+  newStatus: LeadStatus,
 ): Promise<{ success: boolean; error?: string }> {
   if (!isUuid(id)) {
     return { success: false, error: "Identificador inválido" };
@@ -255,7 +277,11 @@ export async function deleteLeadInDb(id: string): Promise<{ success: boolean; er
   }
 }
 
-export function buildWhatsappChatUrl(phone: string, clientName: string, propCode?: string | null): string {
+export function buildWhatsappChatUrl(
+  phone: string,
+  clientName: string,
+  propCode?: string | null,
+): string {
   const cleanPhone = phone.replace(/\D/g, "");
   const fullPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
   const firstName = clientName.split(" ")[0] || "Cliente";

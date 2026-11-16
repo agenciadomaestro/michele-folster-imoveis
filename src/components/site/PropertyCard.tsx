@@ -83,19 +83,25 @@ export function PropertyCard({ p }: { p: Property }) {
           {p.bedrooms != null && p.bedrooms > 0 && (
             <span className="flex items-center gap-1 rounded-lg bg-secondary/80 px-2.5 py-1 font-medium text-foreground">
               <BedDouble className="size-3.5 text-primary" />
-              <span>{p.bedrooms} {p.bedrooms === 1 ? "quarto" : "quartos"}</span>
+              <span>
+                {p.bedrooms} {p.bedrooms === 1 ? "quarto" : "quartos"}
+              </span>
             </span>
           )}
           {p.bathrooms != null && p.bathrooms > 0 && (
             <span className="flex items-center gap-1 rounded-lg bg-secondary/80 px-2.5 py-1 font-medium text-foreground">
               <Bath className="size-3.5 text-primary" />
-              <span>{p.bathrooms} {p.bathrooms === 1 ? "banheiro" : "banheiros"}</span>
+              <span>
+                {p.bathrooms} {p.bathrooms === 1 ? "banheiro" : "banheiros"}
+              </span>
             </span>
           )}
           {p.parking != null && p.parking > 0 && (
             <span className="flex items-center gap-1 rounded-lg bg-secondary/80 px-2.5 py-1 font-medium text-foreground">
               <Car className="size-3.5 text-primary" />
-              <span>{p.parking} {p.parking === 1 ? "vaga" : "vagas"}</span>
+              <span>
+                {p.parking} {p.parking === 1 ? "vaga" : "vagas"}
+              </span>
             </span>
           )}
           {area != null && area > 0 && (

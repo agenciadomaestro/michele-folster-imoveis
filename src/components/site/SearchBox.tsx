@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Hash, SlidersHorizontal, Sparkles, MapPin, Home, BedDouble, DollarSign } from "lucide-react";
+import {
+  Search,
+  Hash,
+  SlidersHorizontal,
+  Sparkles,
+  MapPin,
+  Home,
+  BedDouble,
+  DollarSign,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchLocations, parseTextQuery, PROPERTY_TYPES } from "@/lib/realty";

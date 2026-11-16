@@ -12,7 +12,10 @@ export const Route = createFileRoute("/locacao")({
       { title: "Imóveis para alugar — Michele Folster Imóveis" },
       { name: "description", content: "Apartamentos, casas e salas comerciais para locação." },
       { property: "og:title", content: "Imóveis para alugar — Michele Folster" },
-      { property: "og:description", content: "Apartamentos, casas e salas comerciais para locação." },
+      {
+        property: "og:description",
+        content: "Apartamentos, casas e salas comerciais para locação.",
+      },
     ],
   }),
   component: () => <ResultsPage fixedPurpose="locacao" title="Imóveis para alugar" />,

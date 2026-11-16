@@ -25,7 +25,9 @@ function NotFoundComponent() {
         <p className="chip">Erro 404</p>
         <h1 className="mt-4 text-2xl font-bold">Página não encontrada</h1>
         <p className="mt-2 text-sm text-muted-foreground">O endereço não existe ou foi removido.</p>
-        <Link to="/" className="btn btn-primary mt-6">Voltar ao início</Link>
+        <Link to="/" className="btn btn-primary mt-6">
+          Voltar ao início
+        </Link>
       </div>
     </div>
   );
@@ -43,8 +45,18 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         <h1 className="text-xl font-semibold">Não foi possível carregar a página</h1>
         <p className="mt-2 text-sm text-muted-foreground">Tente novamente em instantes.</p>
         <div className="mt-6 flex justify-center gap-2">
-          <button onClick={() => { router.invalidate(); reset(); }} className="btn btn-primary">Tentar novamente</button>
-          <a href="/" className="btn btn-outline">Início</a>
+          <button
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
+            className="btn btn-primary"
+          >
+            Tentar novamente
+          </button>
+          <a href="/" className="btn btn-outline">
+            Início
+          </a>
         </div>
       </div>
     </div>
@@ -59,14 +71,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "color-scheme", content: "light only" },
       { name: "theme-color", content: "#ffffff" },
       { title: "Michele Folster Imóveis" },
-      { name: "description", content: "Imóveis para comprar e alugar com a Michele Folster Imóveis." },
+      {
+        name: "description",
+        content: "Imóveis para comprar e alugar com a Michele Folster Imóveis.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap",
+      },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],

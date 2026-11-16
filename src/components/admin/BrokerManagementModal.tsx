@@ -29,7 +29,6 @@ import {
   updateBrokerStatus,
   reassignAndDeleteBroker,
   formatMembershipDuration,
-
 } from "@/lib/brokers";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
@@ -57,9 +56,17 @@ export function BrokerManagementModal({
 
   const createBrokerFn = useServerFn(createBroker);
   const createMutation = useMutation({ mutationFn: createBrokerFn });
-  const { data: brokerList = [], error: brokerError } = useQuery({ queryKey: ['admin','brokers-list'], queryFn: () => fetchBrokers(false), enabled: isOpen });
-  useEffect(() => { setBrokers(brokerList); }, [brokerList]);
-  useEffect(() => { if (brokerError) toast.error(brokerError.message); }, [brokerError]);
+  const { data: brokerList = [], error: brokerError } = useQuery({
+    queryKey: ["admin", "brokers-list"],
+    queryFn: () => fetchBrokers(false),
+    enabled: isOpen,
+  });
+  useEffect(() => {
+    setBrokers(brokerList);
+  }, [brokerList]);
+  useEffect(() => {
+    if (brokerError) toast.error(brokerError.message);
+  }, [brokerError]);
 
   // Estado para exclusão e reatribuição de corretor
   const [brokerToDelete, setBrokerToDelete] = useState<Broker | null>(null);
@@ -89,7 +96,7 @@ export function BrokerManagementModal({
   };
 
   const getAssignedCount = (brokerId: string, _brokerName: string) => {
-    return properties.filter(p => p.broker_id === brokerId).length;
+    return properties.filter((p) => p.broker_id === brokerId).length;
   };
 
   const handleToggleActive = async (broker: Broker) => {
@@ -139,7 +146,16 @@ export function BrokerManagementModal({
     }
 
     try {
-      await createMutation.mutateAsync({ data: { name: formName.trim(), email: formEmail.trim().toLowerCase(), phone: formPhone.trim(), creci: formCreci.trim(), password: formPassword, role: formRole } });
+      await createMutation.mutateAsync({
+        data: {
+          name: formName.trim(),
+          email: formEmail.trim().toLowerCase(),
+          phone: formPhone.trim(),
+          creci: formCreci.trim(),
+          password: formPassword,
+          role: formRole,
+        },
+      });
       toast.success(`Corretor ${formName} cadastrado com sucesso!`);
       if (formPassword.trim()) {
         toast.info("Enviamos um e-mail para confirmar a conta.");
@@ -167,7 +183,7 @@ export function BrokerManagementModal({
     try {
       const { reassignedProps, reassignedLeads } = await reassignAndDeleteBroker(
         brokerToDelete.id,
-        brokerToDelete.name
+        brokerToDelete.name,
       );
 
       toast.success(
@@ -175,7 +191,7 @@ export function BrokerManagementModal({
           reassignedProps > 0 || reassignedLeads > 0
             ? `${reassignedProps} imóveis e ${reassignedLeads} leads foram reatribuídos para Michele Folster.`
             : "Todos os vínculos foram transferidos para Michele Folster."
-        }`
+        }`,
       );
 
       setBrokerToDelete(null);
@@ -210,9 +226,12 @@ export function BrokerManagementModal({
               <Users className="size-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">Gestão de Corretores e Permissões</h2>
+              <h2 className="text-xl font-bold text-foreground">
+                Gestão de Corretores e Permissões
+              </h2>
               <p className="text-xs text-muted-foreground">
-                Cadastre corretores, controle status, gerencie permissões ou reatribua vínculos da equipe.
+                Cadastre corretores, controle status, gerencie permissões ou reatribua vínculos da
+                equipe.
               </p>
             </div>
           </div>
@@ -255,7 +274,7 @@ export function BrokerManagementModal({
               <tbody className="divide-y divide-border">
                 {brokers.map((broker) => {
                   const assignedCount = getAssignedCount(broker.id, broker.name);
-                  const isMichelePrincipal = broker.role === 'admin';
+                  const isMichelePrincipal = broker.role === "admin";
 
                   return (
                     <tr key={broker.id} className="hover:bg-secondary/20 transition-colors">
@@ -313,7 +332,9 @@ export function BrokerManagementModal({
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 font-bold text-foreground bg-accent/70 px-3 py-1 rounded-full text-xs">
                           <Building className="size-3.5 text-primary shrink-0" />
-                          <span>{assignedCount} {assignedCount === 1 ? "imóvel" : "imóveis"}</span>
+                          <span>
+                            {assignedCount} {assignedCount === 1 ? "imóvel" : "imóveis"}
+                          </span>
                         </span>
                       </td>
 
@@ -407,7 +428,9 @@ export function BrokerManagementModal({
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground">Cadastrar/Editar Imóveis</span>
+                    <span className="text-xs font-bold text-foreground">
+                      Cadastrar/Editar Imóveis
+                    </span>
                     <span
                       className={`grid size-5 place-items-center rounded-full text-white text-[10px] ${
                         selectedBroker.permissions.pode_cadastrar_imovel
@@ -437,7 +460,9 @@ export function BrokerManagementModal({
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground">Ver Ofertas & Leads Gerais</span>
+                    <span className="text-xs font-bold text-foreground">
+                      Ver Ofertas & Leads Gerais
+                    </span>
                     <span
                       className={`grid size-5 place-items-center rounded-full text-white text-[10px] ${
                         selectedBroker.permissions.pode_ver_ofertas_gerais
@@ -453,7 +478,8 @@ export function BrokerManagementModal({
                     </span>
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
-                    Se desativado, o corretor vê apenas os imóveis e leads atribuídos exclusivamente a ele.
+                    Se desativado, o corretor vê apenas os imóveis e leads atribuídos exclusivamente
+                    a ele.
                   </p>
                 </div>
 
@@ -467,7 +493,9 @@ export function BrokerManagementModal({
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground">Ver Captações (Anuncie)</span>
+                    <span className="text-xs font-bold text-foreground">
+                      Ver Captações (Anuncie)
+                    </span>
                     <span
                       className={`grid size-5 place-items-center rounded-full text-white text-[10px] ${
                         selectedBroker.permissions.pode_ver_captacoes
@@ -483,7 +511,8 @@ export function BrokerManagementModal({
                     </span>
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
-                    Permite visualizar formulários enviados por proprietários na página "Anuncie seu imóvel".
+                    Permite visualizar formulários enviados por proprietários na página "Anuncie seu
+                    imóvel".
                   </p>
                 </div>
               </div>
@@ -512,7 +541,9 @@ export function BrokerManagementModal({
               {/* Resumo de Impacto */}
               <div className="grid grid-cols-2 gap-3 rounded-xl bg-secondary/50 p-4 border border-border">
                 <div>
-                  <p className="text-[11px] text-muted-foreground font-medium">Imóveis Atribuídos</p>
+                  <p className="text-[11px] text-muted-foreground font-medium">
+                    Imóveis Atribuídos
+                  </p>
                   <p className="text-base font-bold text-foreground mt-0.5 flex items-center gap-1.5">
                     <Building className="size-4 text-primary" />
                     <span>
@@ -537,7 +568,8 @@ export function BrokerManagementModal({
                 <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-200 font-medium">
                   <strong>Aviso de integridade:</strong> Esta ação <u>não apagará</u> os imóveis ou
                   captações cadastrados por este corretor. Todos os imóveis, leads e históricos de
-                  contato vinculados a ele serão <strong>automaticamente reatribuídos para a gestora Michele Folster</strong>.
+                  contato vinculados a ele serão{" "}
+                  <strong>automaticamente reatribuídos para a gestora Michele Folster</strong>.
                 </p>
               </div>
 
@@ -675,7 +707,11 @@ export function BrokerManagementModal({
                   >
                     Cancelar
                   </button>
-                  <button type="submit" className="btn btn-primary text-xs" disabled={createMutation.isPending}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary text-xs"
+                    disabled={createMutation.isPending}
+                  >
                     {createMutation.isPending ? "Salvando..." : "Salvar Corretor"}
                   </button>
                 </div>
