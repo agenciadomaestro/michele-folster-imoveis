@@ -32,3 +32,6 @@
 - Normalize legacy lead stages through the shared CRM mapper and persist canonical Kanban IDs; history stays in the lead timeline so deletion remains atomic without a separate activities table.
 - Keep property owner contacts in a separate staff-only table, never in public property rows or catalog responses, to enforce privacy at the data boundary.
 - Keep public photo-gallery layout in a dedicated component with a bounded thumbnail window, so photo counts cannot stretch the property page.
+
+- Site visit metrics are insert-only for visitors; visit time changes only through a bounded database function, so anonymous visitors cannot rewrite analytics.
+- Shared search results UI lives in components, not route files, so route modules stay code-split.
