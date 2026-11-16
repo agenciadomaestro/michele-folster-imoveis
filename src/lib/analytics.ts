@@ -1,6 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/integrations/supabase/types';
 
 export type AnalyticsEventType =
   | "page_view"
@@ -19,9 +17,7 @@ export interface AnalyticsRecord {
   created_at: string;
 }
 
-// Optional legacy analytics storage is absent from some agency databases.
-// Keep its existing best-effort behavior without modifying generated types.
-const analyticsClient = supabase as any;
+const analyticsClient = supabase;
 
 export type PeriodFilter = "today" | "7d" | "30d" | "all";
 
@@ -174,8 +170,7 @@ export async function trackAnalyticsEvent(payload: {
       page_path: path,
       property_id: payload.propertyId || null,
       traffic_source: trafficSource,
-      duration_seconds: payload.durationSeconds || 0,
-      created_at: new Date().toISOString(),
+      duration_seconds: 0,
     });
 
     if (error) {
@@ -195,10 +190,10 @@ export async function updateAnalyticsDuration(eventId: string, seconds: number):
   if (!eventId || seconds <= 0) return;
 
   try {
-    await analyticsClient
-      .from("site_analytics")
-      .update({ duration_seconds: Math.round(seconds) })
-      .eq("id", eventId);
+    await analyticsClient.rpc("update_analytics_duration", {
+      _id: eventId,
+      _seconds: Math.round(seconds),
+    });
   } catch {
     // Falha silenciosa
   }

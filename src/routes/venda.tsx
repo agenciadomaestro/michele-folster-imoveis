@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ResultsPage, searchSchema } from "./imoveis";
+import { ResultsPage } from "@/components/site/ResultsPage";
+import { searchSchema } from "@/lib/search-schema";
 import type { SearchFilters } from "@/lib/realty";
 
 export const Route = createFileRoute("/venda")({
