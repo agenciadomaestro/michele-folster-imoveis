@@ -23,7 +23,7 @@ export interface MessageLead {
   cidade_bairro?: string | null;
   valor_pretendido?: number | string | null;
   foto_imovel_url?: string | null;
-  dados_cliente?: Record<string, any>;
+  dados_cliente?: Record<string, unknown>;
   data_envio: string;
   created_at: string;
 }
@@ -59,7 +59,13 @@ export async function fetchMessages(): Promise<MessageLead[]> {
           };
           const status: MessageStatus = statusMap[normalizeLeadStatus(l.status)] || "pendente";
 
-          let capturePhoto = l.capture_data?.foto_imovel_url ?? null;
+          const capture = (l.capture_data ?? {}) as {
+            foto_imovel_url?: string | null;
+            tipo_imovel?: string | null;
+            cidade_bairro?: string | null;
+            valor_pretendido?: number | string | null;
+          };
+          let capturePhoto = capture.foto_imovel_url ?? null;
           if (
             capturePhoto &&
             !capturePhoto.startsWith("http") &&
@@ -85,9 +91,9 @@ export async function fetchMessages(): Promise<MessageLead[]> {
             corretor_atribuido_id: l.broker_id || null,
             corretor_nome: l.broker_name || null,
             status,
-            tipo_imovel: l.capture_data?.tipo_imovel ?? null,
-            cidade_bairro: l.capture_data?.cidade_bairro ?? null,
-            valor_pretendido: l.capture_data?.valor_pretendido ?? null,
+            tipo_imovel: capture.tipo_imovel ?? null,
+            cidade_bairro: capture.cidade_bairro ?? null,
+            valor_pretendido: capture.valor_pretendido ?? null,
             foto_imovel_url: capturePhoto,
             dados_cliente: {},
             data_envio: l.created_at || new Date().toISOString(),
@@ -119,7 +125,7 @@ export async function saveMessageLead(payload: {
   cidade_bairro?: string | null;
   valor_pretendido?: number | string | null;
   foto_imovel_url?: string | null;
-  dados_cliente?: Record<string, any>;
+  dados_cliente?: Record<string, unknown>;
 }): Promise<MessageLead> {
   const newId = crypto.randomUUID();
   const now = new Date().toISOString();
