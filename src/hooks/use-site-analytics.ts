@@ -7,11 +7,10 @@ import {
 } from "@/lib/analytics";
 
 /**
- * Hook silencioso para rastrear visitas e tempo de permanência no site público.
+ * Registra visitas e tempo de permanência. Deve ser usado uma única vez (na raiz do site).
  */
-export function useSiteAnalytics() {
-  const routerState = useRouterState();
-  const currentPath = routerState.location.pathname;
+export function usePageViewTracking() {
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const currentRecordIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
@@ -68,7 +67,11 @@ export function useSiteAnalytics() {
       window.removeEventListener("beforeunload", updateDuration);
     };
   }, [currentPath]);
+}
 
+/** Eventos pontuais (imóvel visto, foto passada, clique no WhatsApp), sem registrar nova visita. */
+export function useSiteAnalytics() {
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const trackEvent = (eventType: AnalyticsEventType, propertyId?: string | null) => {
     trackAnalyticsEvent({
       eventType,
@@ -84,4 +87,3 @@ export function useSiteAnalytics() {
     trackWhatsappClick: (propId?: string | null) => trackEvent("whatsapp_click", propId),
   };
 }
-

@@ -35,9 +35,15 @@ import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal"
 export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
-      { name: "description", content: "Painel Administrativo — Michele Folster Imóveis — Área da equipe autorizada." },
+      {
+        name: "description",
+        content: "Painel Administrativo — Michele Folster Imóveis — Área da equipe autorizada.",
+      },
       { property: "og:title", content: "Painel Administrativo — Michele Folster Imóveis" },
-      { property: "og:description", content: "Painel Administrativo — Michele Folster Imóveis — Área da equipe autorizada." },
+      {
+        property: "og:description",
+        content: "Painel Administrativo — Michele Folster Imóveis — Área da equipe autorizada.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { title: "Painel Administrativo — Michele Folster Imóveis" },
@@ -78,10 +84,7 @@ function AdminDashboard() {
   });
 
   // 5. Query de Imóveis com Suporte a Permissão Granular (pode_ver_ofertas_gerais)
-  const {
-    data: rawProperties = [],
-    isLoading: loadingProps,
-  } = useQuery({
+  const { data: rawProperties = [], isLoading: loadingProps } = useQuery({
     queryKey: ["admin", "properties-list"],
     queryFn: async () => {
       let supabaseItems: Property[] = [];
@@ -97,8 +100,6 @@ function AdminDashboard() {
       return supabaseItems;
     },
   });
-
-
 
   // Filtragem de Imóveis conforme regras de acesso do Corretor
   const visibleProperties = rawProperties.filter((item) => {
@@ -126,7 +127,9 @@ function AdminDashboard() {
       const { error } = await supabase
         .from("properties")
         .update({ featured: nextFeatured, updated_at: new Date().toISOString() })
-        .eq("id", property.id).select("id").single();
+        .eq("id", property.id)
+        .select("id")
+        .single();
 
       if (error) {
         console.error("Erro ao atualizar destaque no Supabase:", error.message);
@@ -141,7 +144,8 @@ function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: ["search"] }),
       ]);
       toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as Error;
       console.error("Erro inesperado ao salvar destaque no Supabase:", err);
       toast.error(`Falha inesperada ao alterar destaque: ${err?.message || err}`);
     }
@@ -158,7 +162,9 @@ function AdminDashboard() {
       const { error } = await supabase
         .from("properties")
         .update({ status: nextStatus, updated_at: new Date().toISOString() })
-        .eq("id", property.id).select("id").single();
+        .eq("id", property.id)
+        .select("id")
+        .single();
 
       if (error) {
         console.error("Erro ao atualizar status no Supabase:", error.message);
@@ -174,7 +180,8 @@ function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: ["locations"] }),
       ]);
       toast.success(`Status alterado para "${nextStatus}".`);
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as Error;
       console.error("Erro inesperado ao salvar status no Supabase:", err);
       toast.error(`Falha inesperada ao alterar status: ${err?.message || err}`);
     }
@@ -185,23 +192,38 @@ function AdminDashboard() {
     if (!confirm(`Deseja realmente excluir o imóvel "${propTitle}"?`)) return;
 
     if (!isUuid(id)) {
-      toast.error('Identificador inválido');
+      toast.error("Identificador inválido");
       return;
     }
 
     try {
-      const { data: photoFiles, error: fileListError } = await supabase.from('property_photos').select('storage_path').eq('property_id', id);
+      const { data: photoFiles, error: fileListError } = await supabase
+        .from("property_photos")
+        .select("storage_path")
+        .eq("property_id", id);
       if (fileListError) throw new Error(fileListError.message);
-      const paths = (photoFiles ?? []).flatMap(photo => photo.storage_path ? [photo.storage_path] : []);
+      const paths = (photoFiles ?? []).flatMap((photo) =>
+        photo.storage_path ? [photo.storage_path] : [],
+      );
       if (paths.length) {
-        const { error: storageError } = await supabase.storage.from('property-images').remove(paths);
+        const { error: storageError } = await supabase.storage
+          .from("property-images")
+          .remove(paths);
         if (storageError) throw new Error(storageError.message);
       }
       // Deleta primeiro as fotos vinculadas para evitar conflitos de chave estrangeira
-      const { error: photosError } = await supabase.from("property_photos").delete().eq("property_id", id);
+      const { error: photosError } = await supabase
+        .from("property_photos")
+        .delete()
+        .eq("property_id", id);
       if (photosError) throw new Error(photosError.message);
 
-      const { error } = await supabase.from("properties").delete().eq("id", id).select("id").single();
+      const { error } = await supabase
+        .from("properties")
+        .delete()
+        .eq("id", id)
+        .select("id")
+        .single();
       if (error) {
         console.error("Erro ao excluir imóvel no Supabase:", error.message);
         toast.error(`Falha ao excluir imóvel: ${error.message}`);
@@ -216,7 +238,8 @@ function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: ["locations"] }),
       ]);
       toast.success("Imóvel removido com sucesso.");
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as Error;
       console.error("Erro inesperado ao excluir imóvel no Supabase:", err);
       toast.error(`Falha inesperada ao excluir imóvel: ${err?.message || err}`);
     }
@@ -230,14 +253,16 @@ function AdminDashboard() {
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Sessão encerrada com sucesso.");
     router.navigate({ to: "/auth" });
   };
 
   // Permissão de cadastro de imóvel
-  const canCreateProperty =
-    userProfile?.isAdmin || userProfile?.permissions.pode_cadastrar_imovel;
+  const canCreateProperty = userProfile?.isAdmin || userProfile?.permissions.pode_cadastrar_imovel;
 
   return (
     <div className="min-h-screen bg-background">
@@ -285,7 +310,9 @@ function AdminDashboard() {
               Central de Mensagens
             </Link>
 
-            {(userProfile?.role === "super_admin" || userProfile?.role === "admin" || userProfile?.isSuperAdmin === true) && (
+            {(userProfile?.role === "super_admin" ||
+              userProfile?.role === "admin" ||
+              userProfile?.isSuperAdmin === true) && (
               <Link
                 to="/admin/analytics"
                 className="btn btn-ghost text-xs h-9 text-muted-foreground hover:text-foreground font-semibold"
@@ -365,7 +392,8 @@ function AdminDashboard() {
                 {visibleProperties.length}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {visibleProperties.filter((p) => p.status === "publicado").length} publicados no site
+                {visibleProperties.filter((p) => p.status === "publicado").length} publicados no
+                site
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-border/50 text-[11px] text-muted-foreground font-medium">
@@ -505,7 +533,9 @@ function AdminDashboard() {
           ) : visibleProperties.length === 0 ? (
             <div className="py-12 text-center">
               <Building2 className="mx-auto size-10 text-muted-foreground/50 mb-3" />
-              <p className="text-base font-semibold">Nenhum imóvel disponível para sua visualização</p>
+              <p className="text-base font-semibold">
+                Nenhum imóvel disponível para sua visualização
+              </p>
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
                 {canCreateProperty
                   ? "Comece cadastrando seu primeiro imóvel pelo formulário completo em etapas."
@@ -539,9 +569,8 @@ function AdminDashboard() {
           ) : (
             <div className="divide-y divide-border overflow-x-auto">
               {filteredProperties.map((item) => {
-                const coverPhoto = item.property_photos?.sort(
-                  (a, b) => a.position - b.position
-                )[0]?.url;
+                const coverPhoto = item.property_photos?.sort((a, b) => a.position - b.position)[0]
+                  ?.url;
                 return (
                   <div
                     key={item.id}
@@ -566,9 +595,7 @@ function AdminDashboard() {
                           <span className="font-mono text-xs font-bold text-primary bg-accent px-2 py-0.5 rounded-md">
                             {item.code}
                           </span>
-                          <span className="chip text-[11px] h-5 capitalize">
-                            {item.purpose}
-                          </span>
+                          <span className="chip text-[11px] h-5 capitalize">{item.purpose}</span>
 
                           {/* Status Toggle interativo com persistência no Supabase */}
                           {userProfile?.isAdmin ? (
@@ -619,7 +646,9 @@ function AdminDashboard() {
                             >
                               <Star
                                 className={`size-3 ${
-                                  item.featured ? "fill-purple-600 text-purple-600" : "text-muted-foreground"
+                                  item.featured
+                                    ? "fill-purple-600 text-purple-600"
+                                    : "text-muted-foreground"
                                 }`}
                               />
                               <span>{item.featured ? "Destaque" : "Normal"}</span>
@@ -631,19 +660,14 @@ function AdminDashboard() {
                             </span>
                           ) : null}
                         </div>
-                        <h3 className="font-semibold text-sm mt-1 text-foreground">
-                          {item.title}
-                        </h3>
+                        <h3 className="font-semibold text-sm mt-1 text-foreground">{item.title}</h3>
                         <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                           <span className="flex items-center gap-1">
                             <MapPin className="size-3" />
                             {item.neighborhood ? `${item.neighborhood}, ` : ""}
                             {item.city}/{item.state}
                           </span>
-                          •
-                          <span className="font-semibold text-foreground">
-                            {priceLabel(item)}
-                          </span>
+                          •<span className="font-semibold text-foreground">{priceLabel(item)}</span>
                         </p>
                       </div>
                     </div>
@@ -651,7 +675,7 @@ function AdminDashboard() {
                     <div className="flex items-center gap-2 self-end sm:self-center">
                       {canCreateProperty && (
                         <Link
-                          to={`/admin/imoveis/${item.id}` as any}
+                          to={`/admin/imoveis/${item.id}` as never}
                           className="btn btn-outline text-xs h-8"
                           title="Editar imóvel"
                         >
@@ -669,7 +693,7 @@ function AdminDashboard() {
                         Ver informações
                       </Link>
                       <Link
-                        to={`/imovel/${item.code}` as any}
+                        to={`/imovel/${item.code}` as never}
                         target="_blank"
                         className="btn btn-ghost text-xs h-8"
                         title="Ver no site público"

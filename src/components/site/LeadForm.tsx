@@ -67,10 +67,15 @@ export function LeadForm({
 
     try {
       await saveMessageLead({
-        tipo: v.interest === 'Anunciar meu imóvel' ? 'captacao' : propertyId ? 'imovel' : 'geral',
-        nome_cliente: v.name, telefone_cliente: v.phone, email_cliente: v.email || null,
-        interesse: v.interest, mensagem: v.message,
-        imovel_id: propertyId ?? null, codigo_imovel: propertyCode ?? null, titulo_imovel: propertyTitle ?? null,
+        tipo: v.interest === "Anunciar meu imóvel" ? "captacao" : propertyId ? "imovel" : "geral",
+        nome_cliente: v.name,
+        telefone_cliente: v.phone,
+        email_cliente: v.email || null,
+        interesse: v.interest,
+        mensagem: v.message,
+        imovel_id: propertyId ?? null,
+        codigo_imovel: propertyCode ?? null,
+        titulo_imovel: propertyTitle ?? null,
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -100,14 +105,24 @@ export function LeadForm({
       </div>
     );
 
-  const err = (k: string) => errors[k] && <p className="mt-1 text-xs text-destructive">{errors[k]}</p>;
+  const err = (k: string) =>
+    errors[k] && <p className="mt-1 text-xs text-destructive">{errors[k]}</p>;
 
   return (
     <form onSubmit={submit} className="space-y-3" noValidate>
-      <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        className="hidden"
+        aria-hidden
+      />
 
       <div>
-        <label className="label" htmlFor="lead-name">Nome completo *</label>
+        <label className="label" htmlFor="lead-name">
+          Nome completo *
+        </label>
         <input
           id="lead-name"
           name="name"
@@ -120,7 +135,9 @@ export function LeadForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label" htmlFor="lead-phone">WhatsApp/Telefone *</label>
+          <label className="label" htmlFor="lead-phone">
+            WhatsApp/Telefone *
+          </label>
           <input
             id="lead-phone"
             name="phone"
@@ -132,7 +149,9 @@ export function LeadForm({
           {err("phone")}
         </div>
         <div>
-          <label className="label" htmlFor="lead-email">E-mail (Opcional)</label>
+          <label className="label" htmlFor="lead-email">
+            E-mail (Opcional)
+          </label>
           <input
             id="lead-email"
             name="email"
@@ -145,7 +164,9 @@ export function LeadForm({
       </div>
 
       <div>
-        <label className="label" htmlFor="lead-interest">Interesse</label>
+        <label className="label" htmlFor="lead-interest">
+          Interesse
+        </label>
         <select id="lead-interest" name="interest" className="field">
           <option value="Mais informações">Mais informações</option>
           <option value="Agendar visita">Agendar visita</option>
@@ -156,7 +177,9 @@ export function LeadForm({
       </div>
 
       <div>
-        <label className="label" htmlFor="lead-message">Mensagem / Observação</label>
+        <label className="label" htmlFor="lead-message">
+          Mensagem / Observação
+        </label>
         <textarea
           id="lead-message"
           name="message"

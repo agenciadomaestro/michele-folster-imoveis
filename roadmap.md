@@ -17,3 +17,4 @@
 - [x] Implementar fotos WebP, capa, legendas e armazenamento persistente.
 - [x] Testar regras de acesso e cadastro, foto, contato, publicação, rascunho e exclusão com sessão real de Michele e duas janelas.
 - [ ] Verificar confirmação por e-mail e exclusão de um corretor real: aguarda endereço de teste autorizado e corretor descartável; não excluir contas reais para testar.
+- [x] Corrigir os 4 pontos de atenção (métricas, formatação, tela de busca, índices)

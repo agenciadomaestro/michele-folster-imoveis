@@ -7,9 +7,15 @@ import { ShieldAlert, ArrowLeft } from "lucide-react";
 export const Route = createFileRoute("/admin/imoveis/novo")({
   head: () => ({
     meta: [
-      { name: "description", content: "Cadastrar Imóvel — Painel Michele Folster — Área da equipe autorizada." },
+      {
+        name: "description",
+        content: "Cadastrar Imóvel — Painel Michele Folster — Área da equipe autorizada.",
+      },
       { property: "og:title", content: "Cadastrar Imóvel — Painel Michele Folster" },
-      { property: "og:description", content: "Cadastrar Imóvel — Painel Michele Folster — Área da equipe autorizada." },
+      {
+        property: "og:description",
+        content: "Cadastrar Imóvel — Painel Michele Folster — Área da equipe autorizada.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { title: "Cadastrar Imóvel — Painel Michele Folster" },
@@ -44,8 +50,9 @@ function NovoImovelPage() {
           </div>
           <h2 className="text-xl font-bold text-foreground">Permissão Bloqueada</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Seu perfil de corretor está configurado com a permissão de cadastro e edição de imóveis bloqueada.
-            Entre em contato com a Michele Folster (Gestora) para solicitar a liberação de inclusão.
+            Seu perfil de corretor está configurado com a permissão de cadastro e edição de imóveis
+            bloqueada. Entre em contato com a Michele Folster (Gestora) para solicitar a liberação
+            de inclusão.
           </p>
           <div className="pt-2">
             <Link to="/admin" className="btn btn-outline text-xs">

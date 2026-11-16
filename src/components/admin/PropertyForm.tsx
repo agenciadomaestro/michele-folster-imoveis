@@ -33,8 +33,8 @@ import { uploadPropertyPhoto } from "@/lib/image-upload";
 import { getCurrentUserProfile } from "@/lib/brokers";
 import { Button } from "@/components/ui/button";
 import { PROPERTY_TYPES, brl, type Property } from "@/lib/realty";
-import { emptyOwnerDetails, fetchPropertyOwner, savePropertyOwner } from '@/lib/property-owners';
-import { OwnerDetails } from '@/components/admin/OwnerDetails';
+import { emptyOwnerDetails, fetchPropertyOwner, savePropertyOwner } from "@/lib/property-owners";
+import { OwnerDetails } from "@/components/admin/OwnerDetails";
 
 const DIFFERENTIALS = [
   "Piscina",
@@ -207,7 +207,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           return;
         }
         setTitle(prop.title || "");
-        setPurpose((prop.purpose as any) || "venda");
+        setPurpose((prop.purpose as never) || "venda");
         setType(prop.type || "Casa");
         setCode(prop.code || "");
         setSalePrice(prop.sale_price ?? "");
@@ -259,12 +259,17 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           const sorted = [...prop.property_photos].sort((a, b) => a.position - b.position);
           setPhotos(
             sorted.map((p) => ({
-              id: (p as any).id,
-              caption: (p as any).caption ?? "",
-              storage_path: (p as any).storage_path,
+              id: (p as unknown as { id: string; caption?: string | null; storage_path: string })
+                .id,
+              caption:
+                (p as unknown as { id: string; caption?: string | null; storage_path: string })
+                  .caption ?? "",
+              storage_path: (
+                p as unknown as { id: string; caption?: string | null; storage_path: string }
+              ).storage_path,
               url: p.url,
               previewUrl: p.url,
-            }))
+            })),
           );
         }
       } catch (err) {
@@ -326,7 +331,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
   // Feature Toggle
   const toggleFeature = (feat: string) => {
     setSelectedFeatures((prev) =>
-      prev.includes(feat) ? prev.filter((f) => f !== feat) : [...prev, feat]
+      prev.includes(feat) ? prev.filter((f) => f !== feat) : [...prev, feat],
     );
   };
 
@@ -363,7 +368,11 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
   const handleAddExternalUrl = () => {
     const trimmed = externalUrlInput.trim();
     if (!trimmed) return;
-    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://") && !trimmed.startsWith("/")) {
+    if (
+      !trimmed.startsWith("http://") &&
+      !trimmed.startsWith("https://") &&
+      !trimmed.startsWith("/")
+    ) {
       toast.error("Insira uma URL válida (ex: https://...)");
       return;
     }
@@ -480,7 +489,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
     try {
       const currentUser = await getCurrentUserProfile();
-      if (!currentUser.isAdmin && !currentUser.permissions.pode_cadastrar_imovel) throw new Error('Cadastro e edição de imóveis não autorizados');
+      if (!currentUser.isAdmin && !currentUser.permissions.pode_cadastrar_imovel)
+        throw new Error("Cadastro e edição de imóveis não autorizados");
       // Format full address
       let formattedAddress = street.trim();
       if (number.trim()) formattedAddress += `, ${number.trim()}`;
@@ -527,7 +537,11 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
       if (persistedId) {
         const { data: updatedProp, error: updateError } = await supabase
-          .from('properties').update(basePropertyPayload).eq('id', persistedId).select('id').single();
+          .from("properties")
+          .update(basePropertyPayload)
+          .eq("id", persistedId)
+          .select("id")
+          .single();
 
         if (updateError) {
           console.error("Erro ao salvar no Supabase:", updateError.message);
@@ -536,11 +550,21 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         }
 
         propertyDbId = updatedProp?.id || persistedId;
-
       } else {
-        const { data: newProp, error: insertError } = await supabase.from('properties')
-          .insert({ ...basePropertyPayload, code: basePropertyPayload.code, slug: basePropertyPayload.slug, title: basePropertyPayload.title, type: basePropertyPayload.type, city: basePropertyPayload.city, created_by: validUserId, broker_id: validUserId })
-          .select('id').single();
+        const { data: newProp, error: insertError } = await supabase
+          .from("properties")
+          .insert({
+            ...basePropertyPayload,
+            code: basePropertyPayload.code,
+            slug: basePropertyPayload.slug,
+            title: basePropertyPayload.title,
+            type: basePropertyPayload.type,
+            city: basePropertyPayload.city,
+            created_by: validUserId,
+            broker_id: validUserId,
+          })
+          .select("id")
+          .single();
 
         if (insertError) {
           console.error("Erro ao cadastrar imóvel no Supabase:", insertError.message);
@@ -559,36 +583,71 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
       }
 
       // Keep the returned property ID for retries after an image failure.
-      setProgressMessage('Salvando dados do proprietário...');
+      setProgressMessage("Salvando dados do proprietário...");
       await savePropertyOwner(propertyDbId, owner);
-      setProgressMessage('Salvando fotos...');
-      const photoRecords: { id: string; property_id: string; url: string; storage_path: string | null; caption: string; position: number }[] = [];
+      setProgressMessage("Salvando fotos...");
+      const photoRecords: {
+        id: string;
+        property_id: string;
+        url: string;
+        storage_path: string | null;
+        caption: string;
+        position: number;
+      }[] = [];
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
         if (!photo) continue;
-        const uploaded = photo.file ? await uploadPropertyPhoto(propertyDbId, photo.file) : { url: photo.url, storage_path: photo.storage_path ?? null };
-        photoRecords.push({ id: photo.id, property_id: propertyDbId, ...uploaded, caption: photo.caption ?? '', position: i });
-        if (photo.file) setPhotos(previous => previous.map(item => item.id === photo.id ? { ...item, ...uploaded, file: undefined } : item));
+        const uploaded = photo.file
+          ? await uploadPropertyPhoto(propertyDbId, photo.file)
+          : { url: photo.url, storage_path: photo.storage_path ?? null };
+        photoRecords.push({
+          id: photo.id,
+          property_id: propertyDbId,
+          ...uploaded,
+          caption: photo.caption ?? "",
+          position: i,
+        });
+        if (photo.file)
+          setPhotos((previous) =>
+            previous.map((item) =>
+              item.id === photo.id ? { ...item, ...uploaded, file: undefined } : item,
+            ),
+          );
       }
       if (photoRecords.length) {
-        const { error } = await supabase.from('property_photos').upsert(photoRecords);
+        const { error } = await supabase.from("property_photos").upsert(photoRecords);
         if (error) throw new Error(error.message);
       }
-      const { data: existingPhotos, error: listError } = await supabase.from('property_photos').select('id,storage_path').eq('property_id',propertyDbId);
+      const { data: existingPhotos, error: listError } = await supabase
+        .from("property_photos")
+        .select("id,storage_path")
+        .eq("property_id", propertyDbId);
       if (listError) throw new Error(listError.message);
-      const removed = (existingPhotos ?? []).filter(photo => !photoRecords.some(item => item.id === photo.id));
+      const removed = (existingPhotos ?? []).filter(
+        (photo) => !photoRecords.some((item) => item.id === photo.id),
+      );
       if (removed.length) {
-        const paths = removed.flatMap(photo => photo.storage_path ? [photo.storage_path] : []);
+        const paths = removed.flatMap((photo) => (photo.storage_path ? [photo.storage_path] : []));
         if (paths.length) {
-          const { error } = await supabase.storage.from('property-images').remove(paths);
+          const { error } = await supabase.storage.from("property-images").remove(paths);
           if (error) throw new Error(error.message);
         }
-        const { error } = await supabase.from('property_photos').delete().in('id',removed.map(photo => photo.id));
+        const { error } = await supabase
+          .from("property_photos")
+          .delete()
+          .in(
+            "id",
+            removed.map((photo) => photo.id),
+          );
         if (error) throw new Error(error.message);
       }
 
-      const { error: publicationError } = await supabase.from('properties')
-        .update({ status: chosenStatus }).eq('id', propertyDbId).select('id').single();
+      const { error: publicationError } = await supabase
+        .from("properties")
+        .update({ status: chosenStatus })
+        .eq("id", propertyDbId)
+        .select("id")
+        .single();
       if (publicationError) throw new Error(publicationError.message);
 
       // Força a invalidação e recarregamento imediato das queries de catálogo
@@ -611,8 +670,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         isEditing
           ? "Imóvel atualizado com sucesso!"
           : chosenStatus === "publicado"
-          ? "Imóvel publicado no site com sucesso!"
-          : "Imóvel salvo como rascunho com sucesso!"
+            ? "Imóvel publicado no site com sucesso!"
+            : "Imóvel salvo como rascunho com sucesso!",
       );
 
       // Redireciona ou fecha o formulário/modal confirmando a inclusão completa
@@ -624,7 +683,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
       if (onClose) {
         onClose();
       }
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as Error;
       console.error(err);
       toast.error(err.message || "Erro ao salvar imóvel. Verifique os dados.");
     } finally {
@@ -694,8 +754,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                       isDone
                         ? "bg-primary text-primary-foreground"
                         : isCurrent
-                        ? "bg-accent text-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
-                        : "bg-secondary text-muted-foreground"
+                          ? "bg-accent text-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+                          : "bg-secondary text-muted-foreground"
                     }`}
                   >
                     {isDone ? <Check className="size-4 stroke-[3]" /> : <Icon className="size-4" />}
@@ -763,7 +823,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                     <button
                       key={p.value}
                       type="button"
-                      onClick={() => setPurpose(p.value as any)}
+                      onClick={() => setPurpose(p.value as never)}
                       className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-all ${
                         purpose === p.value
                           ? "border-primary bg-accent/40 font-semibold text-primary shadow-sm"
@@ -813,7 +873,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                     />
                   </div>
                   {salePrice !== "" && Number(salePrice) > 0 && (
-                    <p className="mt-1 text-xs font-semibold text-primary">{brl(Number(salePrice))}</p>
+                    <p className="mt-1 text-xs font-semibold text-primary">
+                      {brl(Number(salePrice))}
+                    </p>
                   )}
                 </div>
               )}
@@ -836,7 +898,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                     />
                   </div>
                   {rentPrice !== "" && Number(rentPrice) > 0 && (
-                    <p className="mt-1 text-xs font-semibold text-primary">{brl(Number(rentPrice))}/mês</p>
+                    <p className="mt-1 text-xs font-semibold text-primary">
+                      {brl(Number(rentPrice))}/mês
+                    </p>
                   )}
                 </div>
               )}
@@ -971,7 +1035,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                 </button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Digite os 8 números do CEP para carregar logradouro, bairro, cidade e estado automaticamente.
+                Digite os 8 números do CEP para carregar logradouro, bairro, cidade e estado
+                automaticamente.
               </p>
             </div>
 
@@ -1053,7 +1118,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                   className="mt-0.5 size-4 rounded text-primary focus:ring-primary"
                 />
                 <div>
-                  <span className="block text-sm font-semibold">Exibir endereço exato no site público</span>
+                  <span className="block text-sm font-semibold">
+                    Exibir endereço exato no site público
+                  </span>
                   <span className="block text-xs text-muted-foreground mt-0.5">
                     {showAddress
                       ? "O endereço completo (rua e número) será visível a todos os visitantes."
@@ -1200,11 +1267,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                     }
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={addCustomFeature}
-                  className="btn btn-outline"
-                >
+                <button type="button" onClick={addCustomFeature} className="btn btn-outline">
                   <Plus className="size-4 mr-1" />
                   Adicionar
                 </button>
@@ -1220,9 +1283,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold">Etapa 4: Galeria de Fotos & Mídia</h2>
-              <p className="text-sm text-muted-foreground">
-                
-              </p>
+              <p className="text-sm text-muted-foreground"></p>
             </div>
 
             {/* Drag & Drop Zone */}
@@ -1279,11 +1340,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                   }
                 }}
               />
-              <button
-                type="button"
-                onClick={handleAddExternalUrl}
-                className="btn btn-outline"
-              >
+              <button type="button" onClick={handleAddExternalUrl} className="btn btn-outline">
                 <Plus className="mr-1.5 size-4" />
                 Adicionar URL
               </button>
@@ -1321,7 +1378,19 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                           />
                         </div>
 
-                        <input aria-label={`Legenda da foto ${index + 1}`} className="field rounded-none text-xs" placeholder="Legenda" value={photo.caption ?? ''} onChange={e => setPhotos(previous => previous.map(item => item.id === photo.id ? { ...item, caption: e.target.value } : item))} />
+                        <input
+                          aria-label={`Legenda da foto ${index + 1}`}
+                          className="field rounded-none text-xs"
+                          placeholder="Legenda"
+                          value={photo.caption ?? ""}
+                          onChange={(e) =>
+                            setPhotos((previous) =>
+                              previous.map((item) =>
+                                item.id === photo.id ? { ...item, caption: e.target.value } : item,
+                              ),
+                            )
+                          }
+                        />
 
                         {/* Top Badges */}
                         <div className="absolute top-2 left-2 flex gap-1">
@@ -1387,7 +1456,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-                Nenhuma foto anexada ainda. Você pode adicionar fotos agora ou salvar e adicionar mais tarde.
+                Nenhuma foto anexada ainda. Você pode adicionar fotos agora ou salvar e adicionar
+                mais tarde.
               </div>
             )}
           </div>
@@ -1400,9 +1470,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold">Etapa 5: Revisão & Publicação</h2>
-              <p className="text-sm text-muted-foreground">
-                
-              </p>
+              <p className="text-sm text-muted-foreground"></p>
             </div>
 
             {/* Visual Review Card */}
@@ -1436,7 +1504,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                       </span>
                     )}
                   </div>
-                  <h3 className="text-lg font-bold text-foreground mt-1">{title || "Sem título"}</h3>
+                  <h3 className="text-lg font-bold text-foreground mt-1">
+                    {title || "Sem título"}
+                  </h3>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <MapPin className="size-3.5" />
                     {neighborhood ? `${neighborhood}, ` : ""}
@@ -1446,10 +1516,10 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                     {purpose === "locacao"
                       ? `${rentPrice ? brl(Number(rentPrice)) : "Consulte"}/mês`
                       : salePrice
-                      ? brl(Number(salePrice))
-                      : rentPrice
-                      ? `${brl(Number(rentPrice))}/mês`
-                      : "Consulte"}
+                        ? brl(Number(salePrice))
+                        : rentPrice
+                          ? `${brl(Number(rentPrice))}/mês`
+                          : "Consulte"}
                   </p>
                 </div>
               </div>
@@ -1500,7 +1570,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
 
               {/* Endereço detalhado */}
               <div className="border-t pt-4 text-xs space-y-1">
-                <span className="block text-muted-foreground font-semibold">Endereço Configurado:</span>
+                <span className="block text-muted-foreground font-semibold">
+                  Endereço Configurado:
+                </span>
                 <p className="text-foreground">
                   {street ? `${street}, ` : ""}
                   {number ? `Nº ${number}` : "S/N"}
@@ -1511,7 +1583,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                 <p className="text-[11px] text-muted-foreground">
                   Privacidade no site:{" "}
                   <strong>
-                    {showAddress ? "Endereço completo exibido publicamente" : "Apenas Bairro e Cidade exibidos"}
+                    {showAddress
+                      ? "Endereço completo exibido publicamente"
+                      : "Apenas Bairro e Cidade exibidos"}
                   </strong>
                 </p>
               </div>
@@ -1564,7 +1638,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
             <div className="rounded-2xl bg-accent/30 border border-primary/20 p-5 space-y-3">
               <h3 className="text-sm font-bold text-foreground">Como deseja salvar este imóvel?</h3>
               <p className="text-xs text-muted-foreground">
-                Escolha salvar como <strong>Rascunho</strong> para continuar editando depois sem exibir publicamente, ou <strong>Publicar Imediatamente</strong> no catálogo do site.
+                Escolha salvar como <strong>Rascunho</strong> para continuar editando depois sem
+                exibir publicamente, ou <strong>Publicar Imediatamente</strong> no catálogo do site.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -1627,11 +1702,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           )}
 
           {step < 5 ? (
-            <button
-              type="button"
-              onClick={nextStep}
-              className="btn btn-primary"
-            >
+            <button type="button" onClick={nextStep} className="btn btn-primary">
               Avançar para Etapa {step + 1}
               <ChevronRight className="ml-1.5 size-4" />
             </button>

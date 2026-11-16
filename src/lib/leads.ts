@@ -128,31 +128,45 @@ export const TEMPERATURE_CONFIG: Record<
 > = {
   quente: {
     label: "Quente",
-    badgeClass: "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+    badgeClass:
+      "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800",
     icon: "🔥",
   },
   morno: {
     label: "Morno",
-    badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+    badgeClass:
+      "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800",
     icon: "☀️",
   },
   frio: {
     label: "Frio",
-    badgeClass: "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800",
+    badgeClass:
+      "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800",
     icon: "❄️",
   },
 };
 
 export function isUuid(value: string | null | undefined): boolean {
-  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  );
 }
 
 export function normalizeLeadStatus(raw: string | null | undefined): LeadStatus {
   if (!raw) return "novo";
   const s = raw.toLowerCase().trim();
   if (s === "novo" || s.includes("não atendido") || s.includes("nao atendido")) return "novo";
-  if (s === "em_contato" || s === "em_atendimento" || s === "em atendimento" || s === "contato" || s === "em contato") return "em_contato";
-  if (s === "visita_agendada" || s === "visita" || s === "visita agendada") return "visita_agendada";
+  if (
+    s === "em_contato" ||
+    s === "em_atendimento" ||
+    s === "em atendimento" ||
+    s === "contato" ||
+    s === "em contato"
+  )
+    return "em_contato";
+  if (s === "visita_agendada" || s === "visita" || s === "visita agendada")
+    return "visita_agendada";
   if (s === "proposta" || s === "proposta feita" || s === "proposta_feita") return "proposta_feita";
   if (
     s === "em_negociacao" ||
@@ -165,7 +179,13 @@ export function normalizeLeadStatus(raw: string | null | undefined): LeadStatus 
     return "em_negociacao";
   }
   if (s === "fechado" || s.includes("ganho") || s === "fechado / ganho") return "fechado";
-  if (s === "perdido" || s.includes("arquivado") || s.includes("desistência") || s.includes("desistencia")) return "perdido";
+  if (
+    s === "perdido" ||
+    s.includes("arquivado") ||
+    s.includes("desistência") ||
+    s.includes("desistencia")
+  )
+    return "perdido";
   return "novo";
 }
 
@@ -177,7 +197,7 @@ export async function fetchLeads(): Promise<Lead[]> {
       .order("created_at", { ascending: false });
 
     if (!error && supabaseLeads) {
-      return supabaseLeads.map((sl: any) => ({
+      return supabaseLeads.map((sl) => ({
         id: sl.id,
         name: sl.name,
         phone: sl.phone,
@@ -192,26 +212,28 @@ export async function fetchLeads(): Promise<Lead[]> {
         source_page: sl.source_page || null,
         status: normalizeLeadStatus(sl.status),
         temperature: (sl.temperature as LeadTemperature) || "quente",
-        transaction_type: (sl.transaction_type as any) || "comprar",
+        transaction_type: (sl.transaction_type as never) || "comprar",
         broker_id: sl.broker_id || null,
         broker_name: sl.broker_name || null,
         loss_reason: sl.loss_reason || null,
         next_action: sl.next_action || null,
         next_action_date: sl.next_action_date || null,
         notes: sl.notes || null,
-        timeline: sl.timeline || [],
+        timeline: (sl.timeline as unknown as LeadActivity[] | null) || [],
         created_at: sl.created_at || new Date().toISOString(),
         updated_at: sl.updated_at || new Date().toISOString(),
       }));
     }
     if (error) throw new Error(error.message);
-  } catch (err) { throw err; }
+  } catch (err) {
+    throw err;
+  }
   return [];
 }
 
 export async function updateLeadStatusInDb(
   id: string,
-  newStatus: LeadStatus
+  newStatus: LeadStatus,
 ): Promise<{ success: boolean; error?: string }> {
   if (!isUuid(id)) {
     return { success: false, error: "Identificador inválido" };
@@ -231,7 +253,8 @@ export async function updateLeadStatusInDb(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao atualizar status do lead no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
@@ -249,13 +272,18 @@ export async function deleteLeadInDb(id: string): Promise<{ success: boolean; er
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao excluir lead no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
 }
 
-export function buildWhatsappChatUrl(phone: string, clientName: string, propCode?: string | null): string {
+export function buildWhatsappChatUrl(
+  phone: string,
+  clientName: string,
+  propCode?: string | null,
+): string {
   const cleanPhone = phone.replace(/\D/g, "");
   const fullPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
   const firstName = clientName.split(" ")[0] || "Cliente";

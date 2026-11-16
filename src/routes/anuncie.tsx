@@ -19,8 +19,8 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { saveMessageLead } from "@/lib/messages";
 import { convertPhoto } from "@/lib/image-upload";
 import { supabase } from "@/integrations/supabase/client";
-import { useServerFn } from '@tanstack/react-start';
-import { prepareCaptureUpload } from '@/lib/capture-upload.functions';
+import { useServerFn } from "@tanstack/react-start";
+import { prepareCaptureUpload } from "@/lib/capture-upload.functions";
 
 export const Route = createFileRoute("/anuncie")({
   head: () => ({
@@ -87,7 +87,9 @@ function AnunciePage() {
       try {
         const blob = await convertPhoto(photoFile);
         const { path, token } = await prepareUpload();
-        const { error } = await supabase.storage.from('captacoes').uploadToSignedUrl(path,token,blob,{ contentType: 'image/webp' });
+        const { error } = await supabase.storage
+          .from("captacoes")
+          .uploadToSignedUrl(path, token, blob, { contentType: "image/webp" });
         if (error) throw new Error(error.message);
         photoUrl = path;
       } catch (error) {
@@ -105,7 +107,9 @@ function AnunciePage() {
         telefone_cliente: whatsapp.trim(),
         email_cliente: email.trim() || null,
         interesse: "Anunciar meu imóvel",
-        mensagem: observacoes.trim() || `Captação de imóvel (${tipoImovel}) em ${cidadeBairro || "Caçapava-SP"}. Valor pretendido: R$ ${valorPretendido || "A combinar"}.`,
+        mensagem:
+          observacoes.trim() ||
+          `Captação de imóvel (${tipoImovel}) em ${cidadeBairro || "Caçapava-SP"}. Valor pretendido: R$ ${valorPretendido || "A combinar"}.`,
         tipo_imovel: tipoImovel,
         cidade_bairro: cidadeBairro.trim() || "Caçapava-SP",
         valor_pretendido: valorPretendido ? Number(valorPretendido.replace(/\D/g, "")) : null,
@@ -118,7 +122,8 @@ function AnunciePage() {
         queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
       ]);
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as Error;
       console.error("Erro ao salvar captação no Supabase:", err);
       toast.error(`Falha ao registrar captação: ${err?.message || err}`);
       setSubmitting(false);
@@ -144,15 +149,13 @@ function AnunciePage() {
       <div className="container-page pt-12 pb-20">
         {/* Hero Section */}
         <div className="max-w-3xl mx-auto text-center space-y-4">
-          <span className="chip bg-accent text-primary font-bold">
-            Captação & Venda Exclusiva
-          </span>
+          <span className="chip bg-accent text-primary font-bold">Captação & Venda Exclusiva</span>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
             Anuncie seu Imóvel com a Michele Folster
           </h1>
           <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-            Seu patrimônio nas mãos de quem conhece profundamente o mercado de Caçapava e o Vale do Paraíba.
-            Divulgação estratégica, segurança jurídica e máxima velocidade de negociação.
+            Seu patrimônio nas mãos de quem conhece profundamente o mercado de Caçapava e o Vale do
+            Paraíba. Divulgação estratégica, segurança jurídica e máxima velocidade de negociação.
           </p>
         </div>
 
@@ -201,8 +204,9 @@ function AnunciePage() {
                   Solicitação Enviada com Sucesso!
                 </h2>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-                  Obrigado por confiar na Michele Folster Imóveis. Nossa equipe já recebeu seus dados e nossa
-                  gestora entrará em contato via WhatsApp para combinar a avaliação do seu imóvel.
+                  Obrigado por confiar na Michele Folster Imóveis. Nossa equipe já recebeu seus
+                  dados e nossa gestora entrará em contato via WhatsApp para combinar a avaliação do
+                  seu imóvel.
                 </p>
                 <div className="pt-4">
                   <button
@@ -226,7 +230,9 @@ function AnunciePage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="border-b border-border pb-4">
-                  <h2 className="text-xl font-bold text-foreground">Dados do Proprietário & Imóvel</h2>
+                  <h2 className="text-xl font-bold text-foreground">
+                    Dados do Proprietário & Imóvel
+                  </h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Preencha as informações para iniciar a divulgação do seu imóvel.
                   </p>
@@ -359,10 +365,13 @@ function AnunciePage() {
                     className="btn btn-primary w-full h-12 text-sm font-bold shadow-md gap-2"
                   >
                     <MessageCircle className="size-5" />
-                    <span>{submitting ? "Cadastrando..." : "Enviar Solicitação e Abrir WhatsApp"}</span>
+                    <span>
+                      {submitting ? "Cadastrando..." : "Enviar Solicitação e Abrir WhatsApp"}
+                    </span>
                   </button>
                   <p className="text-[11px] text-center text-muted-foreground mt-2">
-                    Ao enviar, você será direcionado para o WhatsApp oficial com a notificação pronta.
+                    Ao enviar, você será direcionado para o WhatsApp oficial com a notificação
+                    pronta.
                   </p>
                 </div>
               </form>
@@ -373,4 +382,3 @@ function AnunciePage() {
     </SiteLayout>
   );
 }
-

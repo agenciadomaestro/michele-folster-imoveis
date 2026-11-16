@@ -39,9 +39,20 @@ import { brl } from "@/lib/realty";
 export const Route = createFileRoute("/admin/mensagens")({
   head: () => ({
     meta: [
-      { name: "description", content: "Central de Mensagens e Contatos — Michele Folster Imóveis — Área da equipe autorizada." },
-      { property: "og:title", content: "Central de Mensagens e Contatos — Michele Folster Imóveis" },
-      { property: "og:description", content: "Central de Mensagens e Contatos — Michele Folster Imóveis — Área da equipe autorizada." },
+      {
+        name: "description",
+        content:
+          "Central de Mensagens e Contatos — Michele Folster Imóveis — Área da equipe autorizada.",
+      },
+      {
+        property: "og:title",
+        content: "Central de Mensagens e Contatos — Michele Folster Imóveis",
+      },
+      {
+        property: "og:description",
+        content:
+          "Central de Mensagens e Contatos — Michele Folster Imóveis — Área da equipe autorizada.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { title: "Central de Mensagens e Contatos — Michele Folster Imóveis" },
@@ -76,12 +87,10 @@ function AdminMessagesPage() {
     queryFn: () => fetchBrokers(false),
   });
 
-
-
   const handleStatusChange = async (id: string, newStatus: MessageStatus) => {
     if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
       queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
-        prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+        prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item)),
       );
       queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
       toast.success(`Status da mensagem atualizado para "${newStatus.replace("_", " ")}".`);
@@ -107,7 +116,9 @@ function AdminMessagesPage() {
 
     if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
       queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
-        prev.map((item) => (item.id === id ? { ...item, broker_id: broker.id, broker_name: broker.name } : item))
+        prev.map((item) =>
+          item.id === id ? { ...item, broker_id: broker.id, broker_name: broker.name } : item,
+        ),
       );
       queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
       toast.success(`Mensagem atribuída a ${broker.name}.`);
@@ -132,7 +143,7 @@ function AdminMessagesPage() {
 
     if (!isUuid(id) || id.startsWith("msg-demo") || id.startsWith("demo-")) {
       queryClient.setQueryData(["admin", "messages-leads-list"], (prev: MessageLead[] = []) =>
-        prev.filter((item) => item.id !== id)
+        prev.filter((item) => item.id !== id),
       );
       queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] });
       toast.success("Mensagem removida com sucesso.");
@@ -241,7 +252,8 @@ function AdminMessagesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Central de Mensagens e Contatos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Acompanhe mensagens de clientes por imóvel, solicitações de captação e contatos gerais do site.
+            Acompanhe mensagens de clientes por imóvel, solicitações de captação e contatos gerais
+            do site.
           </p>
         </div>
 
@@ -421,7 +433,7 @@ function AdminMessagesPage() {
                           ) : msg.codigo_imovel ? (
                             <div>
                               <Link
-                                to={`/imovel/${msg.codigo_imovel}` as any}
+                                to={`/imovel/${msg.codigo_imovel}` as never}
                                 target="_blank"
                                 className="font-mono text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
                               >
@@ -494,8 +506,8 @@ function AdminMessagesPage() {
                               msg.status === "pendente"
                                 ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300"
                                 : msg.status === "em_atendimento"
-                                ? "bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300"
-                                : "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                  ? "bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300"
+                                  : "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300"
                             }`}
                           >
                             <option value="pendente">Pendente</option>
@@ -529,4 +541,3 @@ function AdminMessagesPage() {
     </div>
   );
 }
-

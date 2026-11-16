@@ -23,7 +23,8 @@ export const Route = createFileRoute("/contato")({
             <span className="chip">Contato Direto</span>
             <h1 className="mt-4 text-4xl font-extrabold tracking-tight">Vamos conversar</h1>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              Quer comprar, alugar, anunciar seu imóvel ou tirar dúvidas? Fale diretamente conosco pelo WhatsApp ou preencha o formulário ao lado.
+              Quer comprar, alugar, anunciar seu imóvel ou tirar dúvidas? Fale diretamente conosco
+              pelo WhatsApp ou preencha o formulário ao lado.
             </p>
           </div>
 
@@ -38,7 +39,9 @@ export const Route = createFileRoute("/contato")({
                 <MessageCircle className="size-5" />
               </div>
               <div>
-                <span className="block text-xs font-semibold text-emerald-900">Conversar no WhatsApp</span>
+                <span className="block text-xs font-semibold text-emerald-900">
+                  Conversar no WhatsApp
+                </span>
                 <span className="text-base font-bold text-emerald-700">{AGENCY.phone}</span>
               </div>
             </a>
@@ -52,7 +55,9 @@ export const Route = createFileRoute("/contato")({
                   <Phone className="size-4" />
                 </div>
                 <div>
-                  <span className="block text-[11px] text-muted-foreground font-medium">Telefone</span>
+                  <span className="block text-[11px] text-muted-foreground font-medium">
+                    Telefone
+                  </span>
                   <span className="text-xs font-bold text-foreground">{AGENCY.phone}</span>
                 </div>
               </a>
@@ -62,7 +67,9 @@ export const Route = createFileRoute("/contato")({
                   <MapPin className="size-4" />
                 </div>
                 <div>
-                  <span className="block text-[11px] text-muted-foreground font-medium">Localização</span>
+                  <span className="block text-[11px] text-muted-foreground font-medium">
+                    Localização
+                  </span>
                   <span className="text-xs font-bold text-foreground">{AGENCY.address}</span>
                 </div>
               </div>
@@ -72,7 +79,9 @@ export const Route = createFileRoute("/contato")({
                   <Clock className="size-4" />
                 </div>
                 <div>
-                  <span className="block text-[11px] text-muted-foreground font-medium">Horário de Atendimento</span>
+                  <span className="block text-[11px] text-muted-foreground font-medium">
+                    Horário de Atendimento
+                  </span>
                   <span className="text-xs font-bold text-foreground">{AGENCY.hours}</span>
                 </div>
               </div>
@@ -82,7 +91,9 @@ export const Route = createFileRoute("/contato")({
 
         <div className="panel p-6 md:p-8">
           <h2 className="text-lg font-bold mb-1">Envie sua mensagem</h2>
-          <p className="text-xs text-muted-foreground mb-4">Retornaremos o contato o mais rápido possível.</p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Retornaremos o contato o mais rápido possível.
+          </p>
           <LeadForm source="contato" />
         </div>
       </div>

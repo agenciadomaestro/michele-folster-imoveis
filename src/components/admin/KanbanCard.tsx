@@ -27,12 +27,7 @@ interface KanbanCardProps {
   isAdmin: boolean;
 }
 
-export function KanbanCard({
-  lead,
-  onOpenDetails,
-  onMoveStatus,
-  isAdmin,
-}: KanbanCardProps) {
+export function KanbanCard({ lead, onOpenDetails, onMoveStatus, isAdmin }: KanbanCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const tempConfig = TEMPERATURE_CONFIG[lead.temperature] || TEMPERATURE_CONFIG.morno;
 
@@ -43,7 +38,8 @@ export function KanbanCard({
 
   const currentIndex = KANBAN_COLUMNS.findIndex((c) => c.id === lead.status);
   const prevColumn = currentIndex > 0 ? KANBAN_COLUMNS[currentIndex - 1] : null;
-  const nextColumn = currentIndex < KANBAN_COLUMNS.length - 1 ? KANBAN_COLUMNS[currentIndex + 1] : null;
+  const nextColumn =
+    currentIndex < KANBAN_COLUMNS.length - 1 ? KANBAN_COLUMNS[currentIndex + 1] : null;
 
   return (
     <div
@@ -133,7 +129,9 @@ export function KanbanCard({
               {lead.property_title || lead.interest}
             </span>
             <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-              {lead.property_code && <span className="font-mono font-bold">{lead.property_code}</span>}
+              {lead.property_code && (
+                <span className="font-mono font-bold">{lead.property_code}</span>
+              )}
               {lead.property_price && <span>• {brl(lead.property_price)}</span>}
             </div>
           </div>
@@ -183,7 +181,10 @@ export function KanbanCard({
         )}
 
         {/* Quick Stepper Navigation (Previous / Next) */}
-        <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex items-center gap-1 opacity-70 group-hover:opacity-100"
+          onClick={(e) => e.stopPropagation()}
+        >
           {prevColumn && (
             <button
               type="button"
@@ -209,4 +210,3 @@ export function KanbanCard({
     </div>
   );
 }
-

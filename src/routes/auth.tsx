@@ -30,7 +30,12 @@ function AuthPage() {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      try { await getCurrentUserProfile(); navigate({ to: '/admin' }); } catch { /* Only authorized staff may enter. */ }
+      try {
+        await getCurrentUserProfile();
+        navigate({ to: "/admin" });
+      } catch {
+        /* Only authorized staff may enter. */
+      }
     });
   }, [navigate]);
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -38,15 +43,20 @@ function AuthPage() {
     if (busy) return;
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: identifier.trim(), password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: identifier.trim(),
+        password,
+      });
       if (error) throw new Error(error.message);
       await getCurrentUserProfile();
-      toast.success('Acesso autorizado');
-      navigate({ to: '/admin' });
+      toast.success("Acesso autorizado");
+      navigate({ to: "/admin" });
     } catch (error) {
       await supabase.auth.signOut();
       toast.error(error instanceof Error ? error.message : String(error));
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

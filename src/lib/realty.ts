@@ -26,8 +26,16 @@ export const getWhatsappUrl = (customMsg?: string) => {
 };
 
 export const PROPERTY_TYPES = [
-  "Casa", "Apartamento", "Terreno", "Sobrado", "Chácara", "Sítio",
-  "Sala comercial", "Galpão", "Prédio comercial", "Outros",
+  "Casa",
+  "Apartamento",
+  "Terreno",
+  "Sobrado",
+  "Chácara",
+  "Sítio",
+  "Sala comercial",
+  "Galpão",
+  "Prédio comercial",
+  "Outros",
 ];
 
 export const PURPOSE_LABEL: Record<string, string> = {
@@ -54,7 +62,9 @@ export const LEAD_STATUS: Record<string, string> = {
 };
 
 export const brl = (v?: number | null) =>
-  v == null ? "" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  v == null
+    ? ""
+    : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 export function priceLabel(p: Pick<Property, "sale_price" | "rent_price" | "purpose">) {
   if (p.purpose === "locacao" && p.rent_price) return `${brl(p.rent_price)}/mês`;
@@ -84,20 +94,43 @@ export type SearchFilters = {
   page?: number | undefined;
 };
 
-const NUM_WORDS: Record<string, number> = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, "três": 3, quatro: 4, cinco: 5 };
-const strip = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const NUM_WORDS: Record<string, number> = {
+  um: 1,
+  uma: 1,
+  dois: 2,
+  duas: 2,
+  tres: 3,
+  três: 3,
+  quatro: 4,
+  cinco: 5,
+};
+const strip = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 /** Converts free text like "casa com dois quartos em Caçapava" into structured filters. */
-export function parseTextQuery(text: string, cities: string[] = []): { filters: SearchFilters; rest: string } {
+export function parseTextQuery(
+  text: string,
+  cities: string[] = [],
+): { filters: SearchFilters; rest: string } {
   const filters: SearchFilters = {};
   let rest = text.trim();
   const norm = strip(rest);
 
   const code = rest.match(/\b([A-Za-z]{2}\d{3,5})\b/);
-  if (code) { filters.code = (code[1] ?? "").toUpperCase(); rest = rest.replace(code[0], ""); }
+  if (code) {
+    filters.code = (code[1] ?? "").toUpperCase();
+    rest = rest.replace(code[0], "");
+  }
 
   for (const t of PROPERTY_TYPES) {
-    if (new RegExp(`\\b${strip(t)}s?\\b`).test(norm)) { filters.type = t; rest = rest.replace(new RegExp(t + "s?", "i"), ""); break; }
+    if (new RegExp(`\\b${strip(t)}s?\\b`).test(norm)) {
+      filters.type = t;
+      rest = rest.replace(new RegExp(t + "s?", "i"), "");
+      break;
+    }
   }
   if (/\b(alugar|aluguel|locacao)\b/.test(norm)) filters.purpose = "locacao";
   else if (/\b(comprar|venda|compra)\b/.test(norm)) filters.purpose = "venda";
@@ -110,7 +143,10 @@ export function parseTextQuery(text: string, cities: string[] = []): { filters: 
   if (vagas) filters.parking = Number(vagas[1]) || NUM_WORDS[vagas[1] ?? ""];
 
   for (const c of cities) {
-    if (norm.includes(strip(c))) { filters.city = c; break; }
+    if (norm.includes(strip(c))) {
+      filters.city = c;
+      break;
+    }
   }
   if (!filters.city) {
     const em = rest.match(/\b(?:em|no|na)\s+([A-ZÀ-Ú][\wÀ-ú]+(?:\s[A-ZÀ-Ú][\wÀ-ú]+)*)/);
@@ -118,7 +154,10 @@ export function parseTextQuery(text: string, cities: string[] = []): { filters: 
   }
 
   rest = strip(rest)
-    .replace(/\b(\d+|um|uma|dois|duas|tres|quatro|cinco)\s+(quartos?|dormitorios?|banheiros?|vagas?)\b/g, "")
+    .replace(
+      /\b(\d+|um|uma|dois|duas|tres|quatro|cinco)\s+(quartos?|dormitorios?|banheiros?|vagas?)\b/g,
+      "",
+    )
     .replace(/\b(com|em|no|na|de|para|alugar|aluguel|comprar|venda|e)\b/g, "")
     .replace(filters.city ? strip(filters.city) : "\u0000", "")
     .replace(/\s+/g, " ")
@@ -190,7 +229,7 @@ export async function searchProperties(f: SearchFilters) {
   }
   if (f.minArea) {
     filtered = filtered.filter(
-      (p) => (p.area_built ?? 0) >= f.minArea! || (p.area_land ?? 0) >= f.minArea!
+      (p) => (p.area_built ?? 0) >= f.minArea! || (p.area_land ?? 0) >= f.minArea!,
     );
   }
   if (f.maxArea) {
@@ -204,7 +243,7 @@ export async function searchProperties(f: SearchFilters) {
         strip(p.description || "").includes(term) ||
         strip(p.neighborhood || "").includes(term) ||
         strip(p.city || "").includes(term) ||
-        strip(p.code || "").includes(term)
+        strip(p.code || "").includes(term),
     );
   }
 
@@ -242,10 +281,16 @@ export async function fetchLocations() {
   }
 
   const allProperties = supabaseItems.filter((p) => p.status === "publicado");
-  const cities = Array.from(new Set(allProperties.map((d) => d.city).filter(Boolean) as string[])).sort();
-  const neighborhoods = Array.from(new Set(allProperties.map((d) => d.neighborhood).filter(Boolean) as string[])).sort();
+  const cities = Array.from(
+    new Set(allProperties.map((d) => d.city).filter(Boolean) as string[]),
+  ).sort();
+  const neighborhoods = Array.from(
+    new Set(allProperties.map((d) => d.neighborhood).filter(Boolean) as string[]),
+  ).sort();
   return { cities, neighborhoods };
 }
 
 export const slugify = (s: string) =>
-  strip(s).replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  strip(s)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");

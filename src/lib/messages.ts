@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeLeadStatus } from "@/lib/leads";
 
-
 export type MessageType = "imovel" | "captacao" | "geral";
 export type MessageStatus = "pendente" | "em_atendimento" | "concluido";
 
@@ -24,7 +23,7 @@ export interface MessageLead {
   cidade_bairro?: string | null;
   valor_pretendido?: number | string | null;
   foto_imovel_url?: string | null;
-  dados_cliente?: Record<string, any>;
+  dados_cliente?: Record<string, unknown>;
   data_envio: string;
   created_at: string;
 }
@@ -42,56 +41,71 @@ export async function fetchMessages(): Promise<MessageLead[]> {
       .order("created_at", { ascending: false });
 
     if (!error && dbLeads && dbLeads.length > 0) {
-      return Promise.all(dbLeads.map(async (l: any) => {
-        const isCaptacao =
-          l.source === "Anuncie Seu Imóvel" ||
-          l.interest?.toLowerCase().includes("anunciar");
-        const isImovel = Boolean(l.property_code);
-        const tipo: MessageType = isCaptacao ? "captacao" : isImovel ? "imovel" : "geral";
+      return Promise.all(
+        dbLeads.map(async (l) => {
+          const isCaptacao =
+            l.source === "Anuncie Seu Imóvel" || l.interest?.toLowerCase().includes("anunciar");
+          const isImovel = Boolean(l.property_code);
+          const tipo: MessageType = isCaptacao ? "captacao" : isImovel ? "imovel" : "geral";
 
-        const statusMap: Record<string, MessageStatus> = {
-          novo: "pendente",
-          em_contato: "em_atendimento",
-          visita_agendada: "em_atendimento",
-          proposta_feita: "em_atendimento",
-          em_negociacao: "em_atendimento",
-          fechado: "concluido",
-          perdido: "concluido",
-        };
-        const status: MessageStatus = statusMap[normalizeLeadStatus(l.status)] || "pendente";
+          const statusMap: Record<string, MessageStatus> = {
+            novo: "pendente",
+            em_contato: "em_atendimento",
+            visita_agendada: "em_atendimento",
+            proposta_feita: "em_atendimento",
+            em_negociacao: "em_atendimento",
+            fechado: "concluido",
+            perdido: "concluido",
+          };
+          const status: MessageStatus = statusMap[normalizeLeadStatus(l.status)] || "pendente";
 
-        let capturePhoto = l.capture_data?.foto_imovel_url ?? null;
-        if (capturePhoto && !capturePhoto.startsWith('http') && !capturePhoto.startsWith('data:')) {
-          const { data, error } = await supabase.storage.from('captacoes').createSignedUrl(capturePhoto,3600);
-          if (error) throw new Error(error.message);
-          capturePhoto = data.signedUrl;
-        }
-        return {
-          id: l.id,
-          tipo,
-          nome_cliente: l.name,
-          telefone_cliente: l.phone,
-          email_cliente: l.email || null,
-          interesse: l.interest || "Atendimento",
-          mensagem: l.message || "Solicitação recebida pelo site.",
-          imovel_id: l.property_id || null,
-          codigo_imovel: l.property_code || null,
-          titulo_imovel: l.property_title || null,
-          corretor_atribuido_id: l.broker_id || null,
-          corretor_nome: l.broker_name || null,
-          status,
-          tipo_imovel: l.capture_data?.tipo_imovel ?? null,
-          cidade_bairro: l.capture_data?.cidade_bairro ?? null,
-          valor_pretendido: l.capture_data?.valor_pretendido ?? null,
-          foto_imovel_url: capturePhoto,
-          dados_cliente: {},
-          data_envio: l.created_at || new Date().toISOString(),
-          created_at: l.created_at || new Date().toISOString(),
-        };
-      }));
+          const capture = (l.capture_data ?? {}) as {
+            foto_imovel_url?: string | null;
+            tipo_imovel?: string | null;
+            cidade_bairro?: string | null;
+            valor_pretendido?: number | string | null;
+          };
+          let capturePhoto = capture.foto_imovel_url ?? null;
+          if (
+            capturePhoto &&
+            !capturePhoto.startsWith("http") &&
+            !capturePhoto.startsWith("data:")
+          ) {
+            const { data, error } = await supabase.storage
+              .from("captacoes")
+              .createSignedUrl(capturePhoto, 3600);
+            if (error) throw new Error(error.message);
+            capturePhoto = data.signedUrl;
+          }
+          return {
+            id: l.id,
+            tipo,
+            nome_cliente: l.name,
+            telefone_cliente: l.phone,
+            email_cliente: l.email || null,
+            interesse: l.interest || "Atendimento",
+            mensagem: l.message || "Solicitação recebida pelo site.",
+            imovel_id: l.property_id || null,
+            codigo_imovel: l.property_code || null,
+            titulo_imovel: l.property_title || null,
+            corretor_atribuido_id: l.broker_id || null,
+            corretor_nome: l.broker_name || null,
+            status,
+            tipo_imovel: capture.tipo_imovel ?? null,
+            cidade_bairro: capture.cidade_bairro ?? null,
+            valor_pretendido: capture.valor_pretendido ?? null,
+            foto_imovel_url: capturePhoto,
+            dados_cliente: {},
+            data_envio: l.created_at || new Date().toISOString(),
+            created_at: l.created_at || new Date().toISOString(),
+          };
+        }),
+      );
     }
     if (error) throw new Error(error.message);
-  } catch (err) { throw err; }
+  } catch (err) {
+    throw err;
+  }
   return [];
 }
 
@@ -111,7 +125,7 @@ export async function saveMessageLead(payload: {
   cidade_bairro?: string | null;
   valor_pretendido?: number | string | null;
   foto_imovel_url?: string | null;
-  dados_cliente?: Record<string, any>;
+  dados_cliente?: Record<string, unknown>;
 }): Promise<MessageLead> {
   const newId = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -154,7 +168,13 @@ export async function saveMessageLead(payload: {
     source: payload.tipo === "captacao" ? "Anuncie Seu Imóvel" : "Site",
     status: "novo",
     source_page: window.location.pathname,
-    capture_data: { tipo_imovel: payload.tipo_imovel, cidade_bairro: payload.cidade_bairro, valor_pretendido: payload.valor_pretendido, foto_imovel_url: payload.foto_imovel_url, ...payload.dados_cliente },
+    capture_data: {
+      tipo_imovel: payload.tipo_imovel,
+      cidade_bairro: payload.cidade_bairro,
+      valor_pretendido: payload.valor_pretendido,
+      foto_imovel_url: payload.foto_imovel_url,
+      ...payload.dados_cliente,
+    },
   });
 
   if (error) {
@@ -167,7 +187,7 @@ export async function saveMessageLead(payload: {
 
 export async function updateMessageStatus(
   id: string,
-  newStatus: MessageStatus
+  newStatus: MessageStatus,
 ): Promise<{ success: boolean; error?: string }> {
   // Evita tentar atualizar IDs não-UUID no banco real
   if (!isUuid(id)) {
@@ -189,7 +209,8 @@ export async function updateMessageStatus(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao atualizar status da mensagem no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
@@ -198,14 +219,14 @@ export async function updateMessageStatus(
 export async function assignMessageBroker(
   id: string,
   brokerId: string,
-  brokerName: string
+  brokerName: string,
 ): Promise<{ success: boolean; error?: string }> {
   // Evita tentar atualizar IDs não-UUID no banco real
   if (!isUuid(id)) {
     return { success: false, error: "Identificador inválido" };
   }
 
-  if (!isUuid(brokerId)) return { success: false, error: 'Corretor inválido' };
+  if (!isUuid(brokerId)) return { success: false, error: "Corretor inválido" };
   const validBrokerId = brokerId;
 
   try {
@@ -218,13 +239,16 @@ export async function assignMessageBroker(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao atribuir corretor no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
 }
 
-export async function deleteLocalMessage(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteLocalMessage(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   // Evita tentar deletar IDs não-UUID no banco real
   if (!isUuid(id)) {
     return { success: false, error: "Identificador inválido" };
@@ -237,7 +261,8 @@ export async function deleteLocalMessage(id: string): Promise<{ success: boolean
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao excluir mensagem no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }

@@ -1,7 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Users, Shield, Plus, Building, UserCheck, UserX, Sliders, Check, X, Mail, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Users,
+  Shield,
+  Plus,
+  Building,
+  UserCheck,
+  UserX,
+  Sliders,
+  Check,
+  X,
+  Mail,
+  Phone,
+} from "lucide-react";
 import { Logo } from "@/components/site/SiteLayout";
 import {
   type Broker,
@@ -16,9 +29,15 @@ import { BrokerManagementModal } from "@/components/admin/BrokerManagementModal"
 export const Route = createFileRoute("/admin/corretores")({
   head: () => ({
     meta: [
-      { name: "description", content: "Gestão de Corretores — Michele Folster Imóveis — Área da equipe autorizada." },
+      {
+        name: "description",
+        content: "Gestão de Corretores — Michele Folster Imóveis — Área da equipe autorizada.",
+      },
       { property: "og:title", content: "Gestão de Corretores — Michele Folster Imóveis" },
-      { property: "og:description", content: "Gestão de Corretores — Michele Folster Imóveis — Área da equipe autorizada." },
+      {
+        property: "og:description",
+        content: "Gestão de Corretores — Michele Folster Imóveis — Área da equipe autorizada.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { title: "Gestão de Corretores — Michele Folster Imóveis" },
@@ -96,4 +115,3 @@ function AdminBrokersPage() {
     </div>
   );
 }
-
