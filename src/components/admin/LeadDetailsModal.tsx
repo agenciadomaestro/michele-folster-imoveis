@@ -126,7 +126,7 @@ export function LeadDetailsModal({
         queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
       ]);
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       console.error("Erro inesperado ao salvar lead no Supabase:", err);
       toast.error(`Falha ao salvar: ${err?.message || err}`);
       return;
@@ -191,7 +191,7 @@ export function LeadDetailsModal({
         queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
       ]);
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       console.error("Erro inesperado ao salvar nota no Supabase:", err);
       toast.error(`Falha ao salvar: ${err?.message || err}`);
       return;

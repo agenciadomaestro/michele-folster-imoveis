@@ -42,7 +42,7 @@ export async function fetchMessages(): Promise<MessageLead[]> {
 
     if (!error && dbLeads && dbLeads.length > 0) {
       return Promise.all(
-        dbLeads.map(async (l: any) => {
+        dbLeads.map(async (l) => {
           const isCaptacao =
             l.source === "Anuncie Seu Imóvel" || l.interest?.toLowerCase().includes("anunciar");
           const isImovel = Boolean(l.property_code);

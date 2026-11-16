@@ -259,9 +259,14 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           const sorted = [...prop.property_photos].sort((a, b) => a.position - b.position);
           setPhotos(
             sorted.map((p) => ({
-              id: (p as never).id,
-              caption: (p as never).caption ?? "",
-              storage_path: (p as never).storage_path,
+              id: (p as unknown as { id: string; caption?: string | null; storage_path: string })
+                .id,
+              caption:
+                (p as unknown as { id: string; caption?: string | null; storage_path: string })
+                  .caption ?? "",
+              storage_path: (
+                p as unknown as { id: string; caption?: string | null; storage_path: string }
+              ).storage_path,
               url: p.url,
               previewUrl: p.url,
             })),
@@ -679,7 +684,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         onClose();
       }
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       console.error(err);
       toast.error(err.message || "Erro ao salvar imóvel. Verifique os dados.");
     } finally {

@@ -197,7 +197,7 @@ export async function fetchLeads(): Promise<Lead[]> {
       .order("created_at", { ascending: false });
 
     if (!error && supabaseLeads) {
-      return supabaseLeads.map((sl: any) => ({
+      return supabaseLeads.map((sl) => ({
         id: sl.id,
         name: sl.name,
         phone: sl.phone,

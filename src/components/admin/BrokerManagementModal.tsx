@@ -106,7 +106,7 @@ export function BrokerManagementModal({
       toast.success(`Corretor ${broker.name} marcado como ${nextState ? "Ativo" : "Inativo"}.`);
       await refreshList();
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       toast.error(err?.message || "Falha ao alterar status do corretor.");
     }
   };
@@ -135,7 +135,7 @@ export function BrokerManagementModal({
       await refreshList();
       toast.success("Permissão atualizada com sucesso.");
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       toast.error(err?.message || "Falha ao atualizar permissão.");
     }
   };
@@ -173,7 +173,7 @@ export function BrokerManagementModal({
       setIsNewBrokerModalOpen(false);
       await refreshList();
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       toast.error(err?.message || "Falha ao cadastrar corretor.");
     }
   };
@@ -211,7 +211,7 @@ export function BrokerManagementModal({
         queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
       ]);
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       console.error("Erro ao excluir no Supabase:", err);
       toast.error(err?.message || "Falha ao excluir corretor.");
     } finally {

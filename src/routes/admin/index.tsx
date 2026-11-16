@@ -145,7 +145,7 @@ function AdminDashboard() {
       ]);
       toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       console.error("Erro inesperado ao salvar destaque no Supabase:", err);
       toast.error(`Falha inesperada ao alterar destaque: ${err?.message || err}`);
     }
@@ -181,7 +181,7 @@ function AdminDashboard() {
       ]);
       toast.success(`Status alterado para "${nextStatus}".`);
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       console.error("Erro inesperado ao salvar status no Supabase:", err);
       toast.error(`Falha inesperada ao alterar status: ${err?.message || err}`);
     }
@@ -239,7 +239,7 @@ function AdminDashboard() {
       ]);
       toast.success("Imóvel removido com sucesso.");
     } catch (caught) {
-    const err = caught as Error;
+      const err = caught as Error;
       console.error("Erro inesperado ao excluir imóvel no Supabase:", err);
       toast.error(`Falha inesperada ao excluir imóvel: ${err?.message || err}`);
     }
