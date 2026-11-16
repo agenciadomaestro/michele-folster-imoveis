@@ -344,6 +344,39 @@ export type Database = {
           },
         ]
       }
+      site_analytics: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          event_type: string
+          id: string
+          page_path: string
+          property_id: string | null
+          session_id: string
+          traffic_source: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          event_type: string
+          id?: string
+          page_path: string
+          property_id?: string | null
+          session_id: string
+          traffic_source?: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          event_type?: string
+          id?: string
+          page_path?: string
+          property_id?: string | null
+          session_id?: string
+          traffic_source?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -387,6 +420,10 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_staff_manager: { Args: { _user_id: string }; Returns: boolean }
       retire_broker: { Args: { _broker_id: string }; Returns: Json }
+      update_analytics_duration: {
+        Args: { _id: string; _seconds: number }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "broker"
