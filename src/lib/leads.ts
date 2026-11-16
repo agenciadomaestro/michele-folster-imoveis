@@ -212,7 +212,7 @@ export async function fetchLeads(): Promise<Lead[]> {
         source_page: sl.source_page || null,
         status: normalizeLeadStatus(sl.status),
         temperature: (sl.temperature as LeadTemperature) || "quente",
-        transaction_type: (sl.transaction_type as any) || "comprar",
+        transaction_type: (sl.transaction_type as never) || "comprar",
         broker_id: sl.broker_id || null,
         broker_name: sl.broker_name || null,
         loss_reason: sl.loss_reason || null,
@@ -253,7 +253,8 @@ export async function updateLeadStatusInDb(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao atualizar status do lead no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
@@ -271,7 +272,8 @@ export async function deleteLeadInDb(id: string): Promise<{ success: boolean; er
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao excluir lead no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }

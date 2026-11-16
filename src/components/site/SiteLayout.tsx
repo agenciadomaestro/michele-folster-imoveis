@@ -280,7 +280,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               <li>
                 <Link
                   to="/imoveis"
-                  search={{ type: "Apartamento" } as any}
+                  search={{ type: "Apartamento" } as never}
                   className="transition-colors hover:text-primary"
                 >
                   Apartamentos
@@ -289,7 +289,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               <li>
                 <Link
                   to="/imoveis"
-                  search={{ type: "Casa" } as any}
+                  search={{ type: "Casa" } as never}
                   className="transition-colors hover:text-primary"
                 >
                   Casas & Vilas
@@ -298,7 +298,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               <li>
                 <Link
                   to="/imoveis"
-                  search={{ type: "Sobrado" } as any}
+                  search={{ type: "Sobrado" } as never}
                   className="transition-colors hover:text-primary"
                 >
                   Sobrados em Condomínio
@@ -307,7 +307,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               <li>
                 <Link
                   to="/imoveis"
-                  search={{ type: "Terreno" } as any}
+                  search={{ type: "Terreno" } as never}
                   className="transition-colors hover:text-primary"
                 >
                   Terrenos & Lotes
@@ -316,7 +316,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
               <li>
                 <Link
                   to="/imoveis"
-                  search={{ type: "Sala comercial" } as any}
+                  search={{ type: "Sala comercial" } as never}
                   className="transition-colors hover:text-primary"
                 >
                   Comerciais & Escritórios

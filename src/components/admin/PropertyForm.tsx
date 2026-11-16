@@ -207,7 +207,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           return;
         }
         setTitle(prop.title || "");
-        setPurpose((prop.purpose as any) || "venda");
+        setPurpose((prop.purpose as never) || "venda");
         setType(prop.type || "Casa");
         setCode(prop.code || "");
         setSalePrice(prop.sale_price ?? "");
@@ -259,9 +259,9 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           const sorted = [...prop.property_photos].sort((a, b) => a.position - b.position);
           setPhotos(
             sorted.map((p) => ({
-              id: (p as any).id,
-              caption: (p as any).caption ?? "",
-              storage_path: (p as any).storage_path,
+              id: (p as never).id,
+              caption: (p as never).caption ?? "",
+              storage_path: (p as never).storage_path,
               url: p.url,
               previewUrl: p.url,
             })),
@@ -678,7 +678,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
       if (onClose) {
         onClose();
       }
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       console.error(err);
       toast.error(err.message || "Erro ao salvar imóvel. Verifique os dados.");
     } finally {
@@ -817,7 +818,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
                     <button
                       key={p.value}
                       type="button"
-                      onClick={() => setPurpose(p.value as any)}
+                      onClick={() => setPurpose(p.value as never)}
                       className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-all ${
                         purpose === p.value
                           ? "border-primary bg-accent/40 font-semibold text-primary shadow-sm"

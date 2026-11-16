@@ -433,7 +433,7 @@ function AdminMessagesPage() {
                           ) : msg.codigo_imovel ? (
                             <div>
                               <Link
-                                to={`/imovel/${msg.codigo_imovel}` as any}
+                                to={`/imovel/${msg.codigo_imovel}` as never}
                                 target="_blank"
                                 className="font-mono text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
                               >

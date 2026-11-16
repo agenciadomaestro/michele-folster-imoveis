@@ -203,7 +203,8 @@ export async function updateMessageStatus(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao atualizar status da mensagem no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
@@ -232,7 +233,8 @@ export async function assignMessageBroker(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao atribuir corretor no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }
@@ -253,7 +255,8 @@ export async function deleteLocalMessage(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as Error;
     console.error("Erro ao excluir mensagem no Supabase:", err);
     return { success: false, error: err?.message || String(err) };
   }

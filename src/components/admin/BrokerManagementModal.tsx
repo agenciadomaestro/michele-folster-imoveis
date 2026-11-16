@@ -105,7 +105,8 @@ export function BrokerManagementModal({
       await updateBrokerStatus(broker.id, nextState);
       toast.success(`Corretor ${broker.name} marcado como ${nextState ? "Ativo" : "Inativo"}.`);
       await refreshList();
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       toast.error(err?.message || "Falha ao alterar status do corretor.");
     }
   };
@@ -133,7 +134,8 @@ export function BrokerManagementModal({
       setSelectedBroker(updated);
       await refreshList();
       toast.success("Permissão atualizada com sucesso.");
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       toast.error(err?.message || "Falha ao atualizar permissão.");
     }
   };
@@ -170,7 +172,8 @@ export function BrokerManagementModal({
       setFormRole("corretor");
       setIsNewBrokerModalOpen(false);
       await refreshList();
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       toast.error(err?.message || "Falha ao cadastrar corretor.");
     }
   };
@@ -207,7 +210,8 @@ export function BrokerManagementModal({
         queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "messages-leads-list"] }),
       ]);
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       console.error("Erro ao excluir no Supabase:", err);
       toast.error(err?.message || "Falha ao excluir corretor.");
     } finally {
@@ -675,7 +679,7 @@ export function BrokerManagementModal({
                   <label className="label">Nível de Função</label>
                   <select
                     value={formRole}
-                    onChange={(e) => setFormRole(e.target.value as any)}
+                    onChange={(e) => setFormRole(e.target.value as never)}
                     className="field"
                   >
                     <option value="corretor">Corretor Padrão</option>

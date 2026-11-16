@@ -144,7 +144,8 @@ function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: ["search"] }),
       ]);
       toast.success(nextFeatured ? "Imóvel marcado como Destaque!" : "Destaque removido.");
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       console.error("Erro inesperado ao salvar destaque no Supabase:", err);
       toast.error(`Falha inesperada ao alterar destaque: ${err?.message || err}`);
     }
@@ -179,7 +180,8 @@ function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: ["locations"] }),
       ]);
       toast.success(`Status alterado para "${nextStatus}".`);
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       console.error("Erro inesperado ao salvar status no Supabase:", err);
       toast.error(`Falha inesperada ao alterar status: ${err?.message || err}`);
     }
@@ -236,7 +238,8 @@ function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: ["locations"] }),
       ]);
       toast.success("Imóvel removido com sucesso.");
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       console.error("Erro inesperado ao excluir imóvel no Supabase:", err);
       toast.error(`Falha inesperada ao excluir imóvel: ${err?.message || err}`);
     }
@@ -672,7 +675,7 @@ function AdminDashboard() {
                     <div className="flex items-center gap-2 self-end sm:self-center">
                       {canCreateProperty && (
                         <Link
-                          to={`/admin/imoveis/${item.id}` as any}
+                          to={`/admin/imoveis/${item.id}` as never}
                           className="btn btn-outline text-xs h-8"
                           title="Editar imóvel"
                         >
@@ -690,7 +693,7 @@ function AdminDashboard() {
                         Ver informações
                       </Link>
                       <Link
-                        to={`/imovel/${item.code}` as any}
+                        to={`/imovel/${item.code}` as never}
                         target="_blank"
                         className="btn btn-ghost text-xs h-8"
                         title="Ver no site público"

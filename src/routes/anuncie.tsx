@@ -122,7 +122,8 @@ function AnunciePage() {
         queryClient.invalidateQueries({ queryKey: ["admin", "crm-leads-list"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "leads-crm-list"] }),
       ]);
-    } catch (err: any) {
+    } catch (caught) {
+    const err = caught as Error;
       console.error("Erro ao salvar captação no Supabase:", err);
       toast.error(`Falha ao registrar captação: ${err?.message || err}`);
       setSubmitting(false);
