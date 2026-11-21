@@ -713,15 +713,15 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
   return (
     <div className="mx-auto max-w-4xl py-4 sm:py-6">
       {/* Top Bar */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-2">
         <button
           onClick={() => navigate({ to: "/admin" })}
-          className="btn btn-ghost text-sm text-muted-foreground hover:text-foreground"
+          className="btn btn-ghost text-sm text-muted-foreground hover:text-foreground shrink-0 px-2 sm:px-3"
         >
           <ArrowLeft className="mr-1.5 size-4" />
           Voltar ao Painel
         </button>
-        <span className="chip text-xs">
+        <span className="chip text-xs whitespace-nowrap shrink-0">
           {isEditing ? "Modo Edição" : "Novo Cadastro"} • Etapa {step} de 5
         </span>
       </div>
@@ -732,8 +732,26 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         </h1>
       </div>
 
-      {/* Stepper Indicator */}
-      <div className="mb-8 overflow-x-auto pb-2">
+      {/* Stepper Indicator - Mobile Compact */}
+      <div className="mb-6 sm:hidden bg-secondary/60 border border-border/80 rounded-xl p-3.5 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold text-foreground">
+            Passo {step} de 5: <span className="text-primary font-semibold">{stepsList[step - 1]?.label}</span>
+          </span>
+          <span className="text-[11px] font-semibold text-muted-foreground font-mono">
+            {Math.round((step / 5) * 100)}%
+          </span>
+        </div>
+        <div className="h-2 w-full bg-border rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${(step / 5) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Stepper Indicator - Desktop */}
+      <div className="mb-8 hidden sm:block overflow-x-auto pb-2">
         <div className="flex items-center justify-between min-w-[620px]">
           {stepsList.map((s, idx) => {
             const Icon = s.icon;

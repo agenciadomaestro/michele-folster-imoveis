@@ -176,18 +176,18 @@ function AnalyticsDashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Header */}
-      <header className="border-b bg-surface px-6 py-4 sticky top-0 z-30 shadow-xs">
+      <header className="border-b bg-surface px-4 sm:px-6 py-4 sticky top-0 z-30 shadow-xs">
         <div className="container-page flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               to="/admin"
-              className="btn btn-ghost text-xs h-8 text-muted-foreground hover:text-foreground"
+              className="btn btn-ghost text-xs h-8 text-muted-foreground hover:text-foreground shrink-0 px-2 sm:px-3"
               title="Voltar ao Painel"
             >
               <ArrowLeft className="mr-1.5 size-3.5" />
-              Painel
+              <span>Painel</span>
             </Link>
-            <div className="h-4 w-px bg-border" />
+            <div className="h-4 w-px bg-border shrink-0" />
             <Logo />
           </div>
 
@@ -214,34 +214,34 @@ function AnalyticsDashboardPage() {
         </div>
       </header>
 
-      <main className="container-page py-8 space-y-8">
+      <main className="container-page py-6 sm:py-8 space-y-6 sm:space-y-8 w-full max-w-full box-border">
         {/* Title & Filter Bar */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between w-full">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wider flex items-center gap-1">
                 <Globe className="size-3" />
                 Audiência Interna
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground mt-1 break-words">
               Audiência & Tráfego
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
               Rastreamento em tempo real de visitantes, tempo de permanência, engajamento com fotos
               e cliques no WhatsApp.
             </p>
           </div>
 
           {/* Filtro de Período */}
-          <div className="flex items-center gap-1 bg-surface border border-border p-1 rounded-xl shadow-xs self-start sm:self-auto overflow-x-auto">
+          <div className="grid grid-cols-2 sm:flex items-center gap-1 bg-surface border border-border p-1 rounded-xl shadow-xs w-full sm:w-auto shrink-0">
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setPeriod(opt.id)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+                className={`text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors text-center justify-center whitespace-nowrap ${
                   period === opt.id
-                    ? "bg-primary text-primary-foreground shadow-xs"
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >

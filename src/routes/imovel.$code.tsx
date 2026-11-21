@@ -218,12 +218,12 @@ function PropertyPage() {
                 .filter(Boolean)
                 .join(", ")}
             </p>
-            <div className="mt-6 flex flex-wrap items-end gap-6">
+            <div className="mt-6 flex flex-wrap items-end gap-4 sm:gap-6">
               <div>
                 <p className="text-xs text-muted-foreground">
                   {p.purpose === "locacao" ? "Aluguel" : "Valor"}
                 </p>
-                <p className="text-3xl font-bold text-primary">{priceLabel(p)}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-primary">{priceLabel(p)}</p>
               </div>
               {p.purpose === "ambos" && p.rent_price && (
                 <div>
@@ -243,7 +243,7 @@ function PropertyPage() {
                   <p className="font-semibold">{brl(p.iptu)}</p>
                 </div>
               )}
-              <button onClick={share} className="btn btn-outline ml-auto">
+              <button onClick={share} className="btn btn-outline w-full sm:w-auto sm:ml-auto">
                 <Share2 className="size-4" /> Compartilhar
               </button>
             </div>

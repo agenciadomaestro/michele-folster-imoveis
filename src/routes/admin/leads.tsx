@@ -253,36 +253,34 @@ function LeadsManagementPage() {
     <div className="min-h-screen bg-background">
       {/* Top Header */}
       <header className="border-b bg-surface px-4 sm:px-6 py-3.5 sticky top-0 z-30 shadow-xs">
-        <div className="container-page flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="container-page flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/admin"
-              className="btn btn-ghost text-xs h-8 text-muted-foreground hover:text-foreground"
+              className="btn btn-ghost text-xs h-8 text-muted-foreground hover:text-foreground shrink-0 px-2 sm:px-3"
               title="Voltar ao Painel"
             >
               <ArrowLeft className="mr-1.5 size-3.5" />
-              Painel
+              <span>Voltar ao Painel</span>
             </Link>
-            <div className="h-4 w-px bg-border" />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
-                  Gestão de Leads (CRM)
-                </h1>
-                <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5">
-                  {filteredLeads.length} leads
-                </span>
-              </div>
+            <div className="h-4 w-px bg-border shrink-0" />
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight whitespace-nowrap">
+                Gestão de Leads (CRM)
+              </h1>
+              <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 shrink-0">
+                {filteredLeads.length} leads
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
             {/* View Mode Toggle: Kanban vs Tabela */}
-            <div className="flex items-center rounded-xl border border-border bg-muted/50 p-0.5 text-xs">
+            <div className="flex items-center rounded-xl border border-border bg-muted/50 p-0.5 text-xs w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setViewMode("kanban")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                   viewMode === "kanban"
                     ? "bg-card text-foreground shadow-xs font-bold"
                     : "text-muted-foreground hover:text-foreground"
@@ -295,7 +293,7 @@ function LeadsManagementPage() {
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                   viewMode === "table"
                     ? "bg-card text-foreground shadow-xs font-bold"
                     : "text-muted-foreground hover:text-foreground"
@@ -327,19 +325,19 @@ function LeadsManagementPage() {
       </header>
 
       {/* Main CRM Workspace */}
-      <main className="container-page py-6 space-y-6">
+      <main className="container-page py-6 space-y-6 w-full max-w-full box-border">
         {/* Filter Controls Bar */}
-        <div className="panel p-4 shadow-sm space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="panel p-4 shadow-sm space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-center w-full">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[240px] max-w-md">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar por nome, telefone, e-mail ou código..."
-                className="field pl-9 pr-8 text-xs h-9.5"
+                placeholder="Buscar lead, fone, email..."
+                className="field pl-9 pr-8 text-xs h-9.5 w-full"
               />
               {searchQuery && (
                 <button
@@ -352,98 +350,96 @@ function LeadsManagementPage() {
               )}
             </div>
 
-            {/* Quick Filters */}
-            <div className="flex flex-wrap items-center gap-2.5 text-xs">
-              {/* Broker Selector (Admin Only) */}
-              {isAdmin && (
-                <div className="flex items-center gap-1.5">
-                  <UserCheck className="size-3.5 text-primary" />
-                  <select
-                    value={filterBrokerId}
-                    onChange={(e) => setFilterBrokerId(e.target.value)}
-                    className="field h-9 text-xs py-1"
-                  >
-                    <option value="all">Todos os Corretores</option>
-                    {brokers.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                    <option value="unassigned">Leads Não Atribuídos</option>
-                  </select>
-                </div>
-              )}
-
-              {/* Temperature Filter */}
-              <div className="flex items-center gap-1.5">
+            {/* Broker Selector (Admin Only) */}
+            {isAdmin ? (
+              <div className="w-full">
                 <select
-                  value={filterTemperature}
-                  onChange={(e) => setFilterTemperature(e.target.value)}
-                  className="field h-9 text-xs py-1"
+                  value={filterBrokerId}
+                  onChange={(e) => setFilterBrokerId(e.target.value)}
+                  className="field h-9.5 text-xs py-1 w-full"
                 >
-                  <option value="all">Todas as Temperaturas</option>
-                  <option value="quente">🔥 Quente</option>
-                  <option value="morno">☀️ Morno</option>
-                  <option value="frio">❄️ Frio</option>
+                  <option value="all">Todos os Corretores</option>
+                  {brokers.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                  <option value="unassigned">Leads Não Atribuídos</option>
                 </select>
               </div>
+            ) : null}
 
-              {/* Source Filter */}
-              <div className="flex items-center gap-1.5">
-                <select
-                  value={filterSource}
-                  onChange={(e) => setFilterSource(e.target.value)}
-                  className="field h-9 text-xs py-1"
-                >
-                  <option value="all">Todas as Origens</option>
-                  <option value="site">Site</option>
-                  <option value="meta_ads">Meta Ads</option>
-                  <option value="portal">Portal</option>
-                  <option value="indicacao">Indicação</option>
-                  <option value="whatsapp">WhatsApp</option>
-                </select>
-              </div>
+            {/* Temperature Filter */}
+            <div className="w-full">
+              <select
+                value={filterTemperature}
+                onChange={(e) => setFilterTemperature(e.target.value)}
+                className="field h-9.5 text-xs py-1 w-full"
+              >
+                <option value="all">Todas as Temperaturas</option>
+                <option value="quente">🔥 Quente</option>
+                <option value="morno">☀️ Morno</option>
+                <option value="frio">❄️ Frio</option>
+              </select>
+            </div>
 
-              {/* Transaction Type */}
-              <div className="flex items-center gap-1.5">
-                <select
-                  value={filterTransaction}
-                  onChange={(e) => setFilterTransaction(e.target.value)}
-                  className="field h-9 text-xs py-1"
-                >
-                  <option value="all">Compra ou Locação</option>
-                  <option value="comprar">Comprar</option>
-                  <option value="alugar">Alugar</option>
-                </select>
-              </div>
+            {/* Source Filter */}
+            <div className="w-full">
+              <select
+                value={filterSource}
+                onChange={(e) => setFilterSource(e.target.value)}
+                className="field h-9.5 text-xs py-1 w-full"
+              >
+                <option value="all">Todas as Origens</option>
+                <option value="site">Site</option>
+                <option value="meta_ads">Meta Ads</option>
+                <option value="portal">Portal</option>
+                <option value="indicacao">Indicação</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </div>
 
-              {/* Clear Filters Button */}
-              {(searchQuery ||
-                filterBrokerId !== "all" ||
-                filterTemperature !== "all" ||
-                filterSource !== "all" ||
-                filterTransaction !== "all") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setFilterBrokerId("all");
-                    setFilterTemperature("all");
-                    setFilterSource("all");
-                    setFilterTransaction("all");
-                  }}
-                  className="btn btn-ghost text-xs h-9 text-muted-foreground hover:text-foreground"
-                >
-                  Limpar Filtros
-                </button>
-              )}
+            {/* Transaction Type */}
+            <div className="w-full">
+              <select
+                value={filterTransaction}
+                onChange={(e) => setFilterTransaction(e.target.value)}
+                className="field h-9.5 text-xs py-1 w-full"
+              >
+                <option value="all">Compra ou Locação</option>
+                <option value="comprar">Comprar</option>
+                <option value="alugar">Alugar</option>
+              </select>
             </div>
           </div>
+
+          {/* Clear Filters Button */}
+          {(searchQuery ||
+            filterBrokerId !== "all" ||
+            filterTemperature !== "all" ||
+            filterSource !== "all" ||
+            filterTransaction !== "all") && (
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setFilterBrokerId("all");
+                  setFilterTemperature("all");
+                  setFilterSource("all");
+                  setFilterTransaction("all");
+                }}
+                className="btn btn-ghost text-xs h-8 text-muted-foreground hover:text-foreground"
+              >
+                Limpar Filtros
+              </button>
+            </div>
+          )}
         </div>
 
         {/* View 1: KANBAN BOARD */}
         {viewMode === "kanban" && (
-          <div className="overflow-x-auto pb-6">
+          <div className="overflow-x-auto pb-6 w-full max-w-full">
             <div className="flex gap-4 min-w-[1380px] items-start">
               {KANBAN_COLUMNS.map((col) => {
                 const colLeads = filteredLeads.filter((l) => l.status === col.id);

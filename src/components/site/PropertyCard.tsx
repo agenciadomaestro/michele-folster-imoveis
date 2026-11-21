@@ -36,23 +36,25 @@ export function PropertyCard({ p }: { p: Property }) {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
         {/* Top Badges */}
-        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
-          <span className="rounded-full bg-background/95 px-3 py-1 text-xs font-bold text-foreground shadow-sm backdrop-blur-md">
-            {PURPOSE_LABEL[p.purpose] || p.purpose}
-          </span>
-          {p.featured && (
-            <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
-              <Star className="size-3 fill-white" />
-              <span>Destaque</span>
+        <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2 pointer-events-none">
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0 pointer-events-auto">
+            <span className="rounded-full bg-background/95 px-3 py-1 text-xs font-bold text-foreground shadow-sm backdrop-blur-md whitespace-nowrap">
+              {PURPOSE_LABEL[p.purpose] || p.purpose}
             </span>
-          )}
-        </div>
+            {p.featured && (
+              <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm whitespace-nowrap">
+                <Star className="size-3 fill-white" />
+                <span>Destaque</span>
+              </span>
+            )}
+          </div>
 
-        {/* Top Right: Type Badge */}
-        <div className="absolute right-3 top-3">
-          <span className="rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-semibold text-white/95 backdrop-blur-md">
-            {p.type}
-          </span>
+          {/* Top Right: Type Badge */}
+          <div className="shrink-0 pointer-events-auto">
+            <span className="rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-semibold text-white/95 backdrop-blur-md whitespace-nowrap">
+              {p.type}
+            </span>
+          </div>
         </div>
 
         {/* Bottom Left Code */}

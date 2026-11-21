@@ -41,7 +41,7 @@ export function ResultsPage({
 
   const numInput = (key: keyof SearchFilters, placeholder: string) => (
     <input
-      className="field"
+      className="field w-full min-w-0"
       inputMode="numeric"
       placeholder={placeholder}
       defaultValue={(search[key] as number | undefined) ?? ""}
@@ -63,12 +63,12 @@ export function ResultsPage({
         </p>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="panel h-fit space-y-4 p-5 lg:sticky lg:top-24">
+          <aside className="panel h-fit space-y-4 p-4 sm:p-5 lg:sticky lg:top-24 w-full max-w-full box-border">
             {!fixedPurpose && (
               <div>
                 <label className="label">Finalidade</label>
                 <select
-                  className="field"
+                  className="field w-full"
                   value={search.purpose ?? ""}
                   onChange={(e) => set({ purpose: (e.target.value || undefined) as never })}
                 >
@@ -81,7 +81,7 @@ export function ResultsPage({
             <div>
               <label className="label">Tipo</label>
               <select
-                className="field"
+                className="field w-full"
                 value={search.type ?? ""}
                 onChange={(e) => set({ type: e.target.value || undefined })}
               >
@@ -94,7 +94,7 @@ export function ResultsPage({
             <div>
               <label className="label">Cidade</label>
               <select
-                className="field"
+                className="field w-full"
                 value={search.city ?? ""}
                 onChange={(e) => set({ city: e.target.value || undefined })}
               >
@@ -107,7 +107,7 @@ export function ResultsPage({
             <div>
               <label className="label">Bairro</label>
               <select
-                className="field"
+                className="field w-full"
                 value={search.neighborhood ?? ""}
                 onChange={(e) => set({ neighborhood: e.target.value || undefined })}
               >
@@ -128,7 +128,7 @@ export function ResultsPage({
                 <div key={k}>
                   <label className="label">{l}</label>
                   <select
-                    className="field px-2"
+                    className="field px-2 w-full"
                     value={search[k] ?? ""}
                     onChange={(e) =>
                       set({ [k]: e.target.value ? Number(e.target.value) : undefined })
@@ -146,14 +146,14 @@ export function ResultsPage({
             </div>
             <div>
               <label className="label">Preço (R$)</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 min-w-0 w-full">
                 {numInput("minPrice", "Mín.")}
                 {numInput("maxPrice", "Máx.")}
               </div>
             </div>
             <div>
               <label className="label">Área (m²)</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 min-w-0 w-full">
                 {numInput("minArea", "Mín.")}
                 {numInput("maxArea", "Máx.")}
               </div>
@@ -161,7 +161,7 @@ export function ResultsPage({
             <div>
               <label className="label">Código</label>
               <input
-                className="field font-mono uppercase"
+                className="field font-mono uppercase w-full min-w-0"
                 defaultValue={search.code ?? ""}
                 placeholder="CA0531"
                 onBlur={(e) => set({ code: e.target.value.trim() || undefined })}
@@ -186,11 +186,11 @@ export function ResultsPage({
             )}
           </aside>
 
-          <div>
-            <div className="mb-5 flex items-center justify-end gap-2">
-              <span className="text-xs text-muted-foreground">Ordenar</span>
+          <div className="min-w-0 flex-1">
+            <div className="mb-5 flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Ordenar</span>
               <select
-                className="field h-10 w-auto"
+                className="field h-10 w-auto min-w-[140px]"
                 value={search.sort ?? "recentes"}
                 onChange={(e) => set({ sort: e.target.value as never })}
               >

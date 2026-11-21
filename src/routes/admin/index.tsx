@@ -14,6 +14,7 @@ import {
   Trash2,
   Search,
   X,
+  Menu,
   Kanban,
   ChevronRight,
   MessageSquare,
@@ -58,6 +59,7 @@ function AdminDashboard() {
   const queryClient = useQueryClient();
   const [searchCode, setSearchCode] = useState("");
   const [isBrokersModalOpen, setIsBrokersModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // 1. Perfil do Usuário Autenticado e Permissões Granulares (RBAC)
   const { data: userProfile } = useQuery({
@@ -267,13 +269,14 @@ function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header com Identificação Dinâmica de Acesso */}
-      <header className="border-b bg-surface px-6 py-4 sticky top-0 z-30">
+      <header className="border-b bg-surface px-4 sm:px-6 py-4 sticky top-0 z-30">
         <div className="container-page flex items-center justify-between">
           <Logo />
 
-          <div className="flex items-center gap-4">
+          {/* Menu Desktop */}
+          <div className="hidden md:flex items-center gap-4">
             {/* Informações do Usuário Dinâmico */}
-            <div className="hidden sm:flex items-center gap-2 border-r border-border pr-4">
+            <div className="flex items-center gap-2 border-r border-border pr-4">
               <div className="grid size-8 place-items-center rounded-full bg-accent text-primary">
                 {userProfile?.isSuperAdmin ? (
                   <Shield className="size-4" />
@@ -325,7 +328,7 @@ function AdminDashboard() {
             {userProfile?.isAdmin && (
               <button
                 onClick={() => setIsBrokersModalOpen(true)}
-                className="btn btn-outline text-xs h-9 font-semibold gap-1.5 hidden md:inline-flex"
+                className="btn btn-outline text-xs h-9 font-semibold gap-1.5"
               >
                 <Sliders className="size-3.5 text-primary" />
                 <span>Corretores</span>
@@ -348,8 +351,138 @@ function AdminDashboard() {
               Sair
             </button>
           </div>
+
+          {/* Botão Hambúrguer Mobile */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 rounded-xl text-foreground hover:bg-secondary border border-border transition-colors"
+              aria-label="Abrir menu"
+            >
+              <Menu className="size-5" />
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Drawer / Sheet Lateral Mobile */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="fixed inset-y-0 right-0 w-[300px] max-w-[85vw] bg-surface border-l border-border p-6 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <Logo />
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  aria-label="Fechar menu"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              {/* Informações do Usuário Mobile */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/60 border border-border">
+                <div className="grid size-10 place-items-center rounded-full bg-accent text-primary shrink-0">
+                  {userProfile?.isSuperAdmin ? (
+                    <Shield className="size-5" />
+                  ) : userProfile?.isAdmin ? (
+                    <ShieldCheck className="size-5" />
+                  ) : (
+                    <UserCheck className="size-5" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-foreground truncate">
+                    {userProfile?.name || "Michele Folster"}
+                  </p>
+                  <span className="text-[11px] font-semibold text-primary uppercase tracking-wider block truncate">
+                    {userProfile?.roleLabel || "Gestora/Administradora"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Links de Navegação Mobile */}
+              <div className="flex flex-col gap-2">
+                <Link
+                  to="/admin/leads"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-primary bg-accent/60 hover:bg-accent transition-colors"
+                >
+                  <Kanban className="size-4 shrink-0" />
+                  <span>Gestão de Leads (CRM)</span>
+                </Link>
+
+                <Link
+                  to="/admin/mensagens"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+                >
+                  <MessageSquare className="size-4 text-muted-foreground shrink-0" />
+                  <span>Central de Mensagens</span>
+                </Link>
+
+                {(userProfile?.role === "super_admin" ||
+                  userProfile?.role === "admin" ||
+                  userProfile?.isSuperAdmin === true) && (
+                  <Link
+                    to="/admin/analytics"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+                  >
+                    <TrendingUp className="size-4 text-primary shrink-0" />
+                    <span>Audiência / Acessos</span>
+                  </Link>
+                )}
+
+                {userProfile?.isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setIsBrokersModalOpen(true);
+                    }}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-secondary transition-colors text-left w-full"
+                  >
+                    <Sliders className="size-4 text-primary shrink-0" />
+                    <span>Corretores</span>
+                  </button>
+                )}
+
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                >
+                  <ExternalLink className="size-4 shrink-0" />
+                  <span>Ver site</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Logout Mobile */}
+            <div className="pt-6 border-t border-border">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="btn btn-outline w-full justify-center text-sm text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="mr-2 size-4" />
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="container-page py-10 space-y-10">
         {/* Title & Actions Bar */}
@@ -567,16 +700,16 @@ function AdminDashboard() {
               </button>
             </div>
           ) : (
-            <div className="divide-y divide-border overflow-x-auto">
+            <div className="divide-y divide-border overflow-hidden">
               {filteredProperties.map((item) => {
                 const coverPhoto = item.property_photos?.sort((a, b) => a.position - b.position)[0]
                   ?.url;
                 return (
                   <div
                     key={item.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 hover:bg-secondary/30 transition-colors rounded-xl px-3"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 hover:bg-secondary/30 transition-colors rounded-xl px-2 sm:px-3 w-full max-w-full box-border"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
                       <div className="size-16 shrink-0 overflow-hidden rounded-xl bg-secondary border border-border">
                         {coverPhoto ? (
                           <img
@@ -590,19 +723,19 @@ function AdminDashboard() {
                           </div>
                         )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-primary bg-accent px-2 py-0.5 rounded-md">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className="font-mono text-xs font-bold text-primary bg-accent px-2 py-0.5 rounded-md shrink-0">
                             {item.code}
                           </span>
-                          <span className="chip text-[11px] h-5 capitalize">{item.purpose}</span>
+                          <span className="chip text-[11px] h-5 capitalize shrink-0">{item.purpose}</span>
 
                           {/* Status Toggle interativo com persistência no Supabase */}
                           {userProfile?.isAdmin ? (
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(item)}
-                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full transition-all cursor-pointer flex items-center gap-1 shadow-2xs hover:opacity-85 ${
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full transition-all cursor-pointer flex items-center gap-1 shadow-2xs hover:opacity-85 shrink-0 ${
                                 item.status === "publicado"
                                   ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
                                   : "bg-amber-100 text-amber-800 hover:bg-amber-200"
@@ -618,7 +751,7 @@ function AdminDashboard() {
                             </button>
                           ) : (
                             <span
-                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                                 item.status === "publicado"
                                   ? "bg-emerald-100 text-emerald-800"
                                   : "bg-amber-100 text-amber-800"
@@ -633,7 +766,7 @@ function AdminDashboard() {
                             <button
                               type="button"
                               onClick={() => handleToggleFeatured(item)}
-                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1 shadow-2xs shrink-0 ${
                                 item.featured
                                   ? "bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-200"
                                   : "bg-secondary text-muted-foreground hover:bg-secondary/80 border border-border/40"
@@ -654,57 +787,60 @@ function AdminDashboard() {
                               <span>{item.featured ? "Destaque" : "Normal"}</span>
                             </button>
                           ) : item.featured ? (
-                            <span className="text-[11px] bg-purple-100 text-purple-800 font-semibold px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span className="text-[11px] bg-purple-100 text-purple-800 font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
                               <Star className="size-3 fill-purple-600 text-purple-600" />
                               Destaque
                             </span>
                           ) : null}
                         </div>
-                        <h3 className="font-semibold text-sm mt-1 text-foreground">{item.title}</h3>
-                        <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                        <h3 className="font-semibold text-sm mt-1 text-foreground break-words">{item.title}</h3>
+                        <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                           <span className="flex items-center gap-1">
-                            <MapPin className="size-3" />
-                            {item.neighborhood ? `${item.neighborhood}, ` : ""}
-                            {item.city}/{item.state}
+                            <MapPin className="size-3 shrink-0" />
+                            <span className="break-words">
+                              {item.neighborhood ? `${item.neighborhood}, ` : ""}
+                              {item.city}/{item.state}
+                            </span>
                           </span>
-                          •<span className="font-semibold text-foreground">{priceLabel(item)}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="font-semibold text-foreground whitespace-nowrap">{priceLabel(item)}</span>
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 justify-start sm:justify-end shrink-0">
                       {canCreateProperty && (
                         <Link
                           to={`/admin/imoveis/${item.id}` as never}
-                          className="btn btn-outline text-xs h-8"
+                          className="btn btn-outline text-xs h-8 px-2.5 sm:px-3 whitespace-nowrap"
                           title="Editar imóvel"
                         >
-                          <Edit className="mr-1 size-3.5" />
-                          Editar
+                          <Edit className="mr-1 size-3.5 shrink-0" />
+                          <span>Editar Informações</span>
                         </Link>
                       )}
                       <Link
                         to="/admin/imovel/$id"
                         params={{ id: item.id }}
-                        className="btn btn-ghost text-xs h-8"
+                        className="btn btn-ghost text-xs h-8 px-2.5 sm:px-3 whitespace-nowrap"
                         title="Consultar imóvel na área interna"
                       >
-                        <Eye className="mr-1 size-3.5" />
-                        Ver informações
+                        <Eye className="mr-1 size-3.5 shrink-0" />
+                        <span>Ver informações</span>
                       </Link>
                       <Link
                         to={`/imovel/${item.code}` as never}
                         target="_blank"
-                        className="btn btn-ghost text-xs h-8"
+                        className="btn btn-ghost text-xs h-8 px-2.5 sm:px-3 whitespace-nowrap"
                         title="Ver no site público"
                       >
-                        <Eye className="mr-1 size-3.5" />
-                        Ver Página
+                        <ExternalLink className="mr-1 size-3.5 shrink-0" />
+                        <span>Ver Página</span>
                       </Link>
                       {userProfile?.isAdmin && (
                         <button
                           onClick={() => handleDeleteProperty(item.id, item.title)}
-                          className="btn btn-ghost text-xs h-8 text-destructive hover:bg-destructive/10"
+                          className="btn btn-ghost text-xs h-8 px-2 text-destructive hover:bg-destructive/10 shrink-0"
                           title="Excluir imóvel"
                         >
                           <Trash2 className="size-3.5" />
