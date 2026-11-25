@@ -249,12 +249,12 @@ function PropertyPage() {
             </div>
 
             {specs.length > 0 && (
-              <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="mt-8 grid grid-cols-3 gap-2.5 sm:gap-4">
                 {specs.map((s) => (
-                  <div key={s.l} className="rounded-[18px] bg-surface p-4">
+                  <div key={s.l} className="rounded-xl sm:rounded-[18px] bg-surface p-3 sm:p-4 transition-all">
                     <s.i className="size-4 text-primary" />
-                    <p className="mt-2 text-xs text-muted-foreground">{s.l}</p>
-                    <p className="font-semibold">{s.v}</p>
+                    <p className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground truncate">{s.l}</p>
+                    <p className="font-semibold text-xs sm:text-base text-foreground truncate">{s.v}</p>
                   </div>
                 ))}
               </div>

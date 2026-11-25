@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Building2,
   Users,
@@ -93,7 +93,7 @@ function AdminDashboard() {
       try {
         const { data, error } = await supabase
           .from("properties")
-          .select("*, property_photos(url, position)")
+          .select("*, property_photos(url, position), property_owners(name)")
           .order("created_at", { ascending: false });
         if (!error && data) supabaseItems = data as Property[];
       } catch (err) {
@@ -102,6 +102,52 @@ function AdminDashboard() {
       return supabaseItems;
     },
   });
+
+  // Query auxiliar de nomes de proprietários para pesquisa no painel administrativo
+  const { data: propertyOwnersList = [] } = useQuery({
+    queryKey: ["admin", "property-owners-names"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from("property_owners")
+          .select("property_id, name");
+        if (!error && data) return data;
+      } catch {
+        // Silencioso se não autorizado
+      }
+      return [];
+    },
+  });
+
+  const propertyOwnerMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const po of propertyOwnersList) {
+      if (po.property_id && po.name) {
+        map.set(po.property_id, po.name);
+      }
+    }
+    return map;
+  }, [propertyOwnersList]);
+
+  const getOwnerName = (item: Property): string => {
+    const mapped = propertyOwnerMap.get(item.id);
+    if (mapped) return mapped;
+    const joined = (item as any).property_owners;
+    if (joined) {
+      if (Array.isArray(joined) && joined[0]?.name) return joined[0].name;
+      if (typeof joined === "object" && joined.name) return joined.name;
+    }
+    return (item as any).owner_name || "";
+  };
+
+  const normalizeSearchText = (val: string | null | undefined): string => {
+    if (!val) return "";
+    return val
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  };
 
   // Filtragem de Imóveis conforme regras de acesso do Corretor
   const visibleProperties = rawProperties.filter((item) => {
@@ -247,10 +293,14 @@ function AdminDashboard() {
     }
   };
 
+  const cleanSearchTerm = normalizeSearchText(searchCode);
+
   const filteredProperties = visibleProperties.filter((item) => {
-    if (!searchCode.trim()) return true;
-    const term = searchCode.trim().toUpperCase();
-    return item.code ? item.code.toUpperCase().includes(term) : false;
+    if (cleanSearchTerm.length < 3) return true;
+    const codeMatch = normalizeSearchText(item.code).includes(cleanSearchTerm);
+    const ownerName = getOwnerName(item);
+    const ownerMatch = normalizeSearchText(ownerName).includes(cleanSearchTerm);
+    return codeMatch || ownerMatch;
   });
 
   const handleLogout = async () => {
@@ -628,15 +678,15 @@ function AdminDashboard() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              {/* Campo de Busca por Código */}
-              <div className="relative min-w-[210px] sm:w-60">
+              {/* Campo de Busca por Código ou Proprietário */}
+              <div className="relative min-w-[240px] sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value)}
-                  placeholder="Busca por código"
-                  className="field h-9 pl-9 pr-8 text-xs font-semibold tracking-wider uppercase placeholder:normal-case placeholder:font-normal placeholder:tracking-normal"
+                  placeholder="Busca por código / proprietário"
+                  className="field h-9 pl-9 pr-8 text-xs font-medium placeholder:font-normal placeholder:text-muted-foreground"
                 />
                 {searchCode && (
                   <button
@@ -685,9 +735,9 @@ function AdminDashboard() {
               <Search className="mx-auto size-10 text-muted-foreground/40 mb-3" />
               <p className="text-base font-semibold">Nenhum imóvel encontrado</p>
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-                Não encontramos nenhum imóvel com o código contendo{" "}
-                <span className="font-bold text-foreground font-mono">
-                  "{searchCode.toUpperCase()}"
+                Não encontramos nenhum imóvel com código ou proprietário contendo{" "}
+                <span className="font-bold text-foreground">
+                  "{searchCode}"
                 </span>
                 .
               </p>
@@ -804,6 +854,14 @@ function AdminDashboard() {
                           </span>
                           <span className="hidden sm:inline">•</span>
                           <span className="font-semibold text-foreground whitespace-nowrap">{priceLabel(item)}</span>
+                          {getOwnerName(item) && (
+                            <>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="text-muted-foreground whitespace-nowrap">
+                                Prop.: <strong className="text-foreground font-medium">{getOwnerName(item)}</strong>
+                              </span>
+                            </>
+                          )}
                         </p>
                       </div>
                     </div>
