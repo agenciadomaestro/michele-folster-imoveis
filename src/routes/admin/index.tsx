@@ -27,7 +27,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
 import { toast } from "sonner";
-import { priceLabel, type Property } from "@/lib/realty";
+import { normalizeProperty, priceLabel, type Property } from "@/lib/realty";
 import { getCurrentUserProfile, fetchBrokers } from "@/lib/brokers";
 import { fetchMessages } from "@/lib/messages";
 import { fetchLeads } from "@/lib/leads";
@@ -93,9 +93,9 @@ function AdminDashboard() {
       try {
         const { data, error } = await supabase
           .from("properties")
-          .select("*, property_photos(url, position), property_owners(name)")
+          .select("*, property_photos(url, position)")
           .order("created_at", { ascending: false });
-        if (!error && data) supabaseItems = data as Property[];
+        if (!error && data) supabaseItems = data.map(normalizeProperty);
       } catch (err) {
         console.warn("Aviso ao buscar lista de imóveis:", err);
       }
@@ -130,6 +130,7 @@ function AdminDashboard() {
   }, [propertyOwnersList]);
 
   const getOwnerName = (item: Property): string => {
+    if ((item as any).owner_name) return (item as any).owner_name;
     const mapped = propertyOwnerMap.get(item.id);
     if (mapped) return mapped;
     const joined = (item as any).property_owners;
@@ -137,7 +138,7 @@ function AdminDashboard() {
       if (Array.isArray(joined) && joined[0]?.name) return joined[0].name;
       if (typeof joined === "object" && joined.name) return joined.name;
     }
-    return (item as any).owner_name || "";
+    return "";
   };
 
   const normalizeSearchText = (val: string | null | undefined): string => {
@@ -205,7 +206,8 @@ function AdminDashboard() {
       toast.error("Identificador de imóvel inválido (não é um UUID).");
       return;
     }
-    const nextStatus = property.status === "publicado" ? "rascunho" : "publicado";
+    const isPub = property.status === "publicado" || property.status === "published";
+    const nextStatus = isPub ? "draft" : "published";
     try {
       const { error } = await supabase
         .from("properties")
@@ -575,7 +577,7 @@ function AdminDashboard() {
                 {visibleProperties.length}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {visibleProperties.filter((p) => p.status === "publicado").length} publicados no
+                {visibleProperties.filter((p) => p.status === "publicado" || p.status === "published").length} publicados no
                 site
               </p>
             </div>

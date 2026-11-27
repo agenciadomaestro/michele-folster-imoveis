@@ -4,7 +4,7 @@ import { ArrowLeft, BedDouble, Bath, Car, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPropertyOwner, emptyOwnerDetails } from "@/lib/property-owners";
 import { OwnerDetails } from "@/components/admin/OwnerDetails";
-import { priceLabel, type Property } from "@/lib/realty";
+import { normalizeProperty, priceLabel, type Property } from "@/lib/realty";
 
 const internalPropertyOptions = (id: string) =>
   queryOptions({
@@ -17,7 +17,7 @@ const internalPropertyOptions = (id: string) =>
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) return null;
-      return { property: data as Property, owner: await fetchPropertyOwner(id) };
+      return { property: normalizeProperty(data), owner: await fetchPropertyOwner(id) };
     },
   });
 

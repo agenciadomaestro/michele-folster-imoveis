@@ -20,7 +20,7 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { SearchBox } from "@/components/site/SearchBox";
 import { PropertyCard, CardSkeleton } from "@/components/site/PropertyCard";
 import { supabase } from "@/integrations/supabase/client";
-import { AGENCY, getWhatsappUrl, type Property } from "@/lib/realty";
+import { AGENCY, getWhatsappUrl, normalizeProperty, type Property } from "@/lib/realty";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -55,11 +55,11 @@ function Index() {
         const { data, error } = await supabase
           .from("properties")
           .select("*, property_photos(url, position)")
-          .eq("status", "publicado")
+          .in("status", ["publicado", "published"])
           .order("featured", { ascending: false })
           .order("created_at", { ascending: false });
         if (!error && data) {
-          supabaseItems = data as Property[];
+          supabaseItems = data.map(normalizeProperty);
         }
       } catch (err) {
         console.warn("Aviso ao carregar imóveis do Supabase:", err);
@@ -78,8 +78,8 @@ function Index() {
 
   const filteredProperties = (data || []).filter((p) => {
     if (filterPurpose === "todos") return true;
-    if (filterPurpose === "venda") return p.purpose === "venda" || p.purpose === "ambos";
-    if (filterPurpose === "locacao") return p.purpose === "locacao" || p.purpose === "ambos";
+    if (filterPurpose === "venda") return p.purpose === "venda" || p.purpose === "ambos" || p.purpose === "venda_locacao";
+    if (filterPurpose === "locacao") return p.purpose === "locacao" || p.purpose === "ambos" || p.purpose === "venda_locacao";
     return true;
   });
 

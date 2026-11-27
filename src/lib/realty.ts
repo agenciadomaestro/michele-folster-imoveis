@@ -3,7 +3,65 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type Property = Database["public"]["Tables"]["properties"]["Row"] & {
   property_photos?: { url: string; position: number }[];
+  property_owners?: { name?: string } | { name?: string }[];
+  owner_name?: string | null;
+  owner_phone?: string | null;
+  price?: number | null;
+  sale_price?: number | null;
+  property_type?: string | null;
+  type?: string | null;
+  parking_spaces?: number | null;
+  parking?: number | null;
+  built_area?: number | null;
+  area_built?: number | null;
+  useful_area?: number | null;
+  area_useful?: number | null;
+  total_area?: number | null;
+  area_land?: number | null;
+  amenities?: string[] | null;
+  features?: string[] | null;
+  iptu_fee?: number | null;
+  iptu?: number | null;
+  street?: string | null;
+  address?: string | null;
 };
+
+export function normalizeProperty(raw: any): Property {
+  if (!raw) return raw;
+  const sale = raw.sale_price ?? raw.price ?? null;
+  const propType = raw.type ?? raw.property_type ?? "Outros";
+  const pSpaces = raw.parking ?? raw.parking_spaces ?? null;
+  const bArea = raw.area_built ?? raw.built_area ?? null;
+  const uArea = raw.area_useful ?? raw.useful_area ?? bArea;
+  const tArea = raw.area_land ?? raw.total_area ?? null;
+  const feats = raw.features ?? raw.amenities ?? [];
+  const tax = raw.iptu ?? raw.iptu_fee ?? null;
+  const addr = raw.address ?? raw.street ?? null;
+  const st = (raw.status === "published" || raw.status === "publicado") ? "publicado" : raw.status;
+
+  return {
+    ...raw,
+    sale_price: sale,
+    price: sale,
+    type: propType,
+    property_type: propType,
+    parking: pSpaces,
+    parking_spaces: pSpaces,
+    area_built: bArea,
+    built_area: bArea,
+    area_useful: uArea,
+    useful_area: uArea,
+    area_land: tArea,
+    total_area: tArea,
+    features: Array.isArray(feats) ? feats : [],
+    amenities: Array.isArray(feats) ? feats : [],
+    iptu: tax,
+    iptu_fee: tax,
+    address: addr,
+    street: addr,
+    status: st,
+  };
+}
 
 export const AGENCY = {
   name: "Michele Folster",
@@ -66,9 +124,10 @@ export const brl = (v?: number | null) =>
     ? ""
     : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-export function priceLabel(p: Pick<Property, "sale_price" | "rent_price" | "purpose">) {
+export function priceLabel(p: Pick<Property, "sale_price" | "rent_price" | "purpose"> & { price?: number | null }) {
   if (p.purpose === "locacao" && p.rent_price) return `${brl(p.rent_price)}/mês`;
-  if (p.sale_price) return brl(p.sale_price);
+  const sale = p.sale_price ?? p.price;
+  if (sale) return brl(sale);
   if (p.rent_price) return `${brl(p.rent_price)}/mês`;
   return "Consulte";
 }
@@ -173,18 +232,20 @@ export async function searchProperties(f: SearchFilters) {
     const { data, error } = await supabase
       .from("properties")
       .select("*, property_photos(url, position)")
-      .eq("status", "publicado")
+      .in("status", ["publicado", "published"])
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
     if (!error && data) {
-      supabaseItems = data as Property[];
+      supabaseItems = data.map(normalizeProperty);
     }
   } catch (err) {
     console.warn("Aviso ao buscar propriedades do Supabase:", err);
   }
 
   // Imóveis ativos diretamente do banco de dados Supabase
-  const allProperties = supabaseItems.filter((p) => p.status === "publicado");
+  const allProperties = supabaseItems.filter(
+    (p) => p.status === "publicado" || p.status === "published",
+  );
 
   // Aplica filtros sobre a lista completa do Supabase
   let filtered = allProperties;
@@ -194,13 +255,19 @@ export async function searchProperties(f: SearchFilters) {
     filtered = filtered.filter((p) => p.code?.toUpperCase().includes(codeTerm));
   }
   if (f.purpose === "venda") {
-    filtered = filtered.filter((p) => p.purpose === "venda" || p.purpose === "ambos");
+    filtered = filtered.filter(
+      (p) => p.purpose === "venda" || p.purpose === "ambos" || p.purpose === "venda_locacao",
+    );
   }
   if (f.purpose === "locacao") {
-    filtered = filtered.filter((p) => p.purpose === "locacao" || p.purpose === "ambos");
+    filtered = filtered.filter(
+      (p) => p.purpose === "locacao" || p.purpose === "ambos" || p.purpose === "venda_locacao",
+    );
   }
   if (f.type) {
-    filtered = filtered.filter((p) => p.type === f.type);
+    filtered = filtered.filter(
+      (p) => p.type === f.type || (p as any).property_type === f.type,
+    );
   }
   if (f.city) {
     const cityTerm = strip(f.city);
@@ -217,23 +284,29 @@ export async function searchProperties(f: SearchFilters) {
     filtered = filtered.filter((p) => (p.bathrooms ?? 0) >= f.bathrooms!);
   }
   if (f.parking) {
-    filtered = filtered.filter((p) => (p.parking ?? 0) >= f.parking!);
+    filtered = filtered.filter(
+      (p) => (p.parking ?? p.parking_spaces ?? 0) >= f.parking!,
+    );
   }
 
   const priceProp = f.purpose === "locacao" ? "rent_price" : "sale_price";
   if (f.minPrice) {
-    filtered = filtered.filter((p) => (p[priceProp] ?? 0) >= f.minPrice!);
+    filtered = filtered.filter((p) => (p[priceProp] ?? p.price ?? 0) >= f.minPrice!);
   }
   if (f.maxPrice) {
-    filtered = filtered.filter((p) => (p[priceProp] ?? 0) <= f.maxPrice!);
+    filtered = filtered.filter((p) => (p[priceProp] ?? p.price ?? 0) <= f.maxPrice!);
   }
   if (f.minArea) {
     filtered = filtered.filter(
-      (p) => (p.area_built ?? 0) >= f.minArea! || (p.area_land ?? 0) >= f.minArea!,
+      (p) =>
+        (p.area_built ?? p.built_area ?? 0) >= f.minArea! ||
+        (p.area_land ?? p.total_area ?? 0) >= f.minArea!,
     );
   }
   if (f.maxArea) {
-    filtered = filtered.filter((p) => (p.area_built ?? 0) <= f.maxArea!);
+    filtered = filtered.filter(
+      (p) => (p.area_built ?? p.built_area ?? 0) <= f.maxArea!,
+    );
   }
   if (f.q) {
     const term = strip(f.q);
@@ -249,9 +322,9 @@ export async function searchProperties(f: SearchFilters) {
 
   // Ordenação
   if (f.sort === "menor") {
-    filtered.sort((a, b) => (a[priceProp] ?? 0) - (b[priceProp] ?? 0));
+    filtered.sort((a, b) => ((a[priceProp] ?? a.price) || 0) - ((b[priceProp] ?? b.price) || 0));
   } else if (f.sort === "maior") {
-    filtered.sort((a, b) => (b[priceProp] ?? 0) - (a[priceProp] ?? 0));
+    filtered.sort((a, b) => ((b[priceProp] ?? b.price) || 0) - ((a[priceProp] ?? a.price) || 0));
   } else {
     filtered.sort((a, b) => {
       if (a.featured && !b.featured) return -1;
@@ -272,15 +345,17 @@ export async function fetchLocations() {
     const { data, error } = await supabase
       .from("properties")
       .select("city, neighborhood, state, status")
-      .eq("status", "publicado");
+      .in("status", ["publicado", "published"]);
     if (!error && data) {
-      supabaseItems = data as Property[];
+      supabaseItems = data.map(normalizeProperty);
     }
   } catch (err) {
     console.warn("Aviso ao buscar localidades:", err);
   }
 
-  const allProperties = supabaseItems.filter((p) => p.status === "publicado");
+  const allProperties = supabaseItems.filter(
+    (p) => p.status === "publicado" || p.status === "published",
+  );
   const cities = Array.from(
     new Set(allProperties.map((d) => d.city).filter(Boolean) as string[]),
   ).sort();

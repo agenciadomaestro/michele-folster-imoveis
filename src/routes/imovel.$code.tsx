@@ -26,6 +26,7 @@ import {
   priceLabel,
   PURPOSE_LABEL,
   getWhatsappUrl,
+  normalizeProperty,
   type Property,
 } from "@/lib/realty";
 import { useSiteAnalytics } from "@/hooks/use-site-analytics";
@@ -86,7 +87,7 @@ function PropertyPage() {
           .select("*, property_photos(url, position)")
           .ilike("code", code)
           .maybeSingle();
-        if (!error && data) return data as Property;
+        if (!error && data) return normalizeProperty(data);
       } catch (err) {
         console.warn("Aviso ao buscar detalhes do imóvel no Supabase:", err);
       }
@@ -108,10 +109,10 @@ function PropertyPage() {
         const { data } = await supabase
           .from("properties")
           .select("*, property_photos(url, position)")
-          .eq("status", "publicado")
+          .in("status", ["publicado", "published"])
           .neq("id", p!.id)
           .limit(3);
-        if (data) supabaseItems = data as Property[];
+        if (data) supabaseItems = data.map(normalizeProperty);
       } catch {}
       return supabaseItems;
     },
