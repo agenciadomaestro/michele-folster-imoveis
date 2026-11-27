@@ -32,15 +32,11 @@ function createSupabaseFetch(supabaseUrl: string, supabaseKey: string): typeof f
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
-    // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (
-      isNewSupabaseApiKey(supabaseKey) &&
-      headers.get("Authorization") === `Bearer ${supabaseKey}`
-    ) {
-      headers.delete("Authorization");
+    headers.set("apikey", supabaseKey);
+    if (!headers.has("Authorization") || !headers.get("Authorization")) {
+      headers.set("Authorization", `Bearer ${supabaseKey}`);
     }
 
-    headers.set("apikey", supabaseKey);
     if (serverUrl) {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.startsWith(`${publicUrl}/`)) {
@@ -58,27 +54,57 @@ export const DEFAULT_SUPABASE_URL = "https://ihihkkapaeajoisqiywz.supabase.co";
 export const DEFAULT_SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_5ANGFJpfPtfu-f_fXINuQg_AipeZwly";
 
+export function resolveApiKey(rawKey?: string | null): string {
+  if (!rawKey) return DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+  const key = rawKey.trim();
+  // Fix known typo if entered in Vercel environment variables:
+  if (
+    key === "sb_publishable_5ANGFJpfPtfu-f_fXiNuQg_AipeZwiy" ||
+    key.includes("XiNuQg_AipeZwiy")
+  ) {
+    return DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+  }
+  return key;
+}
+
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  // Support standard variable names: VITE_SUPABASE_URL, SUPABASE_URL, NEXT_PUBLIC_SUPABASE_URL
+  // Support both direct literal access (for Vite build-time inlining) and process.env fallback
+  const metaUrl =
+    (typeof import.meta !== "undefined" &&
+      import.meta.env &&
+      (import.meta.env.VITE_SUPABASE_URL ||
+        import.meta.env["VITE_SUPABASE_URL"] ||
+        import.meta.env.NEXT_PUBLIC_SUPABASE_URL)) ||
+    undefined;
+
+  // Accept VITE_SUPABASE_PUBLISHABLE_KEY || VITE_SUPABASE_ANON_KEY
+  const metaKey =
+    (typeof import.meta !== "undefined" &&
+      import.meta.env &&
+      (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+        import.meta.env.VITE_SUPABASE_ANON_KEY ||
+        import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+        import.meta.env["VITE_SUPABASE_ANON_KEY"] ||
+        import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) ||
+    undefined;
+
   const SUPABASE_URL =
-    import.meta.env?.["VITE_SUPABASE_URL"] ||
-    process.env?.["SUPABASE_URL"] ||
+    metaUrl ||
     process.env?.["VITE_SUPABASE_URL"] ||
+    process.env?.["SUPABASE_URL"] ||
     process.env?.["NEXT_PUBLIC_SUPABASE_URL"] ||
     DEFAULT_SUPABASE_URL;
 
-  // Support standard variable names: VITE_SUPABASE_PUBLISHABLE_KEY, VITE_SUPABASE_ANON_KEY, SUPABASE_ANON_KEY, etc.
-  const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env?.["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-    import.meta.env?.["VITE_SUPABASE_ANON_KEY"] ||
-    process.env?.["SUPABASE_PUBLISHABLE_KEY"] ||
+  const rawKey =
+    metaKey ||
     process.env?.["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
     process.env?.["VITE_SUPABASE_ANON_KEY"] ||
+    process.env?.["SUPABASE_PUBLISHABLE_KEY"] ||
     process.env?.["SUPABASE_ANON_KEY"] ||
     process.env?.["NEXT_PUBLIC_SUPABASE_ANON_KEY"] ||
     DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+
+  const SUPABASE_PUBLISHABLE_KEY = resolveApiKey(rawKey);
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {

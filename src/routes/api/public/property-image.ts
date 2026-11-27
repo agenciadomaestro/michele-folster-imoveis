@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { resolveApiKey, DEFAULT_SUPABASE_URL } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/api/public/property-image")({
   server: {
     handlers: {
@@ -8,17 +9,17 @@ export const Route = createFileRoute("/api/public/property-image")({
         const path = new URL(request.url).searchParams.get("path");
         if (!path || !/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/i.test(path))
           return new Response("Not found", { status: 404 });
-        const key =
-          process.env["SUPABASE_PUBLISHABLE_KEY"] ||
-          (import.meta as any).env?.["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-          (import.meta as any).env?.["VITE_SUPABASE_ANON_KEY"] ||
-          process.env["VITE_SUPABASE_ANON_KEY"] ||
+        const key = resolveApiKey(
           process.env["SUPABASE_ANON_KEY"] ||
-          "sb_publishable_5ANGFJpfPtfu-f_fXINuQg_AipeZwly";
+          process.env["VITE_SUPABASE_ANON_KEY"] ||
+          (import.meta as any).env?.["VITE_SUPABASE_ANON_KEY"] ||
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+          (import.meta as any).env?.["VITE_SUPABASE_PUBLISHABLE_KEY"],
+        );
         const url =
           process.env["SUPABASE_URL"] ||
           (import.meta as any).env?.["VITE_SUPABASE_URL"] ||
-          "https://ihihkkapaeajoisqiywz.supabase.co";
+          DEFAULT_SUPABASE_URL;
         const publicClient = createClient<Database>(url, key, {
           auth: { persistSession: false },
           global: {

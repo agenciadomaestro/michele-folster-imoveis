@@ -293,7 +293,9 @@ export async function searchProperties(f: SearchFilters) {
       .in("status", ["publicado", "published"])
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
-    if (!error && data) {
+    if (error) {
+      console.error("Erro ao buscar propriedades do Supabase:", error);
+    } else if (data) {
       supabaseItems = data.map(normalizeProperty);
     }
   } catch (err) {
@@ -404,7 +406,9 @@ export async function fetchLocations() {
       .from("properties")
       .select("city, neighborhood, state, status")
       .in("status", ["publicado", "published"]);
-    if (!error && data) {
+    if (error) {
+      console.error("Erro ao buscar propriedades do Supabase:", error);
+    } else if (data) {
       supabaseItems = data.map(normalizeProperty);
     }
   } catch (err) {
