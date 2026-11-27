@@ -32,7 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadPropertyPhoto } from "@/lib/image-upload";
 import { getCurrentUserProfile } from "@/lib/brokers";
 import { Button } from "@/components/ui/button";
-import { PROPERTY_TYPES, brl, resolvePhotoUrl, type Property } from "@/lib/realty";
+import { PROPERTY_TYPES, brl, resolvePhotoUrl, normalizeProperty, type Property } from "@/lib/realty";
 import { emptyOwnerDetails, fetchPropertyOwner, savePropertyOwner } from "@/lib/property-owners";
 import { OwnerDetails } from "@/components/admin/OwnerDetails";
 
@@ -196,7 +196,11 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
             .select("*, property_photos(id, url, position, caption, storage_path)")
             .eq("id", currentId)
             .maybeSingle();
-          if (!error && data) prop = data as Property;
+          if (error) {
+            console.error("Erro ao buscar detalhes do imóvel no Supabase:", error);
+          } else if (data) {
+            prop = normalizeProperty(data);
+          }
         } catch (err) {
           console.warn("Aviso ao buscar detalhes do imóvel no Supabase:", err);
         }
@@ -206,67 +210,85 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           navigate({ to: "/admin" });
           return;
         }
+
         setTitle(prop.title || "");
         setPurpose((prop.purpose as never) || "venda");
-        setType(prop.type || "Casa");
+        setType(prop.property_type || prop.type || "Casa");
         setCode(prop.code || "");
-        setSalePrice(prop.sale_price ?? "");
+        setSalePrice(prop.price ?? prop.sale_price ?? "");
         setRentPrice(prop.rent_price ?? "");
         setCondoFee(prop.condo_fee ?? "");
-        setIptu(prop.iptu ?? "");
+        setIptu(prop.iptu_fee ?? prop.iptu ?? "");
         setDescription(prop.description || "");
         setFeatured(Boolean(prop.featured));
+
         const ownerDetails = await fetchPropertyOwner(currentId);
         setOwner(ownerDetails ?? { ...emptyOwnerDetails });
 
-        // Location
+        // Location & Address
         setCity(prop.city || "Caçapava");
         setState(prop.state || "SP");
         setNeighborhood(prop.neighborhood || "");
         setShowAddress(Boolean(prop.show_address));
 
-        // Attempt parsing address if it contains street, number, CEP
-        if (prop.address) {
+        let streetVal = prop.street || "";
+        let numVal = (prop as any).street_number || "";
+        let compVal = (prop as any).complement || "";
+        let cepVal = (prop as any).zip_code ? formatCep((prop as any).zip_code) : "";
+
+        if (!streetVal && prop.address) {
           const parts = prop.address.split(" - ");
           const streetAndNum = parts[0] || "";
           const numMatch = streetAndNum.match(/(.*?),\s*(\d+.*)/);
           if (numMatch) {
-            setStreet(numMatch[1]?.trim() || "");
-            setNumber(numMatch[2]?.trim() || "");
+            streetVal = numMatch[1]?.trim() || "";
+            numVal = numMatch[2]?.trim() || "";
           } else {
-            setStreet(streetAndNum);
+            streetVal = streetAndNum;
           }
           if (parts[1] && !parts[1].startsWith("CEP:")) {
-            setComplement(parts[1].trim());
+            compVal = parts[1].trim();
           }
-          const cepPart = parts.find((p) => p.startsWith("CEP:"));
+          const cepPart = parts.find((p: string) => p.startsWith("CEP:"));
           if (cepPart) {
-            setCep(cepPart.replace("CEP:", "").trim());
+            cepVal = formatCep(cepPart.replace("CEP:", "").trim());
+          }
+        } else if (streetVal && !numVal) {
+          const numMatch = streetVal.match(/^(.*?),\s*(?:nº|n°|num|n|numero)?\s*(\d+.*)$/i);
+          if (numMatch) {
+            streetVal = numMatch[1]?.trim() || streetVal;
+            numVal = numMatch[2]?.trim() || "";
           }
         }
 
+        setStreet(streetVal);
+        setNumber(numVal);
+        setComplement(compVal);
+        setCep(cepVal);
+
         // Features & dimensions
-        setAreaUseful(prop.area_useful ?? "");
-        setAreaLand(prop.area_land ?? "");
+        setAreaUseful(prop.useful_area ?? prop.built_area ?? prop.area_useful ?? "");
+        setAreaLand(prop.total_area ?? prop.area_land ?? "");
         setBedrooms(prop.bedrooms ?? "");
         setSuites(prop.suites ?? "");
         setBathrooms(prop.bathrooms ?? "");
-        setParking(prop.parking ?? "");
-        setSelectedFeatures(prop.features || []);
+        setParking(prop.parking_spaces ?? prop.parking ?? "");
+        setSelectedFeatures(
+          Array.isArray(prop.amenities) && prop.amenities.length > 0
+            ? prop.amenities
+            : Array.isArray(prop.features)
+              ? prop.features
+              : [],
+        );
 
         // Photos
         if (prop.property_photos && prop.property_photos.length > 0) {
           const sorted = [...prop.property_photos].sort((a, b) => a.position - b.position);
           setPhotos(
             sorted.map((p) => ({
-              id: (p as unknown as { id: string; caption?: string | null; storage_path: string })
-                .id,
-              caption:
-                (p as unknown as { id: string; caption?: string | null; storage_path: string })
-                  .caption ?? "",
-              storage_path: (
-                p as unknown as { id: string; caption?: string | null; storage_path: string }
-              ).storage_path,
+              id: (p as any).id,
+              caption: (p as any).caption ?? "",
+              storage_path: (p as any).storage_path ?? null,
               url: resolvePhotoUrl(p.url, (p as any).storage_path),
               previewUrl: resolvePhotoUrl(p.url, (p as any).storage_path),
             })),
@@ -500,38 +522,45 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
       const finalSlug = generateSlug(title, code);
 
       const validUserId = currentUser.id;
-      // Monta os campos obrigatórios e opcionais do imóvel
+      const targetStatus = chosenStatus === "publicado" ? "published" : "draft";
+
+      // Monta os campos correspondentes às colunas reais da tabela properties
       const basePropertyPayload = {
         title: title.trim() || "Imóvel Sem Título",
         purpose: purpose || "venda",
-        type: type.trim() || "Casa",
+        property_type: type.trim() || "Casa",
         code: code.trim().toUpperCase() || generateCode(type || "Casa"),
         slug: finalSlug || generateSlug(title || "imovel", code),
         city: city.trim() || "Caçapava",
         state: state.trim().toUpperCase() || "SP",
         neighborhood: neighborhood.trim() || null,
+        street: street.trim() || null,
+        street_number: number.trim() || null,
+        complement: complement.trim() || null,
+        zip_code: cep.replace(/\D/g, "") || null,
         address: formattedAddress || null,
         show_address: Boolean(showAddress),
         description: description.trim() || null,
-        sale_price: salePrice !== "" ? Number(salePrice) : null,
+        price: salePrice !== "" ? Number(salePrice) : null,
         rent_price: rentPrice !== "" ? Number(rentPrice) : null,
         condo_fee: condoFee !== "" ? Number(condoFee) : null,
-        iptu: iptu !== "" ? Number(iptu) : null,
+        iptu_fee: iptu !== "" ? Number(iptu) : null,
         bedrooms: bedrooms !== "" ? Number(bedrooms) : null,
         suites: suites !== "" ? Number(suites) : null,
         bathrooms: bathrooms !== "" ? Number(bathrooms) : null,
-        parking: parking !== "" ? Number(parking) : null,
-        area_useful: areaUseful !== "" ? Number(areaUseful) : null,
-        area_land: areaLand !== "" ? Number(areaLand) : null,
-        area_built: areaUseful !== "" ? Number(areaUseful) : null,
-        features: selectedFeatures || [],
-        status: "rascunho",
+        parking_spaces: parking !== "" ? Number(parking) : null,
+        useful_area: areaUseful !== "" ? Number(areaUseful) : null,
+        built_area: areaUseful !== "" ? Number(areaUseful) : null,
+        total_area: areaLand !== "" ? Number(areaLand) : null,
+        amenities: selectedFeatures || [],
+        owner_name: owner.name.trim() || null,
+        owner_phone: owner.phone.trim() || null,
+        status: targetStatus,
         featured: Boolean(featured),
-
         updated_at: new Date().toISOString(),
       };
 
-      // 1. Cadastra ou atualiza o imóvel na tabela properties e aguarda resposta positiva
+      // 1. Cadastra ou atualiza o imóvel na tabela properties
       setProgressMessage("Salvando dados do imóvel...");
       let propertyDbId: string = "";
 
@@ -544,9 +573,7 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           .single();
 
         if (updateError) {
-          console.error("Erro ao salvar no Supabase:", updateError.message);
-          toast.error(`Falha ao salvar imóvel: ${updateError.message}`);
-          return;
+          throw new Error(`Falha ao salvar imóvel no Supabase: ${updateError.message}`);
         }
 
         propertyDbId = updatedProp?.id || persistedId;
@@ -555,11 +582,6 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           .from("properties")
           .insert({
             ...basePropertyPayload,
-            code: basePropertyPayload.code,
-            slug: basePropertyPayload.slug,
-            title: basePropertyPayload.title,
-            type: basePropertyPayload.type,
-            city: basePropertyPayload.city,
             created_by: validUserId,
             broker_id: validUserId,
           })
@@ -567,24 +589,26 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
           .single();
 
         if (insertError) {
-          console.error("Erro ao cadastrar imóvel no Supabase:", insertError.message);
-          toast.error(`Falha ao cadastrar imóvel: ${insertError.message}`);
-          return;
+          throw new Error(`Falha ao cadastrar imóvel no Supabase: ${insertError.message}`);
         }
 
         if (!newProp?.id) {
-          console.error("Supabase não retornou a chave primária UUID do imóvel.");
-          toast.error("Erro: chave primária do imóvel não retornada pelo banco.");
-          return;
+          throw new Error("Erro: chave primária do imóvel não retornada pelo banco.");
         }
 
         propertyDbId = newProp.id;
         setPersistedId(newProp.id);
       }
 
-      // Keep the returned property ID for retries after an image failure.
+      // 2. Salva dados confidenciais do proprietário
       setProgressMessage("Salvando dados do proprietário...");
-      await savePropertyOwner(propertyDbId, owner);
+      try {
+        await savePropertyOwner(propertyDbId, owner);
+      } catch (ownerErr: any) {
+        console.warn("Aviso ao salvar proprietário:", ownerErr);
+      }
+
+      // 3. Salva fotos na galeria (sem reenviar fotos que já estão no Storage)
       setProgressMessage("Salvando fotos...");
       const photoRecords: {
         id: string;
@@ -593,62 +617,87 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
         storage_path: string | null;
         caption: string;
         position: number;
+        is_cover: boolean;
       }[] = [];
+
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
         if (!photo) continue;
-        const uploaded = photo.file
-          ? await uploadPropertyPhoto(propertyDbId, photo.file)
-          : { url: photo.url, storage_path: photo.storage_path ?? null };
+
+        let url = photo.url;
+        let storage_path = photo.storage_path ?? null;
+
+        if (photo.file) {
+          setProgressMessage(`Enviando foto ${i + 1} de ${photos.length}...`);
+          const uploaded = await uploadPropertyPhoto(propertyDbId, photo.file);
+          url = uploaded.url;
+          storage_path = uploaded.storage_path;
+        }
+
         photoRecords.push({
           id: photo.id,
           property_id: propertyDbId,
-          ...uploaded,
+          url,
+          storage_path,
           caption: photo.caption ?? "",
           position: i,
+          is_cover: i === 0,
         });
-        if (photo.file)
+
+        if (photo.file) {
           setPhotos((previous) =>
             previous.map((item) =>
-              item.id === photo.id ? { ...item, ...uploaded, file: undefined } : item,
+              item.id === photo.id ? { ...item, url, storage_path, file: undefined } : item,
             ),
           );
+        }
       }
+
       if (photoRecords.length) {
-        const { error } = await supabase.from("property_photos").upsert(photoRecords);
-        if (error) throw new Error(error.message);
+        setProgressMessage("Atualizando galeria...");
+        const { error: photoErr } = await supabase.from("property_photos").upsert(photoRecords);
+        if (photoErr) throw new Error(`Falha ao salvar fotos: ${photoErr.message}`);
       }
+
       const { data: existingPhotos, error: listError } = await supabase
         .from("property_photos")
         .select("id,storage_path")
         .eq("property_id", propertyDbId);
-      if (listError) throw new Error(listError.message);
-      const removed = (existingPhotos ?? []).filter(
-        (photo) => !photoRecords.some((item) => item.id === photo.id),
-      );
-      if (removed.length) {
-        const paths = removed.flatMap((photo) => (photo.storage_path ? [photo.storage_path] : []));
-        if (paths.length) {
-          const { error } = await supabase.storage.from("property-images").remove(paths);
-          if (error) throw new Error(error.message);
+
+      if (listError) {
+        console.warn("Aviso ao consultar fotos existentes:", listError.message);
+      } else if (existingPhotos) {
+        const removed = existingPhotos.filter(
+          (photo) => !photoRecords.some((item) => item.id === photo.id),
+        );
+        if (removed.length > 0) {
+          const paths = removed.flatMap((photo) => (photo.storage_path ? [photo.storage_path] : []));
+          if (paths.length > 0) {
+            try {
+              await supabase.storage.from("property-images").remove(paths);
+            } catch (storageErr) {
+              console.warn("Aviso ao remover fotos do Storage:", storageErr);
+            }
+          }
+          const { error: delError } = await supabase
+            .from("property_photos")
+            .delete()
+            .in(
+              "id",
+              removed.map((photo) => photo.id),
+            );
+          if (delError) {
+            console.warn("Aviso ao remover registros de fotos:", delError.message);
+          }
         }
-        const { error } = await supabase
-          .from("property_photos")
-          .delete()
-          .in(
-            "id",
-            removed.map((photo) => photo.id),
-          );
-        if (error) throw new Error(error.message);
       }
 
+      // Garante status final no banco
       const { error: publicationError } = await supabase
         .from("properties")
-        .update({ status: chosenStatus })
-        .eq("id", propertyDbId)
-        .select("id")
-        .single();
-      if (publicationError) throw new Error(publicationError.message);
+        .update({ status: targetStatus, updated_at: new Date().toISOString() })
+        .eq("id", propertyDbId);
+      if (publicationError) throw new Error(`Falha ao definir status: ${publicationError.message}`);
 
       // Força a invalidação e recarregamento imediato das queries de catálogo
       await Promise.all([
