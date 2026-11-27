@@ -21,6 +21,8 @@ supabase/.temp/
 .temp/
 .wrangler/
 .dev.vars
+.env.migration
+scripts/
 
 # Editor directories and files
 .vscode/*
