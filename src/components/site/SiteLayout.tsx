@@ -33,11 +33,15 @@ export function Logo({ light = false }: { light?: boolean }) {
     <Link to="/" className="group flex items-center gap-3 transition-opacity hover:opacity-90">
       <div className="relative size-10 shrink-0 rounded-full bg-secondary shadow-soft transition-transform group-hover:scale-105">
         <img
-          src={portrait.url}
+          src={portrait.url || "/michele-folster.jpg"}
           alt="Michele Folster"
           width={40}
           height={40}
           className="size-full rounded-full object-cover"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src =
+              "https://ihihkkapaeajoisqiywz.supabase.co/storage/v1/object/public/property-images/avatars/michele-folster.jpg";
+          }}
         />
         {isOpen && (
           <span

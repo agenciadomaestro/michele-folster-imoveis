@@ -37,6 +37,9 @@ export function resolvePhotoUrl(rawUrl?: string | null, storagePath?: string | n
     (typeof process !== "undefined" &&
       process.env?.["SUPABASE_URL"] &&
       `${process.env["SUPABASE_URL"].replace(/\/+$/, "")}/storage/v1/object/public/property-images`) ||
+    (typeof process !== "undefined" &&
+      process.env?.["VITE_SUPABASE_URL"] &&
+      `${process.env["VITE_SUPABASE_URL"].replace(/\/+$/, "")}/storage/v1/object/public/property-images`) ||
     DEFAULT_STORAGE_BASE;
 
   if (storagePath) {
