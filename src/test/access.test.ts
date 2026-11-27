@@ -13,6 +13,12 @@ describe("Staff access", () => {
     expect(resolveStaffRole(["admin"])).toBe("admin");
     expect(staffPermissions("admin").pode_ver_ofertas_gerais).toBe(true);
   });
+  it("gives manager role GESTOR permissions", () => {
+    expect(resolveStaffRole(["manager"])).toBe("manager");
+    expect(staffPermissions("manager").pode_ver_ofertas_gerais).toBe(true);
+    expect(staffPermissions("manager").pode_cadastrar_imovel).toBe(true);
+    expect(staffPermissions("manager").pode_ver_captacoes).toBe(true);
+  });
   it("denies property creation without the broker permission", () => {
     expect(staffPermissions("corretor").pode_cadastrar_imovel).toBe(false);
     expect(

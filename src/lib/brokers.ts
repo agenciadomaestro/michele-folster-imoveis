@@ -121,9 +121,11 @@ export async function getCurrentUserProfile() {
     roleLabel:
       broker.role === "super_admin"
         ? "Master Agência — Super Admin"
-        : broker.role === "admin"
-          ? "Gestora / Administradora"
-          : "Corretor(a)",
+        : broker.role === "manager"
+          ? "GESTOR"
+          : broker.role === "admin"
+            ? "GESTORA / ADMINISTRADORA"
+            : "Corretor(a)",
     isSuperAdmin: broker.role === "super_admin",
     isAdmin: broker.role !== "corretor",
     isBroker: broker.role === "corretor",

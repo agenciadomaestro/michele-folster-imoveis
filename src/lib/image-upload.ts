@@ -58,5 +58,6 @@ export async function uploadPropertyPhoto(propertyId: string, file: File) {
     .from("property-images")
     .upload(path, blob, { contentType: "image/webp", upsert: false });
   if (error) throw new Error(error.message);
-  return { storage_path: path, url: `/api/public/property-image?path=${encodeURIComponent(path)}` };
+  const { data: publicUrlData } = supabase.storage.from("property-images").getPublicUrl(path);
+  return { storage_path: path, url: publicUrlData.publicUrl };
 }

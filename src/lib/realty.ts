@@ -26,6 +26,49 @@ export type Property = Database["public"]["Tables"]["properties"]["Row"] & {
   address?: string | null;
 };
 
+export const DEFAULT_STORAGE_BASE = "https://ihihkkapaeajoisqiywz.supabase.co/storage/v1/object/public/property-images";
+
+export function resolvePhotoUrl(rawUrl?: string | null, storagePath?: string | null): string {
+  if (!rawUrl && !storagePath) return "";
+  const baseUrl =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any).env?.["VITE_SUPABASE_URL"] &&
+      `${(import.meta as any).env["VITE_SUPABASE_URL"].replace(/\/+$/, "")}/storage/v1/object/public/property-images`) ||
+    (typeof process !== "undefined" &&
+      process.env?.["SUPABASE_URL"] &&
+      `${process.env["SUPABASE_URL"].replace(/\/+$/, "")}/storage/v1/object/public/property-images`) ||
+    DEFAULT_STORAGE_BASE;
+
+  if (storagePath) {
+    const cleanPath = storagePath.replace(/^\/+/, "");
+    return `${baseUrl}/${cleanPath}`;
+  }
+
+  const str = (rawUrl || "").trim();
+  if (!str) return "";
+
+  if (str.includes("/api/public/property-image") || str.includes("path=")) {
+    const match = str.match(/path=([^&]+)/);
+    if (match?.[1]) {
+      const decoded = decodeURIComponent(match[1]).replace(/^\/+/, "");
+      return `${baseUrl}/${decoded}`;
+    }
+  }
+
+  if (str.includes("qqpscxedaj1getvthxiv.supabase.co") || str.includes("qqpscxedajlgeivthxhv.supabase.co")) {
+    return str.replace(
+      /qqpscxedaj[1l]ge[it]vthx[ih]v\.supabase\.co/g,
+      "ihihkkapaeajoisqiywz.supabase.co",
+    );
+  }
+
+  if (str.startsWith("http://") || str.startsWith("https://")) {
+    return str;
+  }
+
+  return `${baseUrl}/${str.replace(/^\/+/, "")}`;
+}
+
 export function normalizeProperty(raw: any): Property {
   if (!raw) return raw;
   const sale = raw.sale_price ?? raw.price ?? null;
@@ -38,6 +81,13 @@ export function normalizeProperty(raw: any): Property {
   const tax = raw.iptu ?? raw.iptu_fee ?? null;
   const addr = raw.address ?? raw.street ?? null;
   const st = (raw.status === "published" || raw.status === "publicado") ? "publicado" : raw.status;
+
+  const photos = Array.isArray(raw.property_photos)
+    ? raw.property_photos.map((ph: any) => ({
+        ...ph,
+        url: resolvePhotoUrl(ph.url, ph.storage_path),
+      }))
+    : raw.property_photos;
 
   return {
     ...raw,
@@ -60,6 +110,7 @@ export function normalizeProperty(raw: any): Property {
     address: addr,
     street: addr,
     status: st,
+    property_photos: photos,
   };
 }
 
@@ -132,8 +183,12 @@ export function priceLabel(p: Pick<Property, "sale_price" | "rent_price" | "purp
   return "Consulte";
 }
 
-export const coverOf = (p: Property) =>
-  [...(p.property_photos ?? [])].sort((a, b) => a.position - b.position)[0]?.url;
+export const coverOf = (p: Property) => {
+  const sorted = [...(p.property_photos ?? [])].sort((a, b) => a.position - b.position);
+  const first = sorted[0];
+  if (!first) return undefined;
+  return resolvePhotoUrl(first.url, (first as any).storage_path);
+};
 
 export type SearchFilters = {
   q?: string | undefined;

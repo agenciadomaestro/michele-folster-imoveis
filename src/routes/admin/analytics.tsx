@@ -20,7 +20,7 @@ import { Logo } from "@/components/site/SiteLayout";
 import { getCurrentUserProfile } from "@/lib/brokers";
 import { fetchAnalyticsData, formatDuration, type PeriodFilter } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
-import { priceLabel, type Property } from "@/lib/realty";
+import { priceLabel, resolvePhotoUrl, type Property } from "@/lib/realty";
 
 export const Route = createFileRoute("/admin/analytics")({
   head: () => ({
@@ -95,6 +95,8 @@ function AnalyticsDashboardPage() {
   const isAuthorized =
     userProfile?.role === "super_admin" ||
     userProfile?.role === "admin" ||
+    userProfile?.role === "manager" ||
+    userProfile?.isAdmin === true ||
     userProfile?.isSuperAdmin === true;
 
   // 2. Query de Métricas de Audiência
@@ -427,7 +429,7 @@ function AnalyticsDashboardPage() {
               {rankedProperties.length > 0 ? (
                 rankedProperties.slice(0, 8).map((item, index) => {
                   const prop = item.property;
-                  const photo = prop?.property_photos?.[0]?.url;
+                  const photo = resolvePhotoUrl(prop?.property_photos?.[0]?.url);
                   const code = prop?.code || "—";
                   const title = prop?.title || `Imóvel ${code}`;
                   const location = prop ? `${prop.neighborhood || ""}, ${prop.city || ""}` : "—";

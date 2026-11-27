@@ -90,7 +90,7 @@ function LeadsManagementPage() {
   const isAdmin = currentUser?.isAdmin ?? false;
   const currentUserId = currentUser?.id;
   const currentUserName = currentUser?.name || "Michele Folster";
-  const currentUserRoleLabel = currentUser?.roleLabel || "Gestora/Administradora";
+  const currentUserRoleLabel = currentUser?.roleLabel || "GESTORA / ADMINISTRADORA";
 
   // 2. Query Brokers List (Active profiles in platform, Super Admin hidden)
   const { data: brokers = [] } = useQuery({
@@ -101,7 +101,7 @@ function LeadsManagementPage() {
         id: b.id,
         name: b.name,
         email: b.email,
-        role: b.role === "admin" ? ("admin" as const) : ("broker" as const),
+        role: b.role === "admin" || b.role === "manager" ? ("admin" as const) : ("broker" as const),
         active: b.active,
       }));
     },

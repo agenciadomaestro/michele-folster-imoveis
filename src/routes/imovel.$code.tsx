@@ -27,6 +27,7 @@ import {
   PURPOSE_LABEL,
   getWhatsappUrl,
   normalizeProperty,
+  resolvePhotoUrl,
   type Property,
 } from "@/lib/realty";
 import { useSiteAnalytics } from "@/hooks/use-site-analytics";
@@ -344,7 +345,7 @@ function PropertyPage() {
           onClick={() => setZoom(false)}
         >
           <img
-            src={photos[idx]?.url}
+            src={resolvePhotoUrl(photos[idx]?.url)}
             alt={p.title}
             className="max-h-[85vh] max-w-full rounded-[20px]"
             onClick={(e) => e.stopPropagation()}

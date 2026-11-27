@@ -27,7 +27,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/site/SiteLayout";
 import { toast } from "sonner";
-import { normalizeProperty, priceLabel, type Property } from "@/lib/realty";
+import { normalizeProperty, priceLabel, resolvePhotoUrl, type Property } from "@/lib/realty";
 import { getCurrentUserProfile, fetchBrokers } from "@/lib/brokers";
 import { fetchMessages } from "@/lib/messages";
 import { fetchLeads } from "@/lib/leads";
@@ -343,7 +343,7 @@ function AdminDashboard() {
                   {userProfile?.name || "Michele Folster"}
                 </p>
                 <span className="text-[10px] font-semibold text-primary uppercase tracking-wider block">
-                  {userProfile?.roleLabel || "Gestora/Administradora"}
+                  {userProfile?.roleLabel || "GESTORA / ADMINISTRADORA"}
                 </span>
               </div>
             </div>
@@ -367,7 +367,9 @@ function AdminDashboard() {
 
             {(userProfile?.role === "super_admin" ||
               userProfile?.role === "admin" ||
-              userProfile?.isSuperAdmin === true) && (
+              userProfile?.role === "manager" ||
+              userProfile?.isSuperAdmin === true ||
+              userProfile?.isAdmin === true) && (
               <Link
                 to="/admin/analytics"
                 className="btn btn-ghost text-xs h-9 text-muted-foreground hover:text-foreground font-semibold"
@@ -455,7 +457,7 @@ function AdminDashboard() {
                     {userProfile?.name || "Michele Folster"}
                   </p>
                   <span className="text-[11px] font-semibold text-primary uppercase tracking-wider block truncate">
-                    {userProfile?.roleLabel || "Gestora/Administradora"}
+                    {userProfile?.roleLabel || "GESTORA / ADMINISTRADORA"}
                   </span>
                 </div>
               </div>
@@ -482,7 +484,9 @@ function AdminDashboard() {
 
                 {(userProfile?.role === "super_admin" ||
                   userProfile?.role === "admin" ||
-                  userProfile?.isSuperAdmin === true) && (
+                  userProfile?.role === "manager" ||
+                  userProfile?.isSuperAdmin === true ||
+                  userProfile?.isAdmin === true) && (
                   <Link
                     to="/admin/analytics"
                     onClick={() => setMobileMenuOpen(false)}
@@ -754,8 +758,9 @@ function AdminDashboard() {
           ) : (
             <div className="divide-y divide-border overflow-hidden">
               {filteredProperties.map((item) => {
-                const coverPhoto = item.property_photos?.sort((a, b) => a.position - b.position)[0]
-                  ?.url;
+                const coverPhoto = resolvePhotoUrl(
+                  item.property_photos?.sort((a, b) => a.position - b.position)[0]?.url,
+                );
                 return (
                   <div
                     key={item.id}

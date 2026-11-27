@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { BedDouble, Bath, Car, Ruler, MapPin, ImageOff, Star, ArrowUpRight } from "lucide-react";
-import { coverOf, priceLabel, PURPOSE_LABEL, brl, type Property } from "@/lib/realty";
+import { coverOf, priceLabel, PURPOSE_LABEL, brl, resolvePhotoUrl, type Property } from "@/lib/realty";
 
 export function PropertyCard({ p }: { p: Property }) {
   const cover = coverOf(p);

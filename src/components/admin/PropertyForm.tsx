@@ -32,7 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadPropertyPhoto } from "@/lib/image-upload";
 import { getCurrentUserProfile } from "@/lib/brokers";
 import { Button } from "@/components/ui/button";
-import { PROPERTY_TYPES, brl, type Property } from "@/lib/realty";
+import { PROPERTY_TYPES, brl, resolvePhotoUrl, type Property } from "@/lib/realty";
 import { emptyOwnerDetails, fetchPropertyOwner, savePropertyOwner } from "@/lib/property-owners";
 import { OwnerDetails } from "@/components/admin/OwnerDetails";
 
@@ -267,8 +267,8 @@ export function PropertyForm({ propertyId, onSuccess, onClose }: PropertyFormPro
               storage_path: (
                 p as unknown as { id: string; caption?: string | null; storage_path: string }
               ).storage_path,
-              url: p.url,
-              previewUrl: p.url,
+              url: resolvePhotoUrl(p.url, (p as any).storage_path),
+              previewUrl: resolvePhotoUrl(p.url, (p as any).storage_path),
             })),
           );
         }

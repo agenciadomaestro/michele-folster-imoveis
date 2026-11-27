@@ -278,7 +278,7 @@ export function BrokerManagementModal({
               <tbody className="divide-y divide-border">
                 {brokers.map((broker) => {
                   const assignedCount = getAssignedCount(broker.id, broker.name);
-                  const isMichelePrincipal = broker.role === "admin";
+                  const isMichelePrincipal = broker.role === "admin" || broker.role === "super_admin";
 
                   return (
                     <tr key={broker.id} className="hover:bg-secondary/20 transition-colors">
@@ -301,9 +301,14 @@ export function BrokerManagementModal({
                           <div className="min-w-0">
                             <p className="font-semibold text-foreground text-sm flex items-center gap-1.5 truncate">
                               <span>{broker.name}</span>
-                              {isMichelePrincipal && (
+                              {broker.role === "admin" && (
                                 <span className="chip text-[10px] bg-primary/10 text-primary border-primary/20 h-4 px-1.5 font-bold shrink-0">
-                                  Gestora / Admin
+                                  GESTORA / ADMINISTRADORA
+                                </span>
+                              )}
+                              {broker.role === "manager" && (
+                                <span className="chip text-[10px] bg-primary/10 text-primary border-primary/20 h-4 px-1.5 font-bold shrink-0">
+                                  GESTOR
                                 </span>
                               )}
                             </p>

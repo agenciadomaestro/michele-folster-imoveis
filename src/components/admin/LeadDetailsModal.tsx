@@ -346,7 +346,15 @@ export function LeadDetailsModal({
                   <option value="">Não atribuído</option>
                   {brokers.map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.name} ({b.role === "owner" ? "Master" : b.role})
+                      {b.name} (
+                      {b.role === "manager"
+                        ? "GESTOR"
+                        : b.role === "admin"
+                          ? "GESTORA / ADMINISTRADORA"
+                          : b.role === "super_admin" || b.role === "owner"
+                            ? "Master"
+                            : "Corretor"}
+                      )
                     </option>
                   ))}
                 </select>

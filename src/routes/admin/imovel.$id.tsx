@@ -4,7 +4,7 @@ import { ArrowLeft, BedDouble, Bath, Car, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPropertyOwner, emptyOwnerDetails } from "@/lib/property-owners";
 import { OwnerDetails } from "@/components/admin/OwnerDetails";
-import { normalizeProperty, priceLabel, type Property } from "@/lib/realty";
+import { normalizeProperty, priceLabel, resolvePhotoUrl, type Property } from "@/lib/realty";
 
 const internalPropertyOptions = (id: string) =>
   queryOptions({
@@ -76,7 +76,7 @@ function InternalPropertyPage() {
         {photos.map((photo) => (
           <img
             key={photo.url}
-            src={photo.url}
+            src={resolvePhotoUrl(photo.url)}
             alt={p.title}
             className="aspect-[4/3] w-full rounded-lg object-cover"
           />

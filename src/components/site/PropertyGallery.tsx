@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { galleryWindowStart, VISIBLE_GALLERY_PHOTOS } from "@/lib/gallery";
+import { resolvePhotoUrl } from "@/lib/realty";
 
 interface PropertyGalleryProps {
   photos: { url: string }[];
@@ -174,7 +175,7 @@ export function PropertyGallery({
         >
           {photos[selected] ? (
             <img
-              src={photos[selected].url}
+              src={resolvePhotoUrl(photos[selected].url)}
               alt={title}
               draggable={false}
               className="absolute inset-0 size-full object-cover pointer-events-none select-none"
@@ -235,7 +236,7 @@ export function PropertyGallery({
                   className={`relative h-auto min-h-0 w-full aspect-square overflow-hidden rounded-md border-2 p-0 md:aspect-auto ${index === selected ? "border-primary" : "border-transparent"}`}
                 >
                   <img
-                    src={photo.url}
+                    src={resolvePhotoUrl(photo.url)}
                     alt={`Foto ${index + 1} de ${title}`}
                     loading="lazy"
                     draggable={false}
