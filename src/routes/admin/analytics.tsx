@@ -190,7 +190,7 @@ function AnalyticsDashboardPage() {
               <span>Painel</span>
             </Link>
             <div className="h-4 w-px bg-border shrink-0" />
-            <Logo />
+            <Logo isAdmin />
           </div>
 
           <div className="flex items-center gap-3">

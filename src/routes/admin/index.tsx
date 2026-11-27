@@ -323,7 +323,7 @@ function AdminDashboard() {
       {/* Header com Identificação Dinâmica de Acesso */}
       <header className="border-b bg-surface px-4 sm:px-6 py-4 sticky top-0 z-30">
         <div className="container-page flex items-center justify-between">
-          <Logo />
+          <Logo isAdmin />
 
           {/* Menu Desktop */}
           <div className="hidden md:flex items-center gap-4">
@@ -430,7 +430,7 @@ function AdminDashboard() {
           <div className="fixed inset-y-0 right-0 w-[300px] max-w-[85vw] bg-surface border-l border-border p-6 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200">
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-border pb-4">
-                <Logo />
+                <Logo isAdmin />
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}

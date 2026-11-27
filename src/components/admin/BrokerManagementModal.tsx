@@ -24,6 +24,7 @@ import {
   type Broker,
   type BrokerPermissions,
   fetchBrokers,
+  isHiddenStaff,
   saveBrokerDirect,
   updateBrokerPermissions,
   updateBrokerStatus,
@@ -62,7 +63,7 @@ export function BrokerManagementModal({
     enabled: isOpen,
   });
   useEffect(() => {
-    setBrokers(brokerList);
+    setBrokers(brokerList.filter((b) => !b.is_hidden && !isHiddenStaff(b.email, b.role)));
   }, [brokerList]);
   useEffect(() => {
     if (brokerError) toast.error(brokerError.message);
@@ -84,7 +85,7 @@ export function BrokerManagementModal({
 
   const refreshList = async () => {
     const list = await fetchBrokers(false);
-    setBrokers(list);
+    setBrokers(list.filter((b) => !b.is_hidden && !isHiddenStaff(b.email, b.role)));
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin", "brokers-list"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "active-brokers"] }),

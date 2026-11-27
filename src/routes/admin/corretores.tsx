@@ -74,7 +74,7 @@ function AdminBrokersPage() {
             >
               <ArrowLeft className="size-5" />
             </Link>
-            <Logo />
+            <Logo isAdmin />
           </div>
           <button
             onClick={() => setIsModalOpen(true)}

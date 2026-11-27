@@ -233,7 +233,7 @@ function AdminMessagesPage() {
             >
               <ArrowLeft className="size-5" />
             </Link>
-            <Logo />
+            <Logo isAdmin />
           </div>
 
           <div className="flex items-center gap-3">

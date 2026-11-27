@@ -27,10 +27,23 @@ const NAV = [
   { to: "/contato", label: "Contato" },
 ] as const;
 
-export function Logo({ light = false }: { light?: boolean }) {
+export function Logo({
+  light = false,
+  isAdmin = false,
+  subtitle,
+  to,
+}: {
+  light?: boolean;
+  isAdmin?: boolean;
+  subtitle?: string | null;
+  to?: string;
+}) {
   const { isOpen } = useAgencyClock();
+  const displaySubtitle = isAdmin ? null : (subtitle ?? "Corretora de Imóveis");
+  const linkTo = to || (isAdmin ? "/admin" : "/");
+
   return (
-    <Link to="/" className="group flex items-center gap-3 transition-opacity hover:opacity-90">
+    <Link to={linkTo} className="group flex items-center gap-3 transition-opacity hover:opacity-90">
       <div className="relative size-10 shrink-0 rounded-full bg-secondary shadow-soft transition-transform group-hover:scale-105">
         <img
           src={portrait.url || "/michele-folster.jpg"}
@@ -48,7 +61,7 @@ export function Logo({ light = false }: { light?: boolean }) {
             role="status"
             aria-label="Em horário de atendimento"
             title="Em horário de atendimento"
-            className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-success ring-2 ring-background"
+            className="absolute bottom-0 right-0 size-3 rounded-full bg-[#25D366] ring-2 ring-background shadow-xs"
           />
         )}
       </div>
@@ -58,9 +71,11 @@ export function Logo({ light = false }: { light?: boolean }) {
         >
           {AGENCY.name}
         </span>
-        <span className="mt-1 text-[11px] font-medium tracking-wide text-muted-foreground">
-          Imóveis
-        </span>
+        {displaySubtitle && (
+          <span className="mt-1 text-[11px] font-medium tracking-wide text-muted-foreground">
+            {displaySubtitle}
+          </span>
+        )}
       </div>
     </Link>
   );

@@ -27,6 +27,11 @@ export function isUuid(value: string | null | undefined): boolean {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
   );
 }
+export function isHiddenStaff(email?: string | null, role?: StaffRole | null): boolean {
+  if (role === "super_admin") return true;
+  const clean = (email || "").toLowerCase().trim();
+  return clean === "contato@agenciabipe.com" || clean === "agbipe@agenciabipe.com";
+}
 export async function fetchBrokers(includeHidden = false): Promise<Broker[]> {
   const [profiles, roles, permissions] = await Promise.all([
     supabase.from("profiles").select("*").order("created_at"),
@@ -39,7 +44,8 @@ export async function fetchBrokers(includeHidden = false): Promise<Broker[]> {
     const role = resolveStaffRole(
       (roles.data ?? []).filter((r) => r.user_id === p.id).map((r) => r.role),
     );
-    if (!role || (!includeHidden && role === "super_admin")) return [];
+    const hidden = isHiddenStaff(p.email, role);
+    if (!role || (!includeHidden && hidden)) return [];
     return [
       {
         id: p.id,
@@ -50,7 +56,7 @@ export async function fetchBrokers(includeHidden = false): Promise<Broker[]> {
         photo_url: p.photo_url,
         role,
         active: p.active,
-        is_hidden: role === "super_admin",
+        is_hidden: hidden,
         permissions: staffPermissions(
           role,
           permissions.data?.find((r) => r.user_id === p.id),
@@ -116,6 +122,7 @@ export async function getCurrentUserProfile() {
   if (!data.user) throw new Error("Entre na sua conta");
   const broker = (await fetchBrokers(true)).find((b) => b.id === data.user.id);
   if (!broker?.active) throw new Error("Acesso da equipe não autorizado");
+  const isMaster = broker.role === "super_admin" || isHiddenStaff(broker.email, broker.role);
   return {
     ...broker,
     roleLabel:
@@ -126,9 +133,9 @@ export async function getCurrentUserProfile() {
           : broker.role === "admin"
             ? "GESTORA / ADMINISTRADORA"
             : "Corretor(a)",
-    isSuperAdmin: broker.role === "super_admin",
-    isAdmin: broker.role !== "corretor",
-    isBroker: broker.role === "corretor",
+    isSuperAdmin: isMaster,
+    isAdmin: isMaster || broker.role !== "corretor",
+    isBroker: !isMaster && broker.role === "corretor",
   };
 }
 export function formatMembershipDuration(createdAtStr?: string): string {
